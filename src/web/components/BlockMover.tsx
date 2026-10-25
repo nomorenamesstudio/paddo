@@ -34,6 +34,8 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
   const drag = useRef<Drag | null>(null)
   const dragged = useRef(false)
   const lastDrop = useRef(0)
+  /** The last place the pointer actually pointed at, kept while it is off the column. */
+  const lastTarget = useRef<{ pos: number; block: BlockRef; side: 'before' | 'after' } | null>(null)
 
   const measure = useCallback(
     (blockPos: number): number | null => {
@@ -48,15 +50,30 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
     [editor, container],
   )
 
+  /**
+   * Where a pointer currently means to drop. Coordinates outside the text column
+   * are clamped into it — dragging into the margin is not a cancel — and if even
+   * that yields nothing, the last real target stays sticky, so releasing outside
+   * the column still lands the block where it was last pointed.
+   */
   const locate = useCallback(
     (clientX: number, clientY: number): { pos: number; block: BlockRef; side: 'before' | 'after' } | null => {
-      if (!editor) return null
-      const pos = editor.view.posAtCoords({ left: clientX, top: clientY })?.pos
-      if (pos == null) return null
+      if (!editor) return lastTarget.current
+
+      const rect = editor.view.dom.getBoundingClientRect()
+      const x = Math.min(Math.max(clientX, rect.left + 1), rect.right - 1)
+      const y = Math.min(Math.max(clientY, rect.top + 1), rect.bottom - 1)
+
+      const pos = editor.view.posAtCoords({ left: x, top: y })?.pos
+      if (pos == null) return lastTarget.current
+
       const block = blockAt(editor, pos)
-      if (!block) return null
+      if (!block) return lastTarget.current
+
       const coords = editor.view.coordsAtPos(block.pos)
-      return { pos, block, side: clientY > coords.top + 24 ? 'after' : 'before' }
+      const hit = { pos, block, side: (y > coords.top + 24 ? 'after' : 'before') as 'before' | 'after' }
+      lastTarget.current = hit
+      return hit
     },
     [editor],
   )
@@ -116,6 +133,8 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
       return
     }
 
+    lastTarget.current = null
+
     const update = (clientX: number, clientY: number) => {
       const hit = locate(clientX, clientY)
       const base = drag.current
@@ -143,10 +162,12 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
 
     const place = (hit: { pos: number; block: BlockRef; side: 'before' | 'after' } | null) => {
       clearPreview()
-      if (!hit || hit.block.pos === moving.pos) {
+      const target = hit ?? lastTarget.current
+      if (!target || target.block.pos === moving.pos) {
         setMoving(null)
         return
       }
+      hit = target
       if (!moveBlock(editor, moving.pos, hit.pos, hit.side)) {
         window.dispatchEvent(
           new CustomEvent('paddo:notice', { detail: 'That block cannot move there.' }),
@@ -165,12 +186,27 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
       pressPoint.current = null
       dragged.current = false
       if (!startedOnGrip || !wasDragging) return // a click on the grip: stay picked
+      // Released back on the grip: that reads as a cancel, not a drop.
+      if ((event.target as HTMLElement | null)?.closest('.grip')) {
+        clearPreview()
+        setMoving(null)
+        return
+      }
       place(locate(event.clientX, event.clientY))
     }
 
     const onClick = (event: MouseEvent) => {
       if ((event.target as HTMLElement | null)?.closest('.grip')) return
       if (Date.now() - lastDrop.current < CLICK_GRACE) return
+
+      // A tap only places on the text. Anywhere else — a button, the margin, the
+      // bars — cancels the move and lets the click do what it normally does.
+      if (!editor.view.dom.contains(event.target as Node)) {
+        clearPreview()
+        setMoving(null)
+        return
+      }
+
       event.preventDefault()
       event.stopPropagation()
       place(locate(event.clientX, event.clientY))
