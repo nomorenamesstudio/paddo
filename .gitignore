@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.pnpm-store/
+.cache/
+.env
+.paddo/
+content/.trash/
+*.log
+.DS_Store
+playwright-report/
+test-results/
