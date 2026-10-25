@@ -15,7 +15,10 @@ import {
   rejectAllSuggestions,
 } from '../editor/actions'
 import { Suggestions } from '../editor/suggestions'
+import { Bot, ChevronLeft } from 'lucide-react'
+
 import { BlockMover } from '../components/BlockMover'
+import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
 
 export function EditorPage({ slug }: { slug: string }) {
@@ -66,16 +69,10 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           autocapitalize: 'sentences',
           'aria-label': 'Document',
         },
-        handleKeyDown: (view, event) => {
+        handleKeyDown: (_view, event) => {
           if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
             event.preventDefault()
-            const href = window.prompt('Link address', 'https://')
-            if (!href) return true
-            const linkMark = view.state.schema.marks.link
-            if (!linkMark) return true
-            const { from, to, empty } = view.state.selection
-            if (empty) return true
-            view.dispatch(view.state.tr.addMark(from, to, linkMark.create({ href })))
+            window.dispatchEvent(new CustomEvent('paddo:link'))
             return true
           }
           return false
@@ -197,15 +194,21 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   return (
     <div className="shell">
       <header className="topbar">
-        <a className="topbar__back" href="/" aria-label="All documents">
-          ←
+        <a className="topbar__back" href="/" aria-label="All documents" title="All documents">
+          <ChevronLeft size={22} aria-hidden="true" />
         </a>
         <h1 className="topbar__title">{title}</h1>
         <span className={`sync sync--${sync}`} title={`sync: ${sync}`}>
           {sync === 'connected' ? 'synced' : sync}
         </span>
-        <button className="button button--ghost" type="button" onClick={() => setInviteOpen(true)}>
-          Invite agent
+        <button
+          className="button button--ghost button--icon"
+          type="button"
+          onClick={() => setInviteOpen(true)}
+          aria-label="Invite the agent"
+          title="Invite the agent"
+        >
+          <Bot size={20} aria-hidden="true" />
         </button>
       </header>
 
@@ -220,10 +223,11 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
 
       <main className="editor" ref={editorHost} onClick={() => editor?.commands.focus()}>
         <EditorContent editor={editor} />
+        <SelectionMenu editor={editor} />
         <BlockMover editor={editor} container={editorHost.current} />
         {editor && pendingRanges(editor).length === 0 ? (
           <p className="editor__hint">
-            _italics_ · **bold** · # heading · &gt; quote · ⌘K link · ⠿ move a paragraph
+            select text for bold, italics and links · ⠿ moves a paragraph
           </p>
         ) : null}
       </main>
