@@ -162,9 +162,22 @@ export const Suggestions = Extension.create<SuggestionsOptions>({
             event.preventDefault()
             event.stopPropagation()
             const action = target.dataset.sugAction
-            if (action === 'accept') acceptSuggestion(editor, id)
-            else if (action === 'reject') rejectSuggestion(editor, id)
-            else if (action === 'edit') acceptSuggestion(editor, id, { select: true })
+            if (action === 'reject') {
+              rejectSuggestion(editor, id)
+              return
+            }
+            if (action !== 'accept' && action !== 'edit') return
+
+            const result = acceptSuggestion(editor, id, { select: action === 'edit' })
+            if (result === 'stale') {
+              // Never a silent no-op: say what happened, then drop the dead hunk.
+              window.dispatchEvent(
+                new CustomEvent('paddo:notice', {
+                  detail: 'That change can no longer be placed — the text under it has changed. Dropped it.',
+                }),
+              )
+              rejectSuggestion(editor, id)
+            }
           }
           view.dom.addEventListener('pointerdown', onPointerDown, true)
           return { destroy: () => view.dom.removeEventListener('pointerdown', onPointerDown, true) }

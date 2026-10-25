@@ -12,6 +12,7 @@ import {
   acceptSuggestion,
   diagnoseSuggestions,
   pendingRanges,
+  pruneDeadSuggestions,
   rejectAllSuggestions,
 } from '../editor/actions'
 import { Suggestions } from '../editor/suggestions'
@@ -127,6 +128,23 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       cancelled = true
     }
   }, [slug])
+
+  // Feedback channel for actions that happen inside ProseMirror decorations.
+  useEffect(() => {
+    const onNotice = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail
+      if (typeof detail === 'string') setNotice(detail)
+    }
+    window.addEventListener('paddo:notice', onNotice)
+    return () => window.removeEventListener('paddo:notice', onNotice)
+  }, [])
+
+  // Hooks that can never be applied are dropped once the document is really here.
+  useEffect(() => {
+    if (!editor || sync !== 'connected') return
+    const timer = window.setTimeout(() => pruneDeadSuggestions(editor), 1200)
+    return () => window.clearTimeout(timer)
+  }, [editor, sync])
 
   // Provider status.
   useEffect(() => {

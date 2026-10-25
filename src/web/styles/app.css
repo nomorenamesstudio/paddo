@@ -734,6 +734,18 @@ a {
   right: 0;
   height: 2px;
   background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* The picked block, so the mode is never invisible. */
+.move-frame {
+  position: absolute;
+  left: -0.75rem;
+  right: -0.75rem;
+  background: var(--accent-soft);
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 4px;
   pointer-events: none;
 }
 

@@ -32,11 +32,17 @@ export function createCollab(config: Config) {
     debounce: 700,
     maxDebounce: 3000,
 
-    async onAuthenticate({ request, token, documentName }) {
+    async onAuthenticate({ request, token, documentName, requestParameters }) {
       if (!isValidSlug(documentName)) throw new Error('unauthorized')
       const cookie = readCookie(request.headers.get('cookie') ?? undefined, SESSION_COOKIE)
       if (verifySession(config.secret, cookie)) return { user: 'owner' }
+
+      // A machine client cannot send a cookie, and its token may ride either the
+      // upgrade query string or the protocol's auth message.
+      const queryToken = requestParameters.get('token')
       if (token && constantTimeEquals(token, config.token)) return { user: 'token' }
+      if (queryToken && constantTimeEquals(queryToken, config.token)) return { user: 'token' }
+
       throw new Error('unauthorized')
     },
 

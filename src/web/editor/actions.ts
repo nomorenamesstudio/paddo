@@ -232,6 +232,31 @@ export function acceptSuggestion(
   return 'applied'
 }
 
+/**
+ * A hunk whose quoted text is gone from the document can never be applied; it is
+ * not a suggestion any more, just a ghost the reader cannot dismiss. Called once
+ * the room is synced, so a half-loaded document is never mistaken for a dead one.
+ */
+export function pruneDeadSuggestions(editor: Editor): number {
+  const sync = syncStateOf(editor)
+  if (!sync) return 0
+
+  const { text } = textIndex(editor.state.doc)
+  const map = sync.doc.getMap<Record<string, unknown>>(SUGGESTIONS_MAP)
+  const dead: string[] = []
+
+  for (const value of map.values()) {
+    const suggestion = value as unknown as Suggestion
+    if (suggestion.status !== 'pending') continue
+    const original = (suggestion.original ?? '').trim()
+    if (original === '') continue
+    if (!text.includes(original)) dead.push(suggestion.id)
+  }
+
+  for (const id of dead) map.delete(id)
+  return dead.length
+}
+
 export function rejectSuggestion(editor: Editor, id: string): void {
   const sync = syncStateOf(editor)
   if (!sync) return

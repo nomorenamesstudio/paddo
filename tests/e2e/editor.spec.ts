@@ -140,6 +140,47 @@ test('rejecting one hunk and accepting the rest lands only the accepted text', a
   expect(text).not.toContain('Alpha sentence is kept.')
 })
 
+test('a paragraph moves by dragging its grip and comes back with one undo', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Moving ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type('First block stays here.')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Second block should move up.')
+  await expect(page.locator('.prose > p')).toHaveCount(2)
+
+  const order = async () => (await page.locator('.prose > p').allInnerTexts()).map((text) => text.trim())
+  // The CRDT undo manager groups changes within half a second; a person does not
+  // type and immediately drag, and the test should not either.
+  await page.waitForTimeout(700)
+  const before = await order()
+
+  // Drag the second block's grip to the top of the first block.
+  await page.locator('.prose > p').nth(1).hover()
+  const grip = page.locator('.grip')
+  await expect(grip).toBeVisible()
+  const gripBox = await grip.boundingBox()
+  const firstBox = await page.locator('.prose > p').first().boundingBox()
+  if (!gripBox || !firstBox) throw new Error('missing geometry')
+
+  await page.mouse.move(gripBox.x + gripBox.width / 2, gripBox.y + gripBox.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + 4, { steps: 10 })
+
+  // The destination is shown while the pointer is down.
+  await expect(page.locator('.move-line')).toHaveCount(1)
+  await page.mouse.up()
+
+  await expect.poll(order).toEqual([before[1], before[0]])
+
+  await page.locator('.prose').click()
+  await page.keyboard.press('Control+z')
+  await expect.poll(order).toEqual(before)
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
