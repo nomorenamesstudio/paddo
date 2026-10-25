@@ -67,8 +67,9 @@ export function createCollab(config: Config) {
 
       try {
         const body = await readDocument(config, documentName)
-        Y.applyUpdate(document, Y.encodeStateAsUpdate(yDocFromMarkdown(body)))
-        lastWritten.set(documentName, hashOf(normalizeMarkdown(body)))
+        if (seedDocumentFromMarkdown(document, body)) {
+          lastWritten.set(documentName, hashOf(normalizeMarkdown(body)))
+        }
       } catch {
         // A room for a document that does not exist yet: it starts empty.
       }
@@ -120,4 +121,24 @@ export function markdownFromYDoc(doc: Y.Doc): string {
 export function yDocFromMarkdown(body: string): Y.Doc {
   const json = markdown.parse(body)
   return prosemirrorJSONToYDoc(schema, json, CONTENT_FIELD)
+}
+
+/**
+ * Seeds an empty room from markdown. Each seed comes from a fresh Y.Doc with its
+ * own client id, so applying one twice appends a second copy of the whole
+ * document instead of merging into the first. The emptiness check therefore has
+ * to happen inside the transaction that applies the seed.
+ */
+export function seedDocumentFromMarkdown(document: Y.Doc, body: string): boolean {
+  const fragment = document.getXmlFragment(CONTENT_FIELD)
+  if (fragment.length > 0) return false
+
+  const seed = Y.encodeStateAsUpdate(yDocFromMarkdown(body))
+  let applied = false
+  document.transact(() => {
+    if (fragment.length > 0) return
+    Y.applyUpdate(document, seed)
+    applied = true
+  })
+  return applied
 }

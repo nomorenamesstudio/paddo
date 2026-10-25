@@ -84,3 +84,23 @@ describe('quote anchoring', () => {
     expect(resolveAnchor(ydoc, to)).not.toBeNull()
   })
 })
+
+describe('seeding a room from markdown', () => {
+  /**
+   * Contract: loading a document into a room happens at most once. A second seed
+   * would append a whole extra copy of the document, because each seed carries a
+   * fresh Yjs client id instead of merging into the first.
+   */
+  it('adds nothing when the room already has content', async () => {
+    const { seedDocumentFromMarkdown } = await import('../src/server/collab')
+    const ydoc = new Y.Doc()
+
+    expect(seedDocumentFromMarkdown(ydoc, '# One\n\nA paragraph.\n')).toBe(true)
+    const afterFirst = ydoc.getXmlFragment('content').length
+
+    expect(seedDocumentFromMarkdown(ydoc, '# One\n\nA paragraph.\n')).toBe(false)
+    expect(ydoc.getXmlFragment('content').length).toBe(afterFirst)
+    // The paragraph appears once, not twice: the observable half of "no duplicate".
+    expect(ydoc.getXmlFragment('content').toString().split('A paragraph.').length - 1).toBe(1)
+  })
+})

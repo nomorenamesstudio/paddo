@@ -67,6 +67,18 @@ Early development runs over the LAN without TLS. Two consequences:
   on `localhost` or `10.*` either: a precached app shell would hide rebuilds. A real
   HTTPS origin gets the PWA.
 
+## Resetting a document's CRDT state
+
+Deleting `.paddo/<slug>.y` while a browser still has the document open creates a
+second CRDT lineage from the same markdown. When that tab reconnects, Yjs merges the
+two by concatenation and you get the whole document twice. So:
+
+1. stop the server,
+2. close every Paddō tab (desktop and phone),
+3. edit or restore the `.md`,
+4. delete the sidecar,
+5. start the server.
+
 ## Tests
 
 ```bash

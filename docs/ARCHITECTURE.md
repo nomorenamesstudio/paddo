@@ -80,6 +80,7 @@ Each of these cost time during the build, and each is guarded by code or a test.
 | A store overwriting a fresh file edit | Hocuspocus stores on unload, so an unrelated request could rewrite the `.md` and erase an external edit | compare the disk hash with the last hash the server wrote before writing |
 | Diff swallowing untouched prose | a merge buffer pulled the rest of the paragraph into every hunk, so a one-word change showed a 300-character diff | the unchanged gap is only committed when a *later* change follows (`src/server/diff.ts`) |
 | Anchoring past the last character | appending a paragraph produced a hunk at `text.length`, which anchored to nothing and dropped the suggestion | `anchorRange` clamps to the last real character and walks separators |
+| Resetting a sidecar with clients connected | the room is re-seeded from markdown under a **new** CRDT lineage while an open tab still holds the old one; when they sync, Yjs merges both lineages by concatenation and the document appears two, three, five times over | stop the server and close every client before deleting `.paddo/<slug>.y`; recovery is a Y-level delete of the repeated blocks (`spike/dedupe-doc.mjs`) |
 | Static assets registered at boot | `@fastify/static` with `wildcard: false` builds its route table at startup, so newly built asset hashes 404 until a restart | wildcard matching, with the SPA fallback in `setNotFoundHandler` |
 
 ## Verified by tests
