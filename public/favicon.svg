@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Paddō">
+  <rect width="100" height="100" rx="18" fill="#f7f4ef" />
+  <g fill="#2a2825">
+    <rect x="22" y="32" width="56" height="3.4" rx="1.7" />
+    <rect x="22" y="43" width="56" height="3.4" rx="1.7" />
+    <rect x="22" y="54" width="56" height="3.4" rx="1.7" />
+    <rect x="22" y="65" width="34" height="3.4" rx="1.7" />
+  </g>
+  <circle cx="74" cy="74.5" r="5.5" fill="#9a3412" />
+</svg>

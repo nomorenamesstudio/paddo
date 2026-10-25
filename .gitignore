@@ -4,8 +4,14 @@ dist/
 .cache/
 .env
 .paddo/
+.paddo-test/
+screenshots/
+.playwright/
 content/.trash/
 *.log
 .DS_Store
 playwright-report/
+# The e2e suite creates a document per test; only the fixture is tracked.
+tests/fixtures/content/*
+!tests/fixtures/content/essay.md
 test-results/

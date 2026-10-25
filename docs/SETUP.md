@@ -21,8 +21,10 @@ pnpm install
 ```
 
 Both directories are gitignored. `pnpm-workspace.yaml` allows esbuild's build
-script; without it the pnpm warning about ignored builds appears and Vite has no
-binary.
+script; without it the pnpm warning about ignored builds appears.
+
+Playwright's browser lives in `.cache/ms-playwright` too, for the same reason:
+`PLAYWRIGHT_BROWSERS_PATH=.cache/ms-playwright`. The `test:e2e` script sets it.
 
 ## Configuration
 
@@ -35,32 +37,47 @@ are set — a default-open service reachable from a phone is not acceptable.
 | `PADDO_SECRET` | HMAC key for signing the session cookie (`openssl rand -hex 32`) |
 | `PADDO_TOKEN` | bearer token the MCP server presents to the HTTP API |
 | `PADDO_CONTENT_DIR` | where the `.md` files live, default `content` |
+| `PADDO_SIDECAR_DIR` | where the CRDT sidecars live, default `.paddo` |
 | `PADDO_HOST` | `0.0.0.0` when the phone needs to reach it over the LAN |
-| `PADDO_PORT` | default `4319` — `3100`, the usual dev port on this machine, is already taken |
+| `PADDO_PORT` | default `4319` — `3100`, the usual dev port on this machine, is taken |
 
 `.env` is gitignored; `.env.example` carries placeholders only.
 
 ## Running
 
 ```bash
-pnpm dev          # server, tsx watch
-pnpm dev:web      # vite dev server for the UI
-pnpm typecheck
+pnpm build        # web app into dist/web (the server serves it)
+pnpm start        # one process, one port
+pnpm dev          # server with tsx watch
+pnpm dev:web      # rebuild dist/web on change, in a second terminal
 ```
 
-`pnpm dev` binds `0.0.0.0:4319`, so the phone can use
-`http://<lan-ip>:4319` during development.
+`pnpm start` binds `0.0.0.0:4319`, so the phone can use `http://<lan-ip>:4319`.
+
+A rebuild of the web app does not need a server restart: static files are served by
+path, not by a route table built at boot.
 
 ## Development over plain HTTP
 
 Early development runs over the LAN without TLS. Two consequences:
 
 - the session cookie is only marked `Secure` when the request origin is HTTPS, so
-  Safari will store it over `http://`;
-- the service worker is not registered outside a secure context, so PWA install is
-  deferred until the service has an HTTPS origin (Tailscale `serve`, or a subdomain
-  behind a reverse proxy). `localhost` counts as secure, so desktop install testing
-  works today.
+  Safari stores it over `http://`;
+- the service worker is not registered outside a secure origin, and deliberately not
+  on `localhost` or `10.*` either: a precached app shell would hide rebuilds. A real
+  HTTPS origin gets the PWA.
+
+## Tests
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm test:e2e
+```
+
+`test:e2e` builds the app, starts its own server on port 4320 with
+`PADDO_CONTENT_DIR=tests/fixtures/content` and `PADDO_SIDECAR_DIR=.paddo-test`, and
+creates a fresh document per test. It never touches `content/` or a running instance.
 
 ## Not yet decided
 

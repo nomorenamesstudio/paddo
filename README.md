@@ -7,16 +7,16 @@ Name: Paddō — from パッド, "pad", the notepad it is. ASCII: `paddo`.
 
 ## Status
 
-Phase 0 complete: the risky assumptions are verified, nothing is wired up yet.
-See [docs/CHANGELOG.md](docs/CHANGELOG.md) and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Working prototype. You can sign in, write, sync between devices, and review an
+agent's proposals as inline suggestions. See what is not done, below.
 
-## What it is
+## What it does
 
-- Long-form prose drafting in Markdown, one document at a time, calm surface.
+- Long-form prose editing in Markdown, one calm surface, no toolbar of forty-seven buttons.
 - Real-time editing between phone and desktop over Yjs — no save button, no sync layer.
-- A local agent proposes edits; they arrive as inline suggestions you accept or reject
-  on whichever device is in your hand.
+- An agent proposes changes; they land as inline hunks with accept / reject / edit,
+  reviewable one-handed on a phone.
+- Block moving without dragging: pick the ⠿ grip, then tap where the paragraph goes.
 - Documents stay plain `.md` files on your disk.
 
 Not a knowledge base, not a team tool, no tables or code blocks.
@@ -29,7 +29,7 @@ Not a knowledge base, not a team tool, no tables or code blocks.
 | Sync | Yjs + Hocuspocus, sharing one HTTP port with the app |
 | Server | Fastify 5, one Node 22 process |
 | Persistence | `content/*.md` plus a `.paddo/*.y` CRDT sidecar |
-| Agent | an external MCP client calling Paddō's own MCP server |
+| Agent | an external MCP client calling Paddō's own stdio MCP server |
 | PWA | Vite + `vite-plugin-pwa` |
 
 ## Quick start
@@ -37,22 +37,60 @@ Not a knowledge base, not a team tool, no tables or code blocks.
 ```bash
 pnpm install
 cp .env.example .env        # fill in PADDO_PASSWORD, PADDO_SECRET, PADDO_TOKEN
-pnpm dev                    # http://127.0.0.1:4319
+pnpm build                  # build the web app into dist/web
+pnpm start                  # http://127.0.0.1:4319
 ```
 
-Full setup, including the pnpm store quirk on this machine, is in
-[docs/SETUP.md](docs/SETUP.md).
+For the phone on the same network, `pnpm start` already binds `0.0.0.0`; open
+`http://<lan-ip>:4319` and sign in with the same password. No HTTPS means no PWA
+install for now (see [docs/SETUP.md](docs/SETUP.md)).
+
+## Working with the agent
+
+1. In the editor, press **Invite agent**, type what you want changed, and copy the prompt.
+2. Paste it into your own agent session. It needs Paddō's MCP server:
+
+   ```bash
+   PADDO_URL=http://<host>:4319 PADDO_TOKEN=<from .env> pnpm mcp
+   ```
+
+3. The agent reads the document, sends hunks, and they appear inline. Review them
+   on whichever device is at hand; accepting writes the `.md` file.
+
+Paddō never runs a model. It never writes text the agent asked for without your
+accept, and the agent never touches the file.
+
+## Tests
+
+```bash
+pnpm typecheck
+pnpm test        # round-trip, anchoring, diff hunks
+pnpm test:e2e    # builds the app, starts a server on :4320, drives a browser
+```
 
 ## Layout
 
 ```
 content/          the .md files themselves
-src/server/       Fastify app, Hocuspocus, persistence, MCP ingest   (phase 1+)
-src/web/          editor UI                                            (phase 1+)
-src/mcp/          stdio MCP server agents connect to                   (phase 4)
-spike/            phase 0 throwaway probes, kept as evidence
+src/server/       Fastify app, Hocuspocus hooks, anchors, diff, MCP ingest
+src/shared/       editor schema, markdown serializer, suggestion record
+src/web/          editor UI, suggestion decorations, block moving
+src/mcp/          the stdio MCP server agents connect to
+spike/            phase 0 probes, kept as evidence
+tests/            unit tests and the Playwright suite
 docs/             INDEX, API, ARCHITECTURE, SETUP, CHANGELOG
 ```
+
+## Not done yet
+
+- **PWA install on iOS** needs an HTTPS origin; deferred deliberately, no Tailscale
+  or reverse proxy yet. The manifest, icons and service worker are in place.
+- **Desktop drag with a ghost** — moving is two-tap/pick-and-place on every input
+  instead, which is the same single transaction and works on a phone.
+- **Suggestion staleness UI**: if the text under a hunk changes, accept re-finds the
+  quote or refuses; there is no "keep mine / take theirs" diff dialog.
+- No delete or rename of documents, no search.
+- Tables, code blocks and footnotes are out of scope; their round-trip is unverified.
 
 ## Built with AI
 
