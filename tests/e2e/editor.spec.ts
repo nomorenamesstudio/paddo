@@ -170,8 +170,9 @@ test('a paragraph moves by dragging its grip and comes back with one undo', asyn
   await page.mouse.down()
   await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + 4, { steps: 10 })
 
-  // The destination is shown while the pointer is down.
-  await expect(page.locator('.move-line')).toHaveCount(1)
+  // While the pointer is down the block travels and the destination opens a gap.
+  await expect(page.locator('.prose .is-dragging')).toHaveCount(1)
+  await expect(page.locator('.prose .is-drop-target')).toHaveCount(1)
   await page.mouse.up()
 
   await expect.poll(order).toEqual([before[1], before[0]])

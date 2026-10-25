@@ -15,6 +15,7 @@ import {
   pruneDeadSuggestions,
   rejectAllSuggestions,
 } from '../editor/actions'
+import { DragPreviewExtension } from '../editor/drag-preview'
 import { Suggestions } from '../editor/suggestions'
 import { Bot, ChevronLeft } from 'lucide-react'
 
@@ -62,6 +63,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           user: { name: 'K', color: '#9a3412' },
         }),
         Suggestions.configure({ ydoc: collab.doc }),
+        DragPreviewExtension,
       ],
       editorProps: {
         attributes: {

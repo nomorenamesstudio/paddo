@@ -2,39 +2,36 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Editor } from '@tiptap/react'
 
+import { DragPreviewKey, EMPTY_PREVIEW, type DragPreview } from '../editor/drag-preview'
 import { blockAt, moveBlock, type BlockRef } from '../editor/move'
-
-interface Indicator {
-  top: number
-  side: 'before' | 'after'
-}
 
 const DRAG_THRESHOLD = 8
 const CLICK_GRACE = 400
 
-interface Frame {
-  top: number
+interface Drag {
+  pos: number
   height: number
+  startX: number
+  startY: number
 }
 
 /**
- * Moving a paragraph works two ways, and both are the same transaction:
+ * Moving a paragraph works two ways, both committed as the same transaction:
  *
- *  - drag the grip and release where it should land (desktop);
+ *  - drag the grip and release where it should land;
  *  - tap the grip once, then tap the destination (touch, and keyboard with Esc).
  *
- * The picked block is visibly lifted, and the destination shows an insertion
- * line, because a mode with no feedback reads as a broken button.
+ * While either is in progress the preview is a pair of decorations: the carried
+ * block is translated with the pointer and the destination opens a gap its own
+ * height, so the surrounding text moves as you drag.
  */
 export function BlockMover({ editor, container }: { editor: Editor | null; container: HTMLElement | null }) {
   const [active, setActive] = useState<BlockRef | null>(null)
   const [moving, setMoving] = useState<BlockRef | null>(null)
   const [gripTop, setGripTop] = useState<number | null>(null)
-  const [indicator, setIndicator] = useState<Indicator | null>(null)
-
-  const [frame, setFrame] = useState<Frame | null>(null)
 
   const pressPoint = useRef<{ x: number; y: number } | null>(null)
+  const drag = useRef<Drag | null>(null)
   const dragged = useRef(false)
   const lastDrop = useRef(0)
 
@@ -63,6 +60,23 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
     },
     [editor],
   )
+
+  const preview = useCallback(
+    (next: DragPreview) => {
+      if (!editor || editor.isDestroyed) return
+      // Decorations only: no document change, so no CRDT traffic and no undo entry.
+      editor.view.dispatch(editor.state.tr.setMeta(DragPreviewKey, next))
+    },
+    [editor],
+  )
+
+  const clearPreview = useCallback(() => preview(EMPTY_PREVIEW), [preview])
+
+  useEffect(() => {
+    return () => {
+      if (editor && !editor.isDestroyed) clearPreview()
+    }
+  }, [editor, clearPreview])
 
   // Hovering the prose parks the grip beside the block under the pointer.
   useEffect(() => {
@@ -95,42 +109,42 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
     }
   }, [editor, moving, measure])
 
-  // The picked block is lifted visibly. Drawn as an overlay rather than a class on
-  // the block itself: ProseMirror redraws block elements at will and takes the class
-  // with them.
-  useEffect(() => {
-    if (!editor || !container || !moving) {
-      setFrame(null)
-      return
-    }
-    try {
-      const start = editor.view.coordsAtPos(moving.pos)
-      const end = editor.view.coordsAtPos(moving.pos + Math.max(1, moving.node.nodeSize - 1))
-      const top = start.top - container.getBoundingClientRect().top
-      setFrame({ top, height: Math.max(20, end.bottom - start.top) })
-    } catch {
-      setFrame(null)
-    }
-  }, [editor, container, moving])
-
-  // Drag to land, or tap to pick and tap again to place.
+  // Track the pointer, keep the preview current, and commit on release or tap.
   useEffect(() => {
     if (!editor || !moving) {
-      setIndicator(null)
       dragged.current = false
       return
     }
 
-    const update = (x: number, y: number) => {
-      const hit = locate(x, y)
-      if (!hit) return null
-      setIndicator({ top: measure(hit.block.pos) ?? 0, side: hit.side })
+    const update = (clientX: number, clientY: number) => {
+      const hit = locate(clientX, clientY)
+      const base = drag.current
+      const carried = dragged.current && base
+
+      preview({
+        source: moving.pos,
+        dx: carried ? clientX - base.startX : 0,
+        dy: carried ? clientY - base.startY : 0,
+        target: hit && hit.block.pos !== moving.pos ? hit.block.pos : null,
+        side: hit?.side ?? 'before',
+        height: base?.height ?? 0,
+      })
+
       return hit
     }
 
-    const place = (hit: { pos: number; block: BlockRef; side: 'before' | 'after' }) => {
-      if (hit.block.pos === moving.pos) {
-        // Dropped on itself: keep it picked rather than moving nothing.
+    const track = (clientX: number, clientY: number) => {
+      const origin = pressPoint.current
+      if (origin && drag.current && !dragged.current) {
+        if (Math.hypot(clientX - origin.x, clientY - origin.y) > DRAG_THRESHOLD) dragged.current = true
+      }
+      update(clientX, clientY)
+    }
+
+    const place = (hit: { pos: number; block: BlockRef; side: 'before' | 'after' } | null) => {
+      clearPreview()
+      if (!hit || hit.block.pos === moving.pos) {
+        setMoving(null)
         return
       }
       if (!moveBlock(editor, moving.pos, hit.pos, hit.side)) {
@@ -142,27 +156,16 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
       setMoving(null)
     }
 
-    const onPointerMove = (event: PointerEvent) => {
-      if (pressPoint.current) {
-        const dx = event.clientX - pressPoint.current.x
-        const dy = event.clientY - pressPoint.current.y
-        if (Math.hypot(dx, dy) > DRAG_THRESHOLD) dragged.current = true
-      }
-      update(event.clientX, event.clientY)
-    }
-
-    const onMouseMove = (event: MouseEvent) => {
-      update(event.clientX, event.clientY)
-    }
+    const onPointerMove = (event: PointerEvent) => track(event.clientX, event.clientY)
+    const onMouseMove = (event: MouseEvent) => track(event.clientX, event.clientY)
 
     const onPointerUp = (event: PointerEvent) => {
       const startedOnGrip = pressPoint.current !== null
+      const wasDragging = dragged.current
       pressPoint.current = null
-      if (!startedOnGrip) return
-      if (!dragged.current) return // a click on the grip: stay picked, wait for the destination
-      const hit = update(event.clientX, event.clientY)
-      if (hit) place(hit)
-      else setMoving(null)
+      dragged.current = false
+      if (!startedOnGrip || !wasDragging) return // a click on the grip: stay picked
+      place(locate(event.clientX, event.clientY))
     }
 
     const onClick = (event: MouseEvent) => {
@@ -170,13 +173,14 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
       if (Date.now() - lastDrop.current < CLICK_GRACE) return
       event.preventDefault()
       event.stopPropagation()
-      const hit = update(event.clientX, event.clientY)
-      if (hit) place(hit)
-      else setMoving(null)
+      place(locate(event.clientX, event.clientY))
     }
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMoving(null)
+      if (event.key === 'Escape') {
+        clearPreview()
+        setMoving(null)
+      }
     }
 
     document.addEventListener('pointermove', onPointerMove, true)
@@ -191,7 +195,7 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
       document.removeEventListener('click', onClick, true)
       window.removeEventListener('keydown', onKey)
     }
-  }, [editor, moving, locate, measure])
+  }, [editor, moving, locate, preview, clearPreview])
 
   const grip = useMemo(() => {
     if (!active || gripTop == null) return null
@@ -207,40 +211,37 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
           pressPoint.current = { x: event.clientX, y: event.clientY }
           dragged.current = false
           if (moving) {
+            clearPreview()
             setMoving(null)
             return
           }
-          if (active) setMoving(active)
+          if (!active || !editor) return
+          const element = editor.view.nodeDOM(active.pos)
+          const box =
+            element instanceof HTMLElement
+              ? element.getBoundingClientRect()
+              : (element?.parentElement?.getBoundingClientRect() ?? null)
+          drag.current = {
+            pos: active.pos,
+            height: box?.height ?? 0,
+            startX: event.clientX,
+            startY: event.clientY,
+          }
+          setMoving(active)
         }}
       >
         ⠿
       </button>
     )
-  }, [active, gripTop, moving])
+  }, [active, gripTop, moving, editor, clearPreview])
 
   return (
     <>
       {grip}
       {moving ? (
-        <>
-          {frame ? (
-            <div
-              className="move-frame"
-              style={{ top: `${frame.top}px`, height: `${frame.height}px` }}
-              aria-hidden="true"
-            />
-          ) : null}
-          {indicator ? (
-            <div
-              className={`move-line move-line--${indicator.side}`}
-              style={{ top: `${indicator.top}px` }}
-              aria-hidden="true"
-            />
-          ) : null}
-          <div className="move-hint" role="status">
-            Drop it, or tap where it goes — Esc to cancel
-          </div>
-        </>
+        <div className="move-hint" role="status">
+          Drop it, or tap where it goes — Esc to cancel
+        </div>
       ) : null}
     </>
   )

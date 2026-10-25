@@ -728,31 +728,6 @@ a {
   cursor: grabbing;
 }
 
-.move-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--accent);
-  border-radius: 1px;
-  pointer-events: none;
-}
-
-/* The picked block, so the mode is never invisible. */
-.move-frame {
-  position: absolute;
-  left: -0.75rem;
-  right: -0.75rem;
-  background: var(--accent-soft);
-  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
-  border-radius: 4px;
-  pointer-events: none;
-}
-
-.move-line--after {
-  transform: translateY(1.1em);
-}
-
 .move-hint {
   position: fixed;
   left: 50%;
@@ -871,4 +846,31 @@ a {
 
 .collaboration-carets__selection {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* The block under the cursor while it is being dragged. */
+.is-dragging {
+  position: relative;
+  z-index: 45;
+  background: var(--bg);
+  box-shadow: 0 2px 6px rgba(42, 40, 37, 0.14), 0 18px 40px rgba(42, 40, 37, 0.18);
+  border-radius: 4px;
+  outline: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  pointer-events: none;
+  cursor: grabbing;
+  will-change: transform;
+  transition: none;
+}
+
+/* The room the block would take where it is going to land. */
+.is-drop-target {
+  background: var(--accent-soft);
+  border-radius: 4px;
+  transition: padding 90ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .is-dragging {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px rgba(0, 0, 0, 0.45);
+  }
 }
