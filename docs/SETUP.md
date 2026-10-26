@@ -26,6 +26,19 @@ script; without it the pnpm warning about ignored builds appears.
 Playwright's browser lives in `.cache/ms-playwright` too, for the same reason:
 `PLAYWRIGHT_BROWSERS_PATH=.cache/ms-playwright`. The `test:e2e` script sets it.
 
+## Fonts
+
+Self-hosted, one woff2 per face in `public/fonts`, declared in
+`src/web/styles/fonts.css`. That file is generated — regenerate with:
+
+```bash
+node tools/fetch-fonts.mjs
+```
+
+The script deliberately keeps the `unicode-range` out of the declarations: Google's
+ranges are narrower than the files they describe, and honouring them sends characters
+like `ō` (in Paddō) to a system serif.
+
 ## Configuration
 
 Copy `.env.example` to `.env`. The server refuses to start unless the three secrets
