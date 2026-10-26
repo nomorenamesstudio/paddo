@@ -529,14 +529,6 @@ a {
   padding: 2rem 1.5rem 10rem;
 }
 
-.editor__hint {
-  margin-top: 3rem;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--muted);
-  opacity: 0.75;
-}
-
 /* --- prose ---------------------------------------------------------------- */
 
 .prose {
@@ -1085,11 +1077,6 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 @media (prefers-reduced-motion: no-preference) {
   .editor__body.is-ready {
     animation: rise 0.7s var(--ease) both;
-  }
-
-  .editor__hint {
-    animation: fade-in 0.6s var(--ease) both;
-    animation-delay: 0.14s;
   }
 
   .topbar__title {

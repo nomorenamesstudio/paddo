@@ -12,7 +12,6 @@ import {
   acceptAllSuggestions,
   acceptSuggestion,
   diagnoseSuggestions,
-  pendingRanges,
   pruneDeadSuggestions,
   rejectAllSuggestions,
 } from '../editor/actions'
@@ -309,11 +308,6 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         </div>
         <SelectionMenu editor={editor} />
         <BlockMover editor={editor} container={editorHost.current} />
-        {editor && pendingRanges(editor).length === 0 ? (
-          <p className="editor__hint">
-            select text for bold, italics and links · ⠿ moves a paragraph
-          </p>
-        ) : null}
       </main>
 
       {pending > 0 ? (
