@@ -408,12 +408,18 @@ a {
 }
 
 .status .button--icon {
-  gap: 0.1rem;
+  /* The caret sits beside the mark, not under it. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0 0.45rem;
   color: var(--muted);
 }
 
 .status__caret {
-  opacity: 0.6;
+  margin-top: 0.1rem;
+  opacity: 0.55;
 }
 
 .status-icon--draft {

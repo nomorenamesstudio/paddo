@@ -1,0 +1,16 @@
+import { readFile } from 'node:fs/promises'
+import { chromium } from '@playwright/test'
+const env = Object.fromEntries((await readFile(new URL('../.env', import.meta.url), 'utf8'))
+  .split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]))
+const browser = await chromium.launch()
+const page = await (await browser.newContext({ viewport: { width: 1180, height: 860 }, deviceScaleFactor: 3 })).newPage()
+await page.goto('http://127.0.0.1:4319/d/the-quiet-interface')
+await page.locator('input[type="password"]').fill(env.PADDO_PASSWORD)
+await page.getByRole('button', { name: /open padd/i }).click()
+await page.locator('.prose h1').first().waitFor()
+await page.waitForTimeout(1000)
+const box = await page.locator('.status button').boundingBox()
+const robot = await page.locator('.topbar .button--icon').last().boundingBox()
+console.log(JSON.stringify({ statusButton: box && { w: Math.round(box.width), h: Math.round(box.height) }, robot: robot && { w: Math.round(robot.width), h: Math.round(robot.height) } }))
+await page.screenshot({ path: 'screenshots/status-button.png', clip: { x: 900, y: 0, width: 280, height: 60 } })
+await browser.close()
