@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Archive, MoreVertical, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, MoreVertical, Trash2 } from 'lucide-react'
 
 import { api, type DocumentMeta } from '../api'
 
@@ -73,16 +73,29 @@ export function RowMenu({
 
       {open ? (
         <div className="row-menu__panel" role="menu" aria-label={`Actions for ${entry.title}`}>
-          <button
-            type="button"
-            role="menuitem"
-            className="row-menu__item"
-            disabled={busy || entry.status === 'archived'}
-            onClick={() => void run(() => api.setStatus(entry.slug, 'archived'))}
-          >
-            <Archive size={16} aria-hidden="true" />
-            <span>{entry.status === 'archived' ? 'Archived' : 'Archive'}</span>
-          </button>
+          {entry.status === 'archived' ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="row-menu__item"
+              disabled={busy}
+              onClick={() => void run(() => api.setStatus(entry.slug, 'draft'))}
+            >
+              <ArchiveRestore size={16} aria-hidden="true" />
+              <span>Restore</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              className="row-menu__item"
+              disabled={busy}
+              onClick={() => void run(() => api.setStatus(entry.slug, 'archived'))}
+            >
+              <Archive size={16} aria-hidden="true" />
+              <span>Archive</span>
+            </button>
+          )}
 
           <button
             type="button"
