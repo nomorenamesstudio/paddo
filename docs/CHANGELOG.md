@@ -2,6 +2,15 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Settings, and a writing guide the agent has to follow
+
+**Feature** — `/settings`, reached from the gear beside the new-document plus, holds
+one field: the writing guide. It is stored in `.paddo/settings.json`, saved on demand,
+and travels with every invitation — the copied prompt grows a
+"Writing guide (from Paddō settings) — follow it:" block, so the agent edits in the
+writer's voice instead of its own. Empty guide, no block. `buildInvitePrompt` moved to
+`src/shared/invite.ts` so the prompt itself can be tested without React.
+
 ## 2026-10-26 — The hunk actions carry their meaning in colour
 
 **Feature** — accept is green, reject red, edit accent, each as a soft tinted pill

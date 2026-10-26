@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { EditorContent, useEditor } from '@tiptap/react'
+import { buildInvitePrompt } from '../../shared/invite'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
 import { api, type Status } from '../api'
@@ -74,6 +75,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   }, [ready])
   const [pending, setPending] = useState(0)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [writingGuide, setWritingGuide] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
   const editorHost = useRef<HTMLElement | null>(null)
 
@@ -260,9 +262,11 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
 
   // Rebuilt when the title changes: the sheet names the document the writer sees,
   // while the tool calls keep using the slug.
+  // Rebuilt when the title or the guide changes: the sheet names the document the
+  // writer sees, the tool calls keep the slug, and the guide carries their voice.
   const invitePrompt = useMemo(
-    () => buildInvitePrompt(slug, title, window.location.origin),
-    [slug, title],
+    () => buildInvitePrompt(slug, title, window.location.origin, writingGuide),
+    [slug, title, writingGuide],
   )
 
   const acceptAll = useCallback(() => {
@@ -287,7 +291,14 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
             <button
               className="button button--ghost button--icon"
               type="button"
-              onClick={() => setInviteOpen(true)}
+              onClick={() => {
+                setInviteOpen(true)
+                // Fetched on demand: most sessions never open this sheet.
+                void api
+                  .getSettings()
+                  .then((settings) => setWritingGuide(settings.writingGuide))
+                  .catch(() => setWritingGuide(''))
+              }}
               aria-label="Invite the agent"
               title="Invite the agent"
             >
@@ -341,22 +352,3 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   )
 }
 
-export function buildInvitePrompt(slug: string, title: string, origin: string): string {
-  return [
-    `Work on the Paddō document "${title}" (slug: "${slug}").`,
-    '',
-    'Tools: Paddō\'s MCP server, started from the paddo repo:',
-    `  PADDO_URL=${origin} PADDO_TOKEN=<value from paddo/.env> pnpm mcp`,
-    '',
-    'Steps:',
-    `1. read_document({ document: "${slug}" })`,
-    `2. propose_edits({ document: "${slug}", edits: [{ original, proposed, rationale }] })`,
-    '',
-    'Rules:',
-    '- `original` must be copied verbatim from the document. Do not send offsets.',
-    '- Keep each hunk small; one sentence or phrase per hunk.',
-    '- Put the reason in `rationale` — it is shown to the reader.',
-    '- Do not rewrite the whole document in one hunk.',
-    '- Never touch the .md file directly; propose instead.',
-  ].join('\n')
-}

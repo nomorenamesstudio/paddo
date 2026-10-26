@@ -27,6 +27,7 @@ import {
 } from './documents'
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
 import { isStatus, readAllStatuses, readStatus, removeStatus, writeStatus } from './meta'
+import { normalizeSettings, readSettings, writeSettings } from './settings'
 
 try {
   process.loadEnvFile('.env')
@@ -170,6 +171,20 @@ app.get('/api/documents/:slug', { preHandler: requireSession }, async (request, 
     reply.code(404).send({ error: 'no such document' })
     return
   }
+})
+
+app.get('/api/settings', { preHandler: requireSession }, async () => readSettings(config))
+
+app.put('/api/settings', { preHandler: requireSession }, async (request, reply) => {
+  let settings
+  try {
+    settings = normalizeSettings(request.body)
+  } catch (problem) {
+    reply.code(400).send({ error: problem instanceof Error ? problem.message : 'invalid settings' })
+    return
+  }
+  await writeSettings(config, settings)
+  return settings
 })
 
 app.delete('/api/documents/:slug', { preHandler: requireSession }, async (request, reply) => {

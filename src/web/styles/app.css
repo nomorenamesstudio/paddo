@@ -1419,3 +1419,86 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
+
+/* --- settings ------------------------------------------------------------- */
+
+.masthead__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings {
+  padding-top: 1.5rem;
+}
+
+.settings__section {
+  padding-bottom: 2rem;
+}
+
+.settings__heading {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.settings__note {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.settings__guide {
+  width: 100%;
+  min-height: 22rem;
+  padding: 0.85rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: var(--fg);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.settings__guide::placeholder {
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+.settings__guide:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.settings__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.settings__meta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.settings__saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--ok);
+}
+
+@media (max-width: 40rem) {
+  .settings__guide {
+    min-height: 16rem;
+    font-size: 0.95rem;
+  }
+}

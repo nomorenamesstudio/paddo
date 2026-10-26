@@ -4,14 +4,16 @@ import { api, ApiError } from './api'
 import { LoadingDocument, humanizeSlug } from './components/LoadingDocument'
 import { TopBar } from './components/TopBar'
 import { DocumentsPage } from './pages/DocumentsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { LoginPage } from './pages/LoginPage'
 
 // The editor is most of the bundle; the document list should not wait for it.
 const EditorPage = lazy(() => import('./pages/EditorPage').then((module) => ({ default: module.EditorPage })))
 
-type Route = { name: 'documents' } | { name: 'editor'; slug: string }
+type Route = { name: 'documents' } | { name: 'editor'; slug: string } | { name: 'settings' }
 
 function parseRoute(): Route {
+  if (/^\/settings\/?$/.test(window.location.pathname)) return { name: 'settings' }
   const match = window.location.pathname.match(/^\/d\/([a-z0-9-]+)\/?$/)
   if (match?.[1]) return { name: 'editor', slug: match[1] }
   return { name: 'documents' }
@@ -75,6 +77,8 @@ export function App() {
       </Suspense>
     )
   }
+
+  if (route.name === 'settings') return <SettingsPage />
 
   return <DocumentsPage />
 }

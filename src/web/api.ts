@@ -63,6 +63,14 @@ export const api = {
   deleteDocument: (slug: string) =>
     request<{ slug: string; deleted: boolean }>(`/api/documents/${slug}`, { method: 'DELETE' }),
 
+  getSettings: () => request<{ writingGuide: string }>('/api/settings'),
+
+  saveSettings: (writingGuide: string) =>
+    request<{ writingGuide: string }>('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ writingGuide }),
+    }),
+
   setStatus: (slug: string, status: Status) =>
     request<{ slug: string; status: Status }>(`/api/documents/${slug}`, {
       method: 'PATCH',

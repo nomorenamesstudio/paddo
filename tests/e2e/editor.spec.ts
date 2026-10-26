@@ -192,7 +192,7 @@ test('a paragraph moves by dragging its grip and comes back with one undo', asyn
 test('a new draft is named by its heading, and its status sticks', async ({ page }) => {
   await signIn(page)
 
-  await page.locator('.masthead--row .button--icon').click()
+  await page.getByRole('button', { name: 'New document' }).click()
   await expect(page.locator('.prose h1')).toHaveText('New draft')
   await expect(page.locator('.topbar__title')).toHaveText('New draft')
   const slug = page.url().split('/d/')[1] ?? ''
@@ -250,6 +250,27 @@ test('a document can be archived and then deleted from the list', async ({ page 
 
   await expect(row).toHaveCount(0)
   await expect.poll(() => statusOf(slug)).toBeUndefined()
+})
+
+test('a writing guide saved in settings reaches the agent invitation', async ({ page }) => {
+  await signIn(page)
+
+  // The guide lives in settings, not in a document.
+  await page.goto('/settings')
+  const guide = page.getByLabel('Writing guide')
+  await expect(guide).toBeVisible()
+  await guide.fill('Never use the word leverage. Short sentences. Em dashes are fine.')
+  await page.getByRole('button', { name: 'Save guide' }).click()
+  await expect(page.locator('.settings__saved')).toBeVisible()
+
+  // And it travels with the prompt the writer copies into their agent session.
+  const slug = await createDocument(page, `Guide check ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await page.locator('.prose h1').first().waitFor()
+  await page.getByRole('button', { name: 'Invite the agent' }).click()
+  const prompt = page.locator('.sheet__prompt')
+  await expect(prompt).toContainText('Writing guide (from Paddō settings)')
+  await expect(prompt).toContainText('Never use the word leverage.')
 })
 
 test('a websocket without a session is refused', async ({ browser }) => {

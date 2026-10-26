@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Plus, Settings } from 'lucide-react'
 
 import { api, ApiError, type DocumentMeta } from '../api'
 import { RowMenu } from '../components/RowMenu'
@@ -72,16 +72,31 @@ export function DocumentsPage() {
     <main className="page page--narrow">
       <header className="masthead masthead--row">
         <h1 className="wordmark">Paddō</h1>
-        <button
-          className="button button--icon"
-          type="button"
-          onClick={create}
-          disabled={creating}
-          aria-label="New document"
-          title="New document"
-        >
-          <Plus size={20} aria-hidden="true" />
-        </button>
+        <div className="masthead__actions">
+          <a
+            className="button button--icon"
+            href="/settings"
+            aria-label="Settings"
+            title="Settings"
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
+              event.preventDefault()
+              navigate('/settings')
+            }}
+          >
+            <Settings size={18} aria-hidden="true" />
+          </a>
+          <button
+            className="button button--icon"
+            type="button"
+            onClick={create}
+            disabled={creating}
+            aria-label="New document"
+            title="New document"
+          >
+            <Plus size={20} aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       {error ? (
