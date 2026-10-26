@@ -2,6 +2,18 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — What the Ghosted run taught the agent interface
+
+**Fix** — three things came out of a real MCP session on a story with bold and a heading:
+
+- `titleOf` kept inline markup, so the library showed `**The Ghosted Story**`. Titles are
+  now stripped to the words a reader sees.
+- `read_document` returns markdown, but `propose_edits` matches against the text, so an
+  agent copying `**bold**` or a `#` got "not in the document verbatim" with no clue why.
+  The read now ends with the rule, and the invitation says the same.
+- A formatting-only change (dropping the bold on a heading) cannot be a suggestion at all,
+  because the text is identical. The invitation now says to mention those in the reply.
+
 ## 2026-10-26 — Theme setting, and a page that stops wandering
 
 **Feature** — Appearance in settings: system, light or dark. The choice is stored with

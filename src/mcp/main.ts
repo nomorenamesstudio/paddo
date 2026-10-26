@@ -65,8 +65,12 @@ server.registerTool(
       `/api/documents/${encodeURIComponent(document)}`,
     )
     // The markdown already carries its heading; adding the title again showed up
-    // in every quote the agent then copied.
-    return text(body.markdown)
+    // in every quote the agent then copied. `original` is matched against the text
+    // itself, so the markers have to be called out — an agent that copies
+    // `**bold**` gets a refusal it cannot explain.
+    return text(
+      `${body.markdown}\n---\nQuote from the text only: markdown markers (#, >, **, _, \`backticks\`, [link](url)) are formatting, not text, and must be left out of \`original\`.`,
+    )
   },
 )
 

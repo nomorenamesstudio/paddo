@@ -28,11 +28,23 @@ export function slugify(input: string): string {
     .slice(0, 64)
 }
 
+/** Inline markdown is markup, not part of the title a reader sees in the list. */
+export function plainTitle(text: string): string {
+  return text
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function titleOf(markdownText: string, slug: string): string {
   const heading = markdownText.match(/^#\s+(.+)$/m)
-  if (heading?.[1]) return heading[1].trim()
+  if (heading?.[1]) return plainTitle(heading[1]) || slug
   const firstLine = markdownText.split('\n').find((line) => line.trim() !== '')
-  return firstLine?.trim().slice(0, 120) || slug
+  const title = firstLine ? plainTitle(firstLine).slice(0, 120) : ''
+  return title || slug
 }
 
 export function wordCount(markdownText: string): number {
