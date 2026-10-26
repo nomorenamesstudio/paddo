@@ -258,7 +258,12 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [collab])
 
-  const invitePrompt = useMemo(() => buildInvitePrompt(slug, window.location.origin), [slug])
+  // Rebuilt when the title changes: the sheet names the document the writer sees,
+  // while the tool calls keep using the slug.
+  const invitePrompt = useMemo(
+    () => buildInvitePrompt(slug, title, window.location.origin),
+    [slug, title],
+  )
 
   const acceptAll = useCallback(() => {
     if (!editor) return
@@ -326,7 +331,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
 
       {inviteOpen ? (
         <InviteSheet
-          slug={slug}
+          title={title}
           prompt={invitePrompt}
           onClose={() => setInviteOpen(false)}
           onCopied={() => setNotice('Prompt copied. Paddō will show the hunks when the agent sends them.')}
@@ -336,9 +341,9 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   )
 }
 
-export function buildInvitePrompt(slug: string, origin: string): string {
+export function buildInvitePrompt(slug: string, title: string, origin: string): string {
   return [
-    `Work on the Paddō document "${slug}".`,
+    `Work on the Paddō document "${title}" (slug: "${slug}").`,
     '',
     'Tools: Paddō\'s MCP server, started from the paddo repo:',
     `  PADDO_URL=${origin} PADDO_TOKEN=<value from paddo/.env> pnpm mcp`,

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
 export function InviteSheet({
-  slug,
+  title,
   prompt,
   onClose,
   onCopied,
 }: {
-  slug: string
+  title: string
   prompt: string
   onClose: () => void
   onCopied: () => void
@@ -42,7 +42,7 @@ export function InviteSheet({
         </p>
 
         <label className="field">
-          <span className="field__label">What should it do to “{slug}”?</span>
+          <span className="field__label">What should it do to “{title}”?</span>
           <input
             className="field__input"
             type="text"
