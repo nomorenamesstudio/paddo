@@ -60,6 +60,9 @@ export const api = {
   document: (slug: string) =>
     request<{ slug: string; title: string; markdown: string; status: Status }>(`/api/documents/${slug}`),
 
+  deleteDocument: (slug: string) =>
+    request<{ slug: string; deleted: boolean }>(`/api/documents/${slug}`, { method: 'DELETE' }),
+
   setStatus: (slug: string, status: Status) =>
     request<{ slug: string; status: Status }>(`/api/documents/${slug}`, {
       method: 'PATCH',

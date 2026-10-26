@@ -16,15 +16,17 @@ import { loadConfig, type Config } from './config'
 import {
   createDocument,
   createDraft,
+  deleteSidecar,
   hashOf,
   isValidSlug,
   listDocuments,
   normalizeMarkdown,
   readDocument,
+  removeDocument,
   titleOf,
 } from './documents'
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
-import { isStatus, readAllStatuses, readStatus, writeStatus } from './meta'
+import { isStatus, readAllStatuses, readStatus, removeStatus, writeStatus } from './meta'
 
 try {
   process.loadEnvFile('.env')
@@ -168,6 +170,29 @@ app.get('/api/documents/:slug', { preHandler: requireSession }, async (request, 
     reply.code(404).send({ error: 'no such document' })
     return
   }
+})
+
+app.delete('/api/documents/:slug', { preHandler: requireSession }, async (request, reply) => {
+  const { slug } = request.params as { slug: string }
+  if (!isValidSlug(slug)) {
+    reply.code(400).send({ error: 'invalid document name' })
+    return
+  }
+
+  try {
+    await readDocument(config, slug)
+  } catch {
+    reply.code(404).send({ error: 'no such document' })
+    return
+  }
+
+  // Drop the live room first: a store from a connected editor would otherwise
+  // write the markdown straight back after the unlink.
+  collab.server.hocuspocus.closeConnections(slug)
+  await removeDocument(config, slug)
+  await deleteSidecar(config, slug)
+  await removeStatus(config, slug)
+  return { slug, deleted: true }
 })
 
 app.patch('/api/documents/:slug', { preHandler: requireSession }, async (request, reply) => {

@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Archive and delete from the list
+
+**Feature** — every row carries a kebab menu with the two actions that were missing:
+archive (a status change, so reversible) and delete. Deleting asks once, in place,
+then removes the markdown, the CRDT sidecar and the status file, and drops the live
+room first so a connected editor cannot write the file back.
+
 ## 2026-10-26 — The macron in Paddō
 
 **Fix** — the ō was drawn by a system serif. Google's webfont CSS splits each family

@@ -142,6 +142,15 @@ export async function createDocument(config: Config, name: string): Promise<Docu
   return { slug, title, words: 0, updatedAt: info.mtimeMs, bytes: info.size }
 }
 
+/** Removes the markdown file itself. Missing files are not an error. */
+export async function removeDocument(config: Config, slug: string): Promise<void> {
+  try {
+    await unlink(pathFor(config, slug))
+  } catch {
+    // Already gone.
+  }
+}
+
 export async function deleteSidecar(config: Config, slug: string): Promise<void> {
   try {
     await unlink(sidecarPathFor(config, slug))

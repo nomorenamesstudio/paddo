@@ -257,12 +257,20 @@ a {
   border-top: 1px solid var(--line);
 }
 
+.documents__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
 .documents__row {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
   padding: 0.9rem 0.2rem;
-  border-bottom: 1px solid var(--line);
   color: inherit;
   text-decoration: none;
 }
@@ -1326,4 +1334,77 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   .editor__body.is-ready {
     opacity: 1;
   }
+}
+
+/* --- row actions ---------------------------------------------------------- */
+
+.documents__item .documents__row {
+  border-bottom: 0;
+}
+
+.row-menu {
+  position: relative;
+  flex: none;
+}
+
+.row-menu__trigger {
+  min-width: 2.4rem;
+  color: var(--muted);
+  opacity: 0.65;
+}
+
+.row-menu__trigger:hover,
+.row-menu__trigger[aria-expanded='true'] {
+  opacity: 1;
+  color: var(--fg);
+}
+
+.row-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 40;
+  min-width: 10rem;
+  padding: 0.25rem;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+
+.row-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--fg);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.row-menu__item:hover,
+.row-menu__item:focus-visible {
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.row-menu__item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.row-menu__item--danger {
+  color: #b3261e;
+}
+
+.row-menu__item--danger.is-confirming {
+  background: rgba(179, 38, 30, 0.1);
+  font-weight: 600;
 }

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import type { Config } from './config'
@@ -37,6 +37,14 @@ export async function readStatus(config: Config, slug: string): Promise<Status> 
 export async function writeStatus(config: Config, slug: string, status: Status): Promise<void> {
   await mkdir(config.sidecarDir, { recursive: true })
   await writeFile(metaPath(config, slug), `${JSON.stringify({ status }, null, 2)}\n`, 'utf8')
+}
+
+export async function removeStatus(config: Config, slug: string): Promise<void> {
+  try {
+    await unlink(metaPath(config, slug))
+  } catch {
+    // No metadata to remove.
+  }
 }
 
 export async function readAllStatuses(config: Config, slugs: string[]): Promise<Map<string, Status>> {

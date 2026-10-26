@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 
 import { api, ApiError, type DocumentMeta } from '../api'
+import { RowMenu } from '../components/RowMenu'
 import { StatusIcon, statusLabel } from '../components/StatusIcon'
 import { navigate } from '../App'
 
@@ -74,7 +75,7 @@ export function DocumentsPage() {
       ) : (
         <ul className="documents">
           {documents.map((document) => (
-            <li key={document.slug}>
+            <li key={document.slug} className="documents__item">
               <a
                 className="documents__row"
                 href={`/d/${document.slug}`}
@@ -88,6 +89,7 @@ export function DocumentsPage() {
                   {document.words} {document.words === 1 ? 'word' : 'words'} · {when(document.updatedAt)}
                 </span>
               </a>
+              <RowMenu entry={document} onChanged={() => void load()} />
             </li>
           ))}
         </ul>

@@ -208,6 +208,34 @@ test('a new draft is named by its heading, and its status sticks', async ({ page
     .toBe('published')
 })
 
+test('a document can be archived and then deleted from the list', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Throwaway ${Date.now()}`)
+  await page.goto('/')
+  await expect(page.locator('.documents')).toBeVisible()
+
+  const statusOf = async (target: string) => {
+    const response = await page.request.get('/api/documents')
+    const body = (await response.json()) as { documents: Array<{ slug: string; status: string }> }
+    return body.documents.find((document) => document.slug === target)?.status
+  }
+
+  const row = page.locator(`.documents__item:has(a[href="/d/${slug}"])`)
+  await expect(row).toHaveCount(1)
+
+  await row.locator('.row-menu__trigger').click()
+  await page.locator('.row-menu__item', { hasText: 'Archive' }).click()
+  await expect.poll(() => statusOf(slug)).toBe('archived')
+
+  // Deleting asks once, in place, before it does anything.
+  await row.locator('.row-menu__trigger').click()
+  await page.locator('.row-menu__item', { hasText: 'Delete' }).click()
+  await page.locator('.row-menu__item--danger.is-confirming').click()
+
+  await expect(row).toHaveCount(0)
+  await expect.poll(() => statusOf(slug)).toBeUndefined()
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
