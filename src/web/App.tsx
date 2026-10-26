@@ -6,6 +6,7 @@ import { TopBar } from './components/TopBar'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { LoginPage } from './pages/LoginPage'
+import { applyTheme, storedTheme, watchSystemTheme } from './theme'
 
 // The editor is most of the bundle; the document list should not wait for it.
 const EditorPage = lazy(() => import('./pages/EditorPage').then((module) => ({ default: module.EditorPage })))
@@ -42,6 +43,29 @@ export function App() {
   useEffect(() => {
     void checkSession()
   }, [checkSession])
+
+  // The stored choice paints instantly; the saved one arrives with the session and
+  // wins, so a second device reads the same way as the first.
+  useEffect(() => {
+    const stop = watchSystemTheme(storedTheme)
+    return stop
+  }, [])
+
+  useEffect(() => {
+    if (!authenticated) return
+    let cancelled = false
+    api
+      .getSettings()
+      .then((settings) => {
+        if (!cancelled) applyTheme(settings.theme)
+      })
+      .catch(() => {
+        // Unauthenticated or offline: the cached theme already applied.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [authenticated])
 
   useEffect(() => {
     const onPop = () => setRoute(parseRoute())

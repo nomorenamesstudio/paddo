@@ -28,20 +28,23 @@
   --tap: 2.75rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1b1917;
-    --fg: #f0ece2;
-    --muted: #b3ab9d;
-    --accent: #eda468;
-    --accent-soft: rgba(237, 164, 104, 0.12);
-    --ok: #8bcfb6;
-    --ok-soft: rgba(139, 207, 182, 0.12);
-    --danger: #f0938a;
-    --line: rgba(240, 236, 226, 0.2);
-    --raised: #232019;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1b1917;
+  --fg: #f0ece2;
+  --muted: #b3ab9d;
+  --accent: #eda468;
+  --accent-soft: rgba(237, 164, 104, 0.12);
+  --ok: #8bcfb6;
+  --ok-soft: rgba(139, 207, 182, 0.12);
+  --danger: #f0938a;
+  --line: rgba(240, 236, 226, 0.2);
+  --raised: #232019;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 * {
@@ -62,6 +65,24 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+  /* A long drag on a phone should scroll, never select the interface or pan it. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html {
+  overflow-x: clip;
+}
+
+.prose,
+.prose *,
+.sheet__prompt,
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 a {
@@ -956,11 +977,6 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   background-color: transparent !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  .is-dragging {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px rgba(0, 0, 0, 0.45);
-  }
-}
 
 /* --- opening a document --------------------------------------------------- */
 
@@ -1234,11 +1250,6 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   background-color: transparent !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  .is-dragging {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px rgba(0, 0, 0, 0.45);
-  }
-}
 
 /* --- opening a document --------------------------------------------------- */
 
@@ -1501,4 +1512,46 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
     min-height: 16rem;
     font-size: 0.95rem;
   }
+}
+
+/* --- theme switch --------------------------------------------------------- */
+
+.settings__themes {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+}
+
+.settings__theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.settings__theme:hover {
+  color: var(--fg);
+}
+
+.settings__theme:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings__theme.is-active {
+  color: var(--fg);
+  background: var(--bg);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
 }

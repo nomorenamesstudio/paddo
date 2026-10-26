@@ -3,12 +3,20 @@ import { join } from 'node:path'
 
 import type { Config } from './config'
 
-/** What the writer tells the agent about their own voice. Plain text, not a document. */
+export const THEMES = ['system', 'light', 'dark'] as const
+export type Theme = (typeof THEMES)[number]
+
+/** What the writer tells the agent about their own voice, and how they want to read. */
 export interface Settings {
   writingGuide: string
+  theme: Theme
 }
 
-export const EMPTY_SETTINGS: Settings = { writingGuide: '' }
+export const EMPTY_SETTINGS: Settings = { writingGuide: '', theme: 'system' }
+
+function isTheme(value: unknown): value is Theme {
+  return typeof value === 'string' && (THEMES as readonly string[]).includes(value)
+}
 
 /** Long enough for a real style guide, short enough to paste into a prompt. */
 export const MAX_WRITING_GUIDE = 20_000
@@ -18,12 +26,12 @@ function settingsPath(config: Config): string {
 }
 
 export function normalizeSettings(input: unknown): Settings {
-  const raw = (input ?? {}) as { writingGuide?: unknown }
+  const raw = (input ?? {}) as { writingGuide?: unknown; theme?: unknown }
   const writingGuide = typeof raw.writingGuide === 'string' ? raw.writingGuide : ''
   if (writingGuide.length > MAX_WRITING_GUIDE) {
     throw new Error(`writing guide is longer than ${MAX_WRITING_GUIDE} characters`)
   }
-  return { writingGuide }
+  return { writingGuide, theme: isTheme(raw.theme) ? raw.theme : 'system' }
 }
 
 export async function readSettings(config: Config): Promise<Settings> {

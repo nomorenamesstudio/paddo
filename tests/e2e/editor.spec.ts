@@ -273,6 +273,27 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   await expect(prompt).toContainText('Never use the word leverage.')
 })
 
+test('the theme is a saved choice, and switching it keeps the writing guide', async ({ page }) => {
+  await signIn(page)
+  await page.goto('/settings')
+  const guide = page.getByLabel('Writing guide')
+  await guide.fill('Keep the guide while the theme changes.')
+  await page.getByRole('button', { name: 'Save guide' }).click()
+  await expect(page.locator('.settings__saved')).toBeVisible()
+
+  await page.getByRole('radio', { name: 'Dark' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  // The theme and the guide travel in one record, so a saved theme must not wipe
+  // the guide — and the choice has to survive a reload.
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(page.getByLabel('Writing guide')).toHaveValue('Keep the guide while the theme changes.')
+
+  await page.getByRole('radio', { name: 'System' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme-setting', 'system')
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

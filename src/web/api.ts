@@ -38,6 +38,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T
 }
 
+export interface Settings {
+  writingGuide: string
+  theme: 'system' | 'light' | 'dark'
+}
+
 export const api = {
   session: () => request<{ authenticated: boolean }>('/api/session'),
 
@@ -63,12 +68,12 @@ export const api = {
   deleteDocument: (slug: string) =>
     request<{ slug: string; deleted: boolean }>(`/api/documents/${slug}`, { method: 'DELETE' }),
 
-  getSettings: () => request<{ writingGuide: string }>('/api/settings'),
+  getSettings: () => request<Settings>('/api/settings'),
 
-  saveSettings: (writingGuide: string) =>
-    request<{ writingGuide: string }>('/api/settings', {
+  saveSettings: (settings: Settings) =>
+    request<Settings>('/api/settings', {
       method: 'PUT',
-      body: JSON.stringify({ writingGuide }),
+      body: JSON.stringify(settings),
     }),
 
   setStatus: (slug: string, status: Status) =>

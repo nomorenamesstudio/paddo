@@ -2,6 +2,19 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Theme setting, and a page that stops wandering
+
+**Feature** — Appearance in settings: system, light or dark. The choice is stored with
+the guide in `.paddo/settings.json`, applied on click (no Save button), cached in
+`localStorage` so a reload paints the right theme before React runs, and re-applied
+from the server on the next device. Dark tokens are no longer a
+`prefers-color-scheme` media query but `:root[data-theme='dark']`, with `color-scheme`
+following the choice.
+
+**Fix** — the page could be dragged and panned on a phone, and a long drag selected the
+interface. `html` clips horizontal overflow, `body` turns off selection and the touch
+callout, and the writing surfaces (`.prose`, inputs, the prompt) turn selection back on.
+
 ## 2026-10-26 — Settings, and a writing guide the agent has to follow
 
 **Feature** — `/settings`, reached from the gear beside the new-document plus, holds

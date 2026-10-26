@@ -11,6 +11,24 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Resolve the theme before the first paint, so a dark reader never sees a
+      // flash of paper. Settings is the source of truth; this is just the cache.
+      (function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('paddo-theme')
+        } catch (error) {
+          stored = null
+        }
+        var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+        var dark =
+          theme === 'dark' ||
+          (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        document.documentElement.dataset.themeSetting = theme
+      })()
+    </script>
     <link rel="preload" href="/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/young-serif.woff2" as="font" type="font/woff2" crossorigin />
   </head>
