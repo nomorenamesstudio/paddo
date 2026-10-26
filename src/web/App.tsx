@@ -1,9 +1,8 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 
 import { api, ApiError } from './api'
-import { RefreshCw } from 'lucide-react'
-
 import { OpeningSkeleton, humanizeSlug } from './components/OpeningSkeleton'
+import { TopBar } from './components/TopBar'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { LoginPage } from './pages/LoginPage'
 
@@ -65,15 +64,7 @@ export function App() {
       <Suspense
         fallback={
           <div className="shell">
-            <header className="topbar">
-              <a className="topbar__back" href="/" aria-label="All documents" title="All documents">
-                ←
-              </a>
-              <h1 className="topbar__title">{humanizeSlug(route.slug)}</h1>
-              <span className="sync-icon sync-icon--connecting" role="status" aria-label="sync: connecting">
-                <RefreshCw size={16} aria-hidden="true" className="spin" />
-              </span>
-            </header>
+            <TopBar title={humanizeSlug(route.slug)} sync="connecting" />
             <main className="editor">
               <OpeningSkeleton />
             </main>

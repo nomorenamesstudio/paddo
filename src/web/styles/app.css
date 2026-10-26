@@ -407,6 +407,18 @@ a {
   align-items: center;
 }
 
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+/* Same box as the status button, so the bar does not reflow when it mounts. */
+.status-placeholder,
+.status .button--icon {
+  min-width: 3.2rem;
+}
+
 .status .button--icon {
   /* The caret sits beside the mark, not under it. */
   display: inline-flex;

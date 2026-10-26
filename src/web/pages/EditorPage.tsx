@@ -18,10 +18,11 @@ import {
 } from '../editor/actions'
 import { DragPreviewExtension } from '../editor/drag-preview'
 import { Suggestions } from '../editor/suggestions'
-import { Bot, Check, ChevronLeft, RefreshCw, X } from 'lucide-react'
+import { Bot } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
 import { OpeningSkeleton, humanizeSlug } from '../components/OpeningSkeleton'
+import { TopBar } from '../components/TopBar'
 import { StatusPicker } from '../components/StatusPicker'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
@@ -52,7 +53,7 @@ export function EditorPage({ slug }: { slug: string }) {
   return <EditorSurface slug={slug} collab={collab} />
 }
 
-type SyncState = 'connecting' | 'connected' | 'disconnected'
+import type { SyncState } from '../components/TopBar'
 
 function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   // Named from the slug straight away, so an existing article never flashes as
@@ -261,31 +262,24 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
 
   return (
     <div className="shell">
-      <header className="topbar">
-        <a className="topbar__back" href="/" aria-label="All documents" title="All documents">
-          <ChevronLeft size={22} aria-hidden="true" />
-        </a>
-        <h1 className="topbar__title">{title}</h1>
-        <span className={`sync-icon sync-icon--${sync}`} title={`sync: ${sync}`} role="status" aria-label={`sync: ${sync}`}>
-          {sync === 'connected' ? (
-            <Check size={16} aria-hidden="true" />
-          ) : sync === 'connecting' ? (
-            <RefreshCw size={16} aria-hidden="true" className="spin" />
-          ) : (
-            <X size={16} aria-hidden="true" />
-          )}
-        </span>
-        <StatusPicker value={status} onChange={(next) => void changeStatus(next)} />
-        <button
-          className="button button--ghost button--icon"
-          type="button"
-          onClick={() => setInviteOpen(true)}
-          aria-label="Invite the agent"
-          title="Invite the agent"
-        >
-          <Bot size={20} aria-hidden="true" />
-        </button>
-      </header>
+      <TopBar
+        title={title}
+        sync={sync}
+        actions={
+          <span className="topbar__actions">
+            <StatusPicker value={status} onChange={(next) => void changeStatus(next)} />
+            <button
+              className="button button--ghost button--icon"
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              aria-label="Invite the agent"
+              title="Invite the agent"
+            >
+              <Bot size={20} aria-hidden="true" />
+            </button>
+          </span>
+        }
+      />
 
       {notice ? (
         <p className="notice" role="status">
