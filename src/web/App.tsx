@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 
 import { api, ApiError } from './api'
-import { OpeningSkeleton, humanizeSlug } from './components/OpeningSkeleton'
+import { LoadingDocument, humanizeSlug } from './components/LoadingDocument'
 import { TopBar } from './components/TopBar'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -66,7 +66,7 @@ export function App() {
           <div className="shell">
             <TopBar title={humanizeSlug(route.slug)} sync="connecting" />
             <main className="editor">
-              <OpeningSkeleton />
+              <LoadingDocument />
             </main>
           </div>
         }

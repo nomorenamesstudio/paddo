@@ -21,7 +21,7 @@ import { Suggestions } from '../editor/suggestions'
 import { Bot } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
-import { OpeningSkeleton, humanizeSlug } from '../components/OpeningSkeleton'
+import { LoadingDocument, humanizeSlug } from '../components/LoadingDocument'
 import { TopBar } from '../components/TopBar'
 import { StatusPicker } from '../components/StatusPicker'
 import { SelectionMenu } from '../components/SelectionMenu'
@@ -303,7 +303,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       ) : null}
 
       <main className="editor" ref={editorHost} onClick={() => editor?.commands.focus()}>
-        {showSkeleton ? <OpeningSkeleton title={title} fading={skeletonFading} /> : null}
+        {showSkeleton ? <LoadingDocument fading={skeletonFading} /> : null}
         <div className={`editor__body${ready ? ' is-ready' : ''}`}>
           <EditorContent editor={editor} />
         </div>
