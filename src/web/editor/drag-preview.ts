@@ -73,7 +73,8 @@ export const DragPreviewExtension = Extension.create({
                 decorations.push(
                   Decoration.node(preview.target, preview.target + targetNode.nodeSize, {
                     style: padding,
-                    class: 'is-drop-target',
+                    // Only the landing edge is marked, not the whole block.
+                    class: `is-drop-target is-drop-${preview.side}`,
                   }),
                 )
               }

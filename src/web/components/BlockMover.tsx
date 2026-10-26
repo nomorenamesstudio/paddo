@@ -89,6 +89,15 @@ export function BlockMover({ editor, container }: { editor: Editor | null; conta
 
   const clearPreview = useCallback(() => preview(EMPTY_PREVIEW), [preview])
 
+  // Move mode owns the pointer for its duration: no text selection may start or
+  // stay visible, because the only thing to read on screen is where it lands.
+  useEffect(() => {
+    if (!moving) return
+    document.body.classList.add('is-moving-mode')
+    window.getSelection()?.removeAllRanges()
+    return () => document.body.classList.remove('is-moving-mode')
+  }, [moving])
+
   useEffect(() => {
     return () => {
       if (editor && !editor.isDestroyed) clearPreview()
