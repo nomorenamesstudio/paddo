@@ -129,14 +129,31 @@ export function yDocFromMarkdown(body: string): Y.Doc {
  * document instead of merging into the first. The emptiness check therefore has
  * to happen inside the transaction that applies the seed.
  */
+const textOf = (node: { toString(): string }): string => node.toString().replace(/<[^>]*>/g, '').trim()
+
+/**
+ * A document is empty when it holds nothing but placeholder blocks. A connected
+ * editor always keeps at least one paragraph — an empty ProseMirror document is
+ * invalid — so counting blocks is not the same as counting content.
+ */
+export function isEmptyDocument(fragment: Y.XmlFragment): boolean {
+  return !fragment.toArray().some((node) => textOf(node) !== '')
+}
+
 export function seedDocumentFromMarkdown(document: Y.Doc, body: string): boolean {
   const fragment = document.getXmlFragment(CONTENT_FIELD)
-  if (fragment.length > 0) return false
+  if (!isEmptyDocument(fragment)) return false
 
   const seed = Y.encodeStateAsUpdate(yDocFromMarkdown(body))
   let applied = false
   document.transact(() => {
-    if (fragment.length > 0) return
+    if (!isEmptyDocument(fragment)) return
+    // Drop the placeholders in the same transaction as the seed, so a connected
+    // editor cannot re-add one in between.
+    for (let index = fragment.length - 1; index >= 0; index -= 1) {
+      const node = fragment.get(index)
+      if (node && textOf(node) === '') fragment.delete(index, 1)
+    }
     Y.applyUpdate(document, seed)
     applied = true
   })

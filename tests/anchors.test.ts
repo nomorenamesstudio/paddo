@@ -103,4 +103,18 @@ describe('seeding a room from markdown', () => {
     // The paragraph appears once, not twice: the observable half of "no duplicate".
     expect(ydoc.getXmlFragment('content').toString().split('A paragraph.').length - 1).toBe(1)
   })
+
+  it('seeds a room that only holds the placeholder paragraph a live editor keeps', async () => {
+    const { seedDocumentFromMarkdown } = await import('../src/server/collab')
+    const ydoc = new Y.Doc()
+    const fragment = ydoc.getXmlFragment('content')
+    // An empty ProseMirror document is invalid, so a connected editor leaves this.
+    const placeholder = new Y.XmlElement('paragraph')
+    placeholder.insert(0, [new Y.XmlText('')])
+    fragment.insert(0, [placeholder])
+
+    expect(seedDocumentFromMarkdown(ydoc, '# Real\n\nContent arrives.\n')).toBe(true)
+    expect(fragment.toString()).toContain('Content arrives.')
+    expect(fragment.toArray().filter((node) => node.toString().includes('<paragraph></paragraph>'))).toHaveLength(0)
+  })
 })

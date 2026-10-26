@@ -831,15 +831,13 @@ a {
   position: absolute;
   bottom: 100%;
   left: -1px;
-  display: inline-block;
-  padding: 0.05rem 0.3rem;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  line-height: 1.4;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
   color: #fff8f2;
   background: var(--accent);
   border-radius: 3px 3px 3px 0;
-  white-space: nowrap;
   pointer-events: none;
   user-select: none;
 }

@@ -6,6 +6,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
 import { api } from '../api'
+import { caretRenderer, deviceKind } from '../editor/caret'
 import { createCollab, type Collab } from '../editor/collab'
 import {
   acceptAllSuggestions,
@@ -67,7 +68,8 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         Collaboration.configure({ document: collab.doc, field: CONTENT_FIELD }),
         CollaborationCaret.configure({
           provider: collab.provider,
-          user: { name: deviceName(), color: '#9a3412' },
+          user: { name: deviceName(), device: deviceKind(), color: '#9a3412' },
+          render: caretRenderer,
         }),
         Suggestions.configure({ ydoc: collab.doc }),
         DragPreviewExtension,
