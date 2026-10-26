@@ -284,6 +284,12 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   const prompt = page.locator('.sheet__prompt')
   await expect(prompt).toContainText('Writing guide (from Paddō settings)')
   await expect(prompt).toContainText('Never use the word leverage.')
+
+  // The guide is optional per invitation: untick it and the prompt drops it.
+  await page.getByRole('checkbox', { name: /Include the writing guide/ }).uncheck()
+  await expect(prompt).not.toContainText('Writing guide (from Paddō settings)')
+  await page.getByRole('checkbox', { name: /Include the writing guide/ }).check()
+  await expect(prompt).toContainText('Writing guide (from Paddō settings)')
 })
 
 test('the theme is a saved choice, and switching it keeps the writing guide', async ({ page }) => {

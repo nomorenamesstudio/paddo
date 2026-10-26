@@ -3,11 +3,18 @@ import { useState } from 'react'
 export function InviteSheet({
   title,
   prompt,
+  guide,
+  includeGuide,
+  onToggleGuide,
   onClose,
   onCopied,
 }: {
   title: string
   prompt: string
+  /** The saved guide, or '' when there is none. */
+  guide: string
+  includeGuide: boolean
+  onToggleGuide: (next: boolean) => void
   onClose: () => void
   onCopied: () => void
 }) {
@@ -40,6 +47,18 @@ export function InviteSheet({
           Paddō does not run the model. Copy this into your own agent session — it has the MCP
           command and the rules for proposing edits. Hunks appear here as soon as they arrive.
         </p>
+
+        {guide.trim() ? (
+          <label className="sheet__toggle">
+            <input
+              type="checkbox"
+              checked={includeGuide}
+              onChange={(event) => onToggleGuide(event.target.checked)}
+            />
+            <span>Include the writing guide</span>
+            <span className="sheet__toggle-meta">{guide.trim().split(/\s+/).length} words</span>
+          </label>
+        ) : null}
 
         <label className="field">
           <span className="field__label">What should it do to “{title}”?</span>

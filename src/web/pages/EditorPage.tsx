@@ -76,6 +76,9 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   const [pending, setPending] = useState(0)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [writingGuide, setWritingGuide] = useState('')
+  const [includeGuide, setIncludeGuide] = useState(
+    () => window.localStorage.getItem('paddo-include-guide') !== 'no',
+  )
   const [notice, setNotice] = useState<string | null>(null)
   const editorHost = useRef<HTMLElement | null>(null)
 
@@ -265,8 +268,8 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   // Rebuilt when the title or the guide changes: the sheet names the document the
   // writer sees, the tool calls keep the slug, and the guide carries their voice.
   const invitePrompt = useMemo(
-    () => buildInvitePrompt(slug, title, window.location.origin, writingGuide),
-    [slug, title, writingGuide],
+    () => buildInvitePrompt(slug, title, window.location.origin, includeGuide ? writingGuide : ''),
+    [slug, title, writingGuide, includeGuide],
   )
 
   const acceptAll = useCallback(() => {
@@ -343,6 +346,13 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       {inviteOpen ? (
         <InviteSheet
           title={title}
+          guide={writingGuide}
+          includeGuide={includeGuide}
+          onToggleGuide={(next) => {
+            setIncludeGuide(next)
+            // Remembered per browser: a writer who skips the guide once means it.
+            window.localStorage.setItem('paddo-include-guide', next ? 'yes' : 'no')
+          }}
           prompt={invitePrompt}
           onClose={() => setInviteOpen(false)}
           onCopied={() => setNotice('Prompt copied. Paddō will show the hunks when the agent sends them.')}

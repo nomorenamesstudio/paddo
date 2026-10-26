@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The guide is optional per invitation
+
+**Feature** — the invite sheet carries a checkbox: include the writing guide or not, with
+its word count alongside. Off, the prompt shrinks from 8 475 to 859 characters. The
+choice is remembered in `localStorage`, so a writer who skips it once keeps skipping it;
+the toggle only appears when a guide exists.
+
 ## 2026-10-26 — The invite sheet came back too
 
 **Fix** — the same CSS surgery that cut `.bottombar` also took the whole `.sheet` block,
