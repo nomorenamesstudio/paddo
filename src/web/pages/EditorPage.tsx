@@ -5,7 +5,7 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
-import { api, STATUSES, type Status } from '../api'
+import { api, type Status } from '../api'
 import { caretRenderer, deviceKind } from '../editor/caret'
 import { createCollab, type Collab } from '../editor/collab'
 import {
@@ -22,6 +22,7 @@ import { Bot, Check, ChevronLeft, RefreshCw, X } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
 import { OpeningSkeleton, humanizeSlug } from '../components/OpeningSkeleton'
+import { StatusPicker } from '../components/StatusPicker'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
 
@@ -274,20 +275,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
             <X size={16} aria-hidden="true" />
           )}
         </span>
-        <label className="status-picker">
-          <span className="visually-hidden">Status</span>
-          <select
-            className={`status-select status--${status}`}
-            value={status}
-            onChange={(event) => void changeStatus(event.target.value as Status)}
-          >
-            {STATUSES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        <StatusPicker value={status} onChange={(next) => void changeStatus(next)} />
         <button
           className="button button--ghost button--icon"
           type="button"

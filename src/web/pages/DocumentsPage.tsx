@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 
 import { api, ApiError, type DocumentMeta } from '../api'
+import { StatusIcon, statusLabel } from '../components/StatusIcon'
 import { navigate } from '../App'
 
 function when(ms: number): string {
@@ -81,7 +82,9 @@ export function DocumentsPage() {
               >
                 <span className="documents__title">{document.title}</span>
                 <span className="documents__meta">
-                  <span className={`status status--${document.status}`}>{document.status}</span>
+                  <span className="documents__status" title={statusLabel(document.status)}>
+                    <StatusIcon status={document.status} size={14} />
+                  </span>
                   {document.words} {document.words === 1 ? 'word' : 'words'} · {when(document.updatedAt)}
                 </span>
               </a>

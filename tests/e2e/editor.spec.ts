@@ -197,7 +197,8 @@ test('a new draft is named by its heading, and its status sticks', async ({ page
   await page.keyboard.type(' about tides')
   await expect(page.locator('.topbar__title')).toHaveText('New draft about tides')
 
-  await page.selectOption('.status-select', 'published')
+  await page.locator('.status button').click()
+  await page.locator('.status__item', { hasText: 'Published' }).click()
   await expect
     .poll(async () => {
       const response = await page.request.get('/api/documents')
