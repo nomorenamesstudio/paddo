@@ -36,12 +36,12 @@ export function InviteSheet({
   return (
     <div className="sheet" role="dialog" aria-modal="true" aria-label="Invite the agent">
       <div className="sheet__panel">
-        <header className="sheet__head">
+        <div className="sheet__head">
           <h2>Invite the agent</h2>
           <button className="sheet__close" type="button" onClick={onClose} aria-label="Close">
             ×
           </button>
-        </header>
+        </div>
 
         <p className="muted">
           Paddō does not run the model. Copy this into your own agent session — it has the MCP
@@ -70,7 +70,10 @@ export function InviteSheet({
           />
         </label>
 
-        <pre className="sheet__prompt">{full}</pre>
+        {/* Scrollable, so it has to be reachable with the keyboard. */}
+        <pre className="sheet__prompt" tabIndex={0} aria-label="Invitation prompt">
+          {full}
+        </pre>
 
         <div className="sheet__actions">
           <button className="button button--ghost" type="button" onClick={onClose}>

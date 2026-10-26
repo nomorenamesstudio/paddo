@@ -2,6 +2,23 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — An axe pass, and the contrast it found
+
+**Fix** — axe (WCAG 2.1 AA) over the list, the editor and the invite sheet in both themes:
+
+- `.button--primary` was white on amber at **1.97:1** in dark mode. It is now an ink
+  button — `--fg` fill, `--bg` text — which clears 4.5:1 in both palettes and stops
+  "Copy prompt" from reading as a red/danger action.
+- `.documents__meta` sat at 4.35:1 on a tinted row: `--muted` is a shade darker.
+- The hunk buttons announced a name that did not contain their visible word; the
+  explanation is a tooltip only now.
+- The sheet's `<header>` made a second banner landmark, so the dialog scrambled the
+  landmark tree; it is a plain `div`.
+- The scrollable prompt could not be reached with the keyboard; it is focusable.
+
+**Feature** — an e2e test runs axe on the list, a settled editor and the invite sheet in
+both themes and fails on any serious or critical violation.
+
 ## 2026-10-26 — The guide is optional per invitation
 
 **Feature** — the invite sheet carries a checkbox: include the writing guide or not, with

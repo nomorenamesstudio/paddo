@@ -26,8 +26,9 @@ function actionButton(label: string, title: string, action: Action): HTMLButtonE
   const button = document.createElement('button')
   button.type = 'button'
   button.className = 'sug-action'
+  // The visible word is the accessible name; the explanation is a tooltip only,
+  // otherwise screen readers hear a name that does not contain what is on screen.
   button.title = title
-  button.setAttribute('aria-label', title)
   button.dataset.sugAction = action
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')

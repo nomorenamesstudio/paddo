@@ -313,6 +313,46 @@ test('the theme is a saved choice, and switching it keeps the writing guide', as
   await expect(page.locator('html')).toHaveAttribute('data-theme-setting', 'system')
 })
 
+test('no serious accessibility violations on the main surfaces', async ({ page }) => {
+  await signIn(page)
+  const axe = await readFile(new URL('../../node_modules/axe-core/axe.min.js', import.meta.url), 'utf8')
+
+  const audit = async (label: string) => {
+    await page.addScriptTag({ content: axe })
+    const violations = (await page.evaluate(async () => {
+      const run = await (window as unknown as {
+        axe: { run: (context: Document, options: unknown) => Promise<{ violations: Array<{ id: string; impact: string | null; nodes: unknown[] }> }> }
+      }).axe.run(document, {
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+      })
+      return run.violations
+        .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+        .map((violation) => `${violation.id} (${violation.nodes.length})`)
+    }))
+    expect(violations, `${label}: ${violations.join(', ')}`).toEqual([])
+  }
+
+  await audit('documents')
+
+  const slug = await createDocument(page, `A11y check ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await page.locator('.prose h1').first().waitFor()
+  // Audit the settled page: the loading state is a crossfade, not a resting state.
+  await expect(page.locator('.loading')).toHaveCount(0)
+  await page.waitForTimeout(300)
+  await audit('editor')
+
+  await page.getByRole('button', { name: 'Invite the agent' }).click()
+  await expect(page.locator('.sheet')).toBeVisible()
+  await audit('invite sheet')
+
+  // Dark mode swaps every token, so it gets its own pass.
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = 'dark'
+  })
+  await audit('invite sheet, dark')
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
