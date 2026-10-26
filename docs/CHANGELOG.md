@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Headlines in Young Serif
+
+**Feature** — Fraunces is out and Young Serif is in, for the document headings, the
+wordmark and the document list. Fraunces had become the house face of every AI side
+project; Young Serif is a single weight, so the display rules ask for 400 and the H1
+steps down a touch (1.9rem) to keep the extra chunk from shouting.
+
 ## 2026-10-25 — Library chrome: new draft, status flags, one sync icon
 
 **Feature** — the document list loses its subtitle, the wordmark is smaller, and the
