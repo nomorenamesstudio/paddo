@@ -1408,3 +1408,69 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   background: rgba(179, 38, 30, 0.1);
   font-weight: 600;
 }
+
+/* --- archive -------------------------------------------------------------- */
+
+.archive {
+  margin-top: 2rem;
+}
+
+.archive__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  list-style: none;
+  cursor: pointer;
+  border-top: 1px solid var(--line);
+}
+
+.archive__summary::-webkit-details-marker {
+  display: none;
+}
+
+.archive__summary:hover {
+  color: var(--fg);
+}
+
+.archive__summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.archive__chevron {
+  transition: transform 140ms var(--ease);
+}
+
+.archive[open] .archive__chevron {
+  transform: rotate(90deg);
+}
+
+.archive__count {
+  margin-left: 0.1rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.66rem;
+}
+
+.archive__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.archive__list .documents__title {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive__chevron {
+    transition: none;
+  }
+}

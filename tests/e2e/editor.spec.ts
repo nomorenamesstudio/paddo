@@ -227,6 +227,11 @@ test('a document can be archived and then deleted from the list', async ({ page 
   await page.locator('.row-menu__item', { hasText: 'Archive' }).click()
   await expect.poll(() => statusOf(slug)).toBe('archived')
 
+  // Archiving moves the row into the collapsed section below the list.
+  await expect(page.locator('.archive')).toBeVisible()
+  await page.locator('.archive__summary').click()
+  await expect(row).toBeVisible()
+
   // Deleting asks once, in place, before it does anything.
   await row.locator('.row-menu__trigger').click()
   await page.locator('.row-menu__item', { hasText: 'Delete' }).click()

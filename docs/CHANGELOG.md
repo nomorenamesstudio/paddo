@@ -2,6 +2,12 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Archived documents live in their own section
+
+**Feature** — the list shows only what is being worked on. Anything set to archived
+drops into a collapsed "Archived" section below it, with a count, and keeps its own
+row actions. Opening an archived document and changing its status is the way back.
+
 ## 2026-10-26 — Archive and delete from the list
 
 **Feature** — every row carries a kebab menu with the two actions that were missing:

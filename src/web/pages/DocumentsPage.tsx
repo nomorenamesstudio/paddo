@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 
 import { api, ApiError, type DocumentMeta } from '../api'
 import { RowMenu } from '../components/RowMenu'
@@ -46,6 +46,28 @@ export function DocumentsPage() {
     }
   }
 
+  const active = (documents ?? []).filter((document) => document.status !== 'archived')
+  const archived = (documents ?? []).filter((document) => document.status === 'archived')
+
+  const row = (document: DocumentMeta) => (
+    <li key={document.slug} className="documents__item">
+      <a
+        className="documents__row"
+        href={`/d/${document.slug}`}
+        onClick={(event) => intercept(event, document.slug)}
+      >
+        <span className="documents__title">{document.title}</span>
+        <span className="documents__meta">
+          <span className="documents__status" title={statusLabel(document.status)}>
+            <StatusIcon status={document.status} size={14} />
+          </span>
+          {document.words} {document.words === 1 ? 'word' : 'words'} · {when(document.updatedAt)}
+        </span>
+      </a>
+      <RowMenu entry={document} onChanged={() => void load()} />
+    </li>
+  )
+
   return (
     <main className="page page--narrow">
       <header className="masthead masthead--row">
@@ -70,29 +92,27 @@ export function DocumentsPage() {
 
       {documents === null ? (
         <p className="muted">loading…</p>
-      ) : documents.length === 0 ? (
+      ) : active.length === 0 && archived.length === 0 ? (
         <p className="muted">Nothing here yet. Start something with the plus above.</p>
       ) : (
-        <ul className="documents">
-          {documents.map((document) => (
-            <li key={document.slug} className="documents__item">
-              <a
-                className="documents__row"
-                href={`/d/${document.slug}`}
-                onClick={(event) => intercept(event, document.slug)}
-              >
-                <span className="documents__title">{document.title}</span>
-                <span className="documents__meta">
-                  <span className="documents__status" title={statusLabel(document.status)}>
-                    <StatusIcon status={document.status} size={14} />
-                  </span>
-                  {document.words} {document.words === 1 ? 'word' : 'words'} · {when(document.updatedAt)}
-                </span>
-              </a>
-              <RowMenu entry={document} onChanged={() => void load()} />
-            </li>
-          ))}
-        </ul>
+        <>
+          {active.length > 0 ? (
+            <ul className="documents">{active.map(row)}</ul>
+          ) : (
+            <p className="muted">Everything is archived. Open one and change its status to bring it back.</p>
+          )}
+
+          {archived.length > 0 ? (
+            <details className="archive">
+              <summary className="archive__summary">
+                <ChevronRight className="archive__chevron" size={14} aria-hidden="true" />
+                <span>Archived</span>
+                <span className="archive__count">{archived.length}</span>
+              </summary>
+              <ul className="archive__list">{archived.map(row)}</ul>
+            </details>
+          ) : null}
+        </>
       )}
     </main>
   )
