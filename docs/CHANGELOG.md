@@ -2,6 +2,19 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The bottom bar came back, and accept is green everywhere
+
+**Fix** — when the two suggestion styles were folded into one, the CSS surgery cut the
+`.bottombar` block along with the old chip rules, so the bar fell out of `position:
+fixed` and sat at the end of the document: on a phone the Accept all / Reject all
+buttons were off-screen behind the page, which is why they looked broken. The bar is
+back — fixed, blurred, wrapping on narrow screens, the count truncating instead of
+pushing — and it was verified fixed at 778–844 px with a passing hit test.
+
+**Feature** — Accept is green wherever it appears. "Accept all" uses the new
+`.button--accept` instead of the accent fill, so one colour means one thing: green
+accepts, red rejects, accent edits.
+
 ## 2026-10-26 — What the Ghosted run taught the agent interface
 
 **Fix** — three things came out of a real MCP session on a story with bold and a heading:

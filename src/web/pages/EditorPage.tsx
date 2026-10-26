@@ -333,7 +333,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
             <button className="button button--danger" type="button" onClick={rejectAll}>
               Reject all
             </button>
-            <button className="button button--primary" type="button" onClick={acceptAll}>
+            <button className="button button--accept" type="button" onClick={acceptAll}>
               Accept all
             </button>
           </div>
