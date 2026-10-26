@@ -20,8 +20,15 @@ import { Suggestions } from '../editor/suggestions'
 import { Bot, ChevronLeft } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
+import { OpeningSkeleton } from '../components/OpeningSkeleton'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
+
+/** Who the other device is, rather than a name that means nothing on a shared doc. */
+export function deviceName(): string {
+  const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+  return coarse ? 'Phone' : 'Desktop'
+}
 
 export function EditorPage({ slug }: { slug: string }) {
   const [collab, setCollab] = useState<Collab | null>(null)
@@ -60,7 +67,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         Collaboration.configure({ document: collab.doc, field: CONTENT_FIELD }),
         CollaborationCaret.configure({
           provider: collab.provider,
-          user: { name: 'K', color: '#9a3412' },
+          user: { name: deviceName(), color: '#9a3412' },
         }),
         Suggestions.configure({ ydoc: collab.doc }),
         DragPreviewExtension,
@@ -242,7 +249,10 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       ) : null}
 
       <main className="editor" ref={editorHost} onClick={() => editor?.commands.focus()}>
-        <EditorContent editor={editor} />
+        {sync !== 'connected' ? <OpeningSkeleton title={title} /> : null}
+        <div className={sync !== 'connected' ? 'editor__body editor__body--hidden' : 'editor__body'}>
+          <EditorContent editor={editor} />
+        </div>
         <SelectionMenu editor={editor} />
         <BlockMover editor={editor} container={editorHost.current} />
         {editor && pendingRanges(editor).length === 0 ? (

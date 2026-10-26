@@ -2,6 +2,22 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-25 — Faster open, and a placeholder while it happens
+
+**Feature** — brotli/gzip on the wire (the editor bundle drops from 923 kB to about
+270 kB) and a one-year immutable cache on content-hashed assets, with the shell kept
+on `no-cache`.
+
+**Feature** — the editor is a lazy chunk, so the document list paints without waiting
+for ProseMirror, and opening a document shows a skeleton — top bar, title, pulsing
+text lines — instead of an empty page while the bundle and the document arrive.
+
+**Feature** — peer cursors are labelled by device ("Desktop", "Phone") rather than a
+name that means nothing in a single-reader app.
+
+**Fix** — other devices' selections were painted at 44% alpha from an inline style
+and read as a mysterious highlighted block; they now use the house tint.
+
 ## 2026-10-25 — Working prototype
 
 **Feature** — editor shell on the studio's paper: Source Serif 4 prose, Fraunces

@@ -4,6 +4,7 @@ import { basename, resolve } from 'node:path'
 
 import chokidar from 'chokidar'
 
+import compress from '@fastify/compress'
 import cookie from '@fastify/cookie'
 import fastifyStatic from '@fastify/static'
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
@@ -36,6 +37,9 @@ const throttle = new LoginThrottle()
 const app = Fastify({ logger: { level: process.env.NODE_ENV === 'production' ? 'warn' : 'info' } })
 
 await app.register(cookie)
+
+// Nearly a megabyte of editor code on every cold load; brotli takes it to ~270 kB.
+await app.register(compress, { global: true, encodings: ['br', 'gzip'] })
 
 function sessionCookieOptions(request: FastifyRequest) {
   const secure = request.protocol === 'https' || request.headers['x-forwarded-proto'] === 'https'
@@ -73,6 +77,16 @@ function requireSession(request: FastifyRequest, reply: FastifyReply, done: () =
 function clientKey(request: FastifyRequest): string {
   return request.ip || 'unknown'
 }
+
+// Content-hashed bundles never change under the same name; everything else (the
+// shell, the manifest, the service worker) has to be revalidated on every load.
+app.addHook('onSend', async (request, reply) => {
+  if (request.url.startsWith('/api/') || request.url.startsWith('/ws')) return
+  reply.header(
+    'cache-control',
+    request.url.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
+  )
+})
 
 // --- health, deliberately unauthenticated, no document data ------------------
 

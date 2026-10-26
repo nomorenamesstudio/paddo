@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 
 import { api, ApiError } from './api'
+import { OpeningSkeleton, humanizeSlug } from './components/OpeningSkeleton'
 import { DocumentsPage } from './pages/DocumentsPage'
-import { EditorPage } from './pages/EditorPage'
 import { LoginPage } from './pages/LoginPage'
+
+// The editor is most of the bundle; the document list should not wait for it.
+const EditorPage = lazy(() => import('./pages/EditorPage').then((module) => ({ default: module.EditorPage })))
 
 type Route = { name: 'documents' } | { name: 'editor'; slug: string }
 
@@ -56,7 +59,26 @@ export function App() {
   }
 
   if (route.name === 'editor') {
-    return <EditorPage key={route.slug} slug={route.slug} />
+    return (
+      <Suspense
+        fallback={
+          <div className="shell">
+            <header className="topbar">
+              <a className="topbar__back" href="/" aria-label="All documents" title="All documents">
+                ←
+              </a>
+              <h1 className="topbar__title">{humanizeSlug(route.slug)}</h1>
+              <span className="sync sync--connecting">connecting</span>
+            </header>
+            <main className="editor">
+              <OpeningSkeleton />
+            </main>
+          </div>
+        }
+      >
+        <EditorPage key={route.slug} slug={route.slug} />
+      </Suspense>
+    )
   }
 
   return <DocumentsPage />
