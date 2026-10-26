@@ -138,8 +138,14 @@ test('rejecting one hunk and accepting the rest lands only the accepted text', a
   await page.locator('.sug-hunk').first().locator('.sug-action').nth(1).click()
   await expect(page.locator('.bottombar__count')).toContainText('1 pending')
 
+  const bar = page.locator('.bottombar')
+  const barBox = await bar.boundingBox()
+  const viewport = page.viewportSize() ?? { width: 0, height: 0 }
+  expect(await bar.evaluate((node) => getComputedStyle(node).position)).toBe('fixed')
+  expect(barBox && barBox.y + barBox.height <= viewport.height + 1).toBe(true)
+
   await page.getByRole('button', { name: 'Accept all' }).click()
-  await expect(page.locator('.bottombar')).toHaveCount(0)
+  await expect(bar).toHaveCount(0)
 
   const text = await page.locator('.prose').innerText()
   expect(text).toContain('Beta sentence gets rewritten words.')
@@ -268,6 +274,13 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   await page.goto(`/d/${slug}`)
   await page.locator('.prose h1').first().waitFor()
   await page.getByRole('button', { name: 'Invite the agent' }).click()
+  const sheet = page.locator('.sheet')
+  await expect(sheet).toBeVisible()
+  const sheetBox = await sheet.boundingBox()
+  const size = page.viewportSize() ?? { width: 0, height: 0 }
+  expect(await sheet.evaluate((node) => getComputedStyle(node).position)).toBe('fixed')
+  expect(sheetBox?.height).toBeGreaterThanOrEqual(size.height - 1)
+
   const prompt = page.locator('.sheet__prompt')
   await expect(prompt).toContainText('Writing guide (from Paddō settings)')
   await expect(prompt).toContainText('Never use the word leverage.')

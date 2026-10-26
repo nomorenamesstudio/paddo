@@ -2,6 +2,14 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The invite sheet came back too
+
+**Fix** — the same CSS surgery that cut `.bottombar` also took the whole `.sheet` block,
+so the invite modal stopped being an overlay and rendered in the flow of the article,
+several thousand pixels down the page. Restored from history, and both layouts now have
+an e2e guard: the bar must be `position: fixed` and inside the viewport, the sheet must
+be fixed and cover it. Both rules were silently missing, so nothing caught them before.
+
 ## 2026-10-26 — The bottom bar came back, and accept is green everywhere
 
 **Fix** — when the two suggestion styles were folded into one, the CSS surgery cut the
