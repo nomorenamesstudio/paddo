@@ -85,12 +85,19 @@ test('a proposal is reviewed inline and applied to the file', async ({ page }) =
   )
   expect(created.created).toHaveLength(1)
 
-  const chip = page.locator('.sug-chip')
-  await expect(chip).toBeVisible()
+  const hunk = page.locator('.sug-hunk')
+  await expect(hunk).toBeVisible()
   await expect(page.locator('.bottombar__count')).toContainText('1 pending')
 
-  await chip.locator('.sug-action').first().click()
-  await expect(chip).toHaveCount(0)
+  // Every hunk carries its reason and all three actions, whatever its size: a
+  // compact change that drops the rationale is the regression this guards.
+  await expect(hunk.locator('.sug-rationale')).toHaveText('Sharpens the claim.')
+  await expect(hunk.locator('.sug-original')).toBeVisible()
+  await expect(hunk.locator('.sug-proposed')).toBeVisible()
+  await expect(hunk.locator('.sug-action')).toHaveCount(3)
+
+  await hunk.locator('.sug-action').first().click()
+  await expect(hunk).toHaveCount(0)
 
   await expect
     .poll(async () => {
@@ -128,7 +135,7 @@ test('rejecting one hunk and accepting the rest lands only the accepted text', a
 
   await expect(page.locator('.bottombar__count')).toContainText('2 pending')
 
-  await page.locator('.sug-chip').first().locator('.sug-action').nth(1).click()
+  await page.locator('.sug-hunk').first().locator('.sug-action').nth(1).click()
   await expect(page.locator('.bottombar__count')).toContainText('1 pending')
 
   await page.getByRole('button', { name: 'Accept all' }).click()

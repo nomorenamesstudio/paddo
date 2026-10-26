@@ -3,7 +3,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import * as Y from 'yjs'
 
-import { isLargeSuggestion, SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
+import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { acceptSuggestion, pendingRanges, rejectSuggestion } from './actions'
 
 export const SUGGESTION_PLUGIN_KEY = new PluginKey('paddoSuggestions')
@@ -16,69 +16,71 @@ type Action = 'accept' | 'reject' | 'edit'
  * replaces widget nodes on every transaction — a click whose mousedown already
  * triggered a re-render would land on a detached element.
  */
+const ICONS: Record<Action, string> = {
+  accept: 'M20 6 9 17l-5-5',
+  reject: 'M18 6 6 18M6 6l12 12',
+  edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z',
+}
+
 function actionButton(label: string, title: string, action: Action): HTMLButtonElement {
   const button = document.createElement('button')
   button.type = 'button'
   button.className = 'sug-action'
-  button.textContent = label
   button.title = title
   button.setAttribute('aria-label', title)
   button.dataset.sugAction = action
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', ICONS[action])
+  svg.append(path)
+
+  const text = document.createElement('span')
+  text.textContent = label
+  button.append(svg, text)
   return button
 }
 
-/** Small edit: the proposed text plus a pair of chips, inline at the change. */
-function inlineChip(editor: Editor, suggestion: Suggestion): HTMLElement {
-  const wrap = document.createElement('span')
-  wrap.className = 'sug-chip'
-  wrap.contentEditable = 'false'
-  wrap.dataset.sugId = suggestion.id
-
-  if (suggestion.kind !== 'delete') {
-    const proposed = document.createElement('span')
-    proposed.className = 'sug-proposed'
-    proposed.textContent = suggestion.proposed
-    wrap.append(proposed)
-  }
-
-  const actions = document.createElement('span')
-  actions.className = 'sug-actions'
-  actions.append(
-    actionButton('✓', 'Accept this change', 'accept'),
-    actionButton('✗', 'Reject this change', 'reject'),
-  )
-  wrap.append(actions)
-
-  return wrap
-}
-
-/** Larger rewrite: a card under the paragraph, with the full text and reason. */
-function blockCard(editor: Editor, suggestion: Suggestion): HTMLElement {
-  const card = document.createElement('div')
-  card.className = 'sug-card'
-  card.contentEditable = 'false'
-  card.dataset.sugId = suggestion.id
+/**
+ * One hunk, one anatomy: the reason, the text it replaces, the replacement, the
+ * actions. Every hunk sits under the block it changes. Short replacements happen
+ * to fit on one row and long ones wrap to three; nothing else about them differs,
+ * which is the point — the earlier inline chip had no rationale and no Edit, so a
+ * spelling fix and a rewritten paragraph looked like two different features.
+ */
+function hunkWidget(suggestion: Suggestion): HTMLElement {
+  const hunk = document.createElement('div')
+  hunk.className = 'sug-hunk'
+  hunk.contentEditable = 'false'
+  hunk.dataset.sugId = suggestion.id
 
   if (suggestion.rationale) {
     const rationale = document.createElement('p')
     rationale.className = 'sug-rationale'
     rationale.textContent = suggestion.rationale
-    card.append(rationale)
+    hunk.append(rationale)
   }
 
+  const swap = document.createElement('div')
+  swap.className = 'sug-swap'
+
   if (suggestion.original) {
-    const original = document.createElement('p')
+    const original = document.createElement('span')
     original.className = 'sug-original'
     original.textContent = suggestion.original
-    card.append(original)
+    swap.append(original)
   }
 
   if (suggestion.proposed) {
-    const proposed = document.createElement('p')
+    const proposed = document.createElement('span')
     proposed.className = 'sug-proposed'
     proposed.textContent = suggestion.proposed
-    card.append(proposed)
+    swap.append(proposed)
   }
+
+  hunk.append(swap)
 
   const actions = document.createElement('div')
   actions.className = 'sug-actions'
@@ -87,9 +89,9 @@ function blockCard(editor: Editor, suggestion: Suggestion): HTMLElement {
     actionButton('Reject', 'Reject this change', 'reject'),
     actionButton('Edit', 'Accept, then select the new text so you can adjust it', 'edit'),
   )
-  card.append(actions)
+  hunk.append(actions)
 
-  return card
+  return hunk
 }
 
 function buildDecorations(editor: Editor): DecorationSet {
@@ -104,23 +106,11 @@ function buildDecorations(editor: Editor): DecorationSet {
       decorations.push(Decoration.inline(from, to, { class: 'sug-strike' }))
     }
 
-    const large = isLargeSuggestion(suggestion)
-
-    if (!large) {
-      decorations.push(
-        Decoration.widget(to, () => inlineChip(editor, suggestion), {
-          side: 1,
-          ignoreSelection: true,
-          stopEvent: () => true,
-        }),
-      )
-      continue
-    }
-
+    // Both sizes sit under the block they change, so the eye looks in one place.
     const $to = doc.resolve(Math.min(to, doc.content.size))
     const blockEnd = $to.depth > 0 ? $to.after(1) : $to.pos
     decorations.push(
-      Decoration.widget(Math.min(blockEnd, doc.content.size), () => blockCard(editor, suggestion), {
+      Decoration.widget(Math.min(blockEnd, doc.content.size), () => hunkWidget(suggestion), {
         side: -1,
         ignoreSelection: true,
         stopEvent: () => true,

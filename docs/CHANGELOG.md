@@ -2,6 +2,16 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — One shape for every hunk
+
+**Fix** — a suggestion rendered in one of two styles: a pill-inline chip for short
+changes, a card for long ones. The chip had no rationale and no Edit, so a spelling
+fix and a rewritten paragraph looked like two different features, and on a phone the
+chip wrapped into a tall box with a dead gap. Every hunk now uses one anatomy — the
+reason, the struck original, the replacement, then Accept / Reject / Edit — and only
+its height changes with the length of the text. `isLargeSuggestion` is gone with the
+branch that needed it.
+
 ## 2026-10-26 — Archived documents live in their own section
 
 **Feature** — the list shows only what is being worked on. Anything set to archived

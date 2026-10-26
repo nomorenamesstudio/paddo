@@ -585,208 +585,109 @@ a {
   color: var(--muted);
 }
 
-.sug-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: 0.3rem;
-  padding: 0.05rem 0.2rem 0.05rem 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  line-height: 1.5;
-  vertical-align: baseline;
-}
-
-.sug-chip .sug-proposed {
-  color: var(--fg);
-}
-
-.sug-actions {
-  display: inline-flex;
-  gap: 0.15rem;
-}
-
-.sug-action {
-  min-width: 1.9rem;
-  min-height: 1.9rem;
-  padding: 0 0.35rem;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--fg);
-  background: var(--raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-}
-
-.sug-action:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.sug-action:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-.sug-card {
-  display: block;
-  margin: 0.75rem 0 1.5rem;
-  padding: 0.85rem 1rem;
+.sug-hunk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.7rem;
+  margin: 0.7rem 0 1.4rem;
+  padding: 0.75rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
   border-radius: 6px;
   background: var(--raised);
   box-shadow: var(--shadow);
-  font-size: 0.98rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
 }
 
-.sug-card p {
-  margin: 0 0 0.6rem;
-}
-
-.sug-rationale {
+.sug-hunk .sug-rationale {
+  flex: 1 1 100%;
+  margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.01em;
   color: var(--muted);
 }
 
-.sug-card .sug-original {
+.sug-hunk .sug-swap {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.sug-hunk .sug-original,
+.sug-hunk .sug-proposed {
+  display: block;
+}
+
+.sug-hunk .sug-original {
   color: var(--muted);
   text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
-.sug-card .sug-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
+.sug-hunk .sug-proposed {
+  margin-top: 0.3rem;
+  color: var(--fg);
 }
 
-.sug-card .sug-action {
-  flex: 1;
-  min-height: var(--tap);
-  font-size: 0.8rem;
+.sug-hunk .sug-actions {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-left: auto;
 }
 
-/* --- bottom bar ----------------------------------------------------------- */
-
-.bottombar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  display: flex;
+.sug-hunk .sug-action {
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 1rem;
-  padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--line);
-}
-
-.bottombar__count {
+  gap: 0.25rem;
+  min-height: 1.95rem;
+  padding: 0 0.6rem;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--muted);
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bottombar__actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.bottombar .button {
-  min-height: var(--tap);
-}
-
-/* --- invite sheet --------------------------------------------------------- */
-
-.sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(20, 18, 16, 0.35);
-  padding: 1rem;
-}
-
-.sheet__panel {
-  width: 100%;
-  max-width: 36rem;
-  max-height: 85dvh;
-  overflow: auto;
-  padding: 1.25rem;
+  font-size: 0.74rem;
+  color: var(--fg);
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
-}
-
-.sheet__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sheet__head h2 {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 400;
-  margin: 0;
-}
-
-.sheet__close {
-  background: none;
-  border: 0;
-  color: var(--muted);
-  font-size: 1.5rem;
-  line-height: 1;
-  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
-.sheet__prompt {
-  max-height: 14rem;
-  overflow: auto;
-  padding: 0.75rem;
-  background: var(--raised);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+.sug-hunk .sug-action svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.sheet__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
+.sug-hunk .sug-action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-/* --- touch ---------------------------------------------------------------- */
+.sug-hunk .sug-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 
-@media (pointer: coarse) {
-  .sug-action {
-    min-width: var(--tap);
-    min-height: var(--tap);
+@media (max-width: 40rem) {
+  .sug-hunk {
+    padding: 0.65rem 0.75rem;
   }
 
-  .sug-chip {
-    gap: 0.5rem;
+  .sug-hunk .sug-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .sug-hunk .sug-action {
+    min-width: var(--tap);
+    min-height: var(--tap);
   }
 }
 

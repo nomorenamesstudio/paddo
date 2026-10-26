@@ -30,9 +30,3 @@ export function kindFor(original: string, proposed: string): SuggestionKind {
   if (proposed === '') return 'delete'
   return 'replace'
 }
-
-/** Long enough that a full card reads better than an inline chip. */
-export function isLargeSuggestion(suggestion: Pick<Suggestion, 'original' | 'proposed'>): boolean {
-  const longest = Math.max(suggestion.original.length, suggestion.proposed.length)
-  return longest > 120 || suggestion.proposed.includes('\n') || suggestion.original.includes('\n')
-}
