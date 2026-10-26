@@ -23,6 +23,7 @@
 
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --radius-pill: 999px;
+  --danger: #b3261e;
   --measure: 40rem;
   --tap: 2.75rem;
 }
@@ -36,6 +37,7 @@
     --accent-soft: rgba(237, 164, 104, 0.12);
     --ok: #8bcfb6;
     --ok-soft: rgba(139, 207, 182, 0.12);
+    --danger: #f0938a;
     --line: rgba(240, 236, 226, 0.2);
     --raised: #232019;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -125,7 +127,7 @@ a {
 }
 
 .notice--error {
-  border-left-color: #b3261e;
+  border-left-color: var(--danger);
 }
 
 .notice__close {
@@ -369,7 +371,7 @@ a {
 }
 
 .sync-icon--disconnected {
-  color: #b3261e;
+  color: var(--danger);
 }
 
 .spin {
@@ -662,9 +664,37 @@ a {
   stroke-linejoin: round;
 }
 
-.sug-hunk .sug-action:hover {
-  border-color: var(--accent);
+.sug-hunk .sug-action[data-sug-action='accept'] {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 38%, transparent);
+  background: color-mix(in srgb, var(--ok) 10%, var(--bg));
+}
+
+.sug-hunk .sug-action[data-sug-action='reject'] {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 34%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, var(--bg));
+}
+
+.sug-hunk .sug-action[data-sug-action='edit'] {
   color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+
+.sug-hunk .sug-action[data-sug-action='accept']:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 18%, var(--bg));
+}
+
+.sug-hunk .sug-action[data-sug-action='reject']:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--bg));
+}
+
+.sug-hunk .sug-action[data-sug-action='edit']:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
 }
 
 .sug-hunk .sug-action:focus-visible {
@@ -1305,7 +1335,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 }
 
 .row-menu__item--danger {
-  color: #b3261e;
+  color: var(--danger);
 }
 
 .row-menu__item--danger.is-confirming {
@@ -1377,4 +1407,15 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   .archive__chevron {
     transition: none;
   }
+}
+
+.button--danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 34%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+.button--danger:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
 }

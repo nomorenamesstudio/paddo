@@ -319,7 +319,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         <div className="bottombar" role="region" aria-label="Pending suggestions">
           <span className="bottombar__count">{pending} pending</span>
           <div className="bottombar__actions">
-            <button className="button button--ghost" type="button" onClick={rejectAll}>
+            <button className="button button--danger" type="button" onClick={rejectAll}>
               Reject all
             </button>
             <button className="button button--primary" type="button" onClick={acceptAll}>

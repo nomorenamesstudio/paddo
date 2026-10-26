@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The hunk actions carry their meaning in colour
+
+**Feature** — accept is green, reject red, edit accent, each as a soft tinted pill
+that deepens on hover. The bottom bar follows: "Reject all" is the red action,
+"Accept all" stays the filled primary. Dark mode gets its own red (`--danger`), since
+the light one sat at about 3:1 against near-black.
+
 ## 2026-10-26 — One shape for every hunk
 
 **Fix** — a suggestion rendered in one of two styles: a pill-inline chip for short
