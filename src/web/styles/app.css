@@ -1695,3 +1695,29 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   color: var(--muted);
   font-size: 0.7rem;
 }
+
+/* --- info box in the sheet ------------------------------------------------ */
+
+.sheet__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.notice--info {
+  align-items: flex-start;
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+.notice--info p {
+  margin: 0;
+}
+
+.notice__icon {
+  flex: none;
+  color: var(--accent);
+  margin-top: 0.15rem;
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Info } from 'lucide-react'
 
 export function InviteSheet({
   title,
@@ -6,6 +7,9 @@ export function InviteSheet({
   guide,
   includeGuide,
   onToggleGuide,
+  noteOpen,
+  onDismissNote,
+  onRestoreNote,
   onClose,
   onCopied,
 }: {
@@ -15,6 +19,9 @@ export function InviteSheet({
   guide: string
   includeGuide: boolean
   onToggleGuide: (next: boolean) => void
+  noteOpen: boolean
+  onDismissNote: () => void
+  onRestoreNote: () => void
   onClose: () => void
   onCopied: () => void
 }) {
@@ -38,15 +45,42 @@ export function InviteSheet({
       <div className="sheet__panel">
         <div className="sheet__head">
           <h2>Invite the agent</h2>
-          <button className="sheet__close" type="button" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          <div className="sheet__head-actions">
+            {noteOpen ? null : (
+              <button
+                className="button button--ghost button--icon"
+                type="button"
+                onClick={onRestoreNote}
+                aria-label="Show the note about how this works"
+                title="How this works"
+              >
+                <Info size={16} aria-hidden="true" />
+              </button>
+            )}
+            <button className="sheet__close" type="button" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          </div>
         </div>
 
-        <p className="muted">
-          Paddō does not run the model. Copy this into your own agent session — it has the MCP
-          command and the rules for proposing edits. Hunks appear here as soon as they arrive.
-        </p>
+        {noteOpen ? (
+          <div className="notice notice--info" role="note">
+            <Info className="notice__icon" size={15} aria-hidden="true" />
+            <p>
+              Paddō does not run the model. Copy this into your own agent session — it has the MCP
+              command and the rules for proposing edits. Hunks appear here as soon as they arrive.
+            </p>
+            <button
+              className="notice__close"
+              type="button"
+              onClick={onDismissNote}
+              aria-label="Dismiss this note"
+              title="Don't show this again"
+            >
+              ×
+            </button>
+          </div>
+        ) : null}
 
         {guide.trim() ? (
           <label className="sheet__toggle">

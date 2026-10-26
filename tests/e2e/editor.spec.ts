@@ -290,6 +290,17 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   await expect(prompt).not.toContainText('Writing guide (from Paddō settings)')
   await page.getByRole('checkbox', { name: /Include the writing guide/ }).check()
   await expect(prompt).toContainText('Writing guide (from Paddō settings)')
+
+  // The "this does not run a model" note is an info box you can put away for good,
+  // and the info button in the header is the way back.
+  await page.getByRole('button', { name: 'Dismiss this note' }).click()
+  await expect(page.locator('.notice--info')).toHaveCount(0)
+  await page.reload()
+  await page.locator('.prose h1').first().waitFor()
+  await page.getByRole('button', { name: 'Invite the agent' }).click()
+  await expect(page.locator('.notice--info')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Show the note about how this works' }).click()
+  await expect(page.locator('.notice--info')).toBeVisible()
 })
 
 test('the theme is a saved choice, and switching it keeps the writing guide', async ({ page }) => {

@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The disclaimer became an info box you can put away
+
+**Feature** — the "Paddō does not run the model" paragraph is now the house notice:
+accent tint, left rule, info icon, and a dismiss button. Dismissing hides it for good
+(`localStorage`), and a small info button in the sheet header brings it back, so putting
+it away is not a one-way door.
+
 ## 2026-10-26 — An axe pass, and the contrast it found
 
 **Fix** — axe (WCAG 2.1 AA) over the list, the editor and the invite sheet in both themes:

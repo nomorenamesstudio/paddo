@@ -79,6 +79,9 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   const [includeGuide, setIncludeGuide] = useState(
     () => window.localStorage.getItem('paddo-include-guide') !== 'no',
   )
+  const [noteOpen, setNoteOpen] = useState(
+    () => window.localStorage.getItem('paddo-invite-note') !== 'hidden',
+  )
   const [notice, setNotice] = useState<string | null>(null)
   const editorHost = useRef<HTMLElement | null>(null)
 
@@ -352,6 +355,15 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
             setIncludeGuide(next)
             // Remembered per browser: a writer who skips the guide once means it.
             window.localStorage.setItem('paddo-include-guide', next ? 'yes' : 'no')
+          }}
+          noteOpen={noteOpen}
+          onDismissNote={() => {
+            setNoteOpen(false)
+            window.localStorage.setItem('paddo-invite-note', 'hidden')
+          }}
+          onRestoreNote={() => {
+            setNoteOpen(true)
+            window.localStorage.setItem('paddo-invite-note', 'shown')
           }}
           prompt={invitePrompt}
           onClose={() => setInviteOpen(false)}
