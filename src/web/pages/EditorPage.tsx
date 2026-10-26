@@ -21,7 +21,7 @@ import { Suggestions } from '../editor/suggestions'
 import { Bot, Check, ChevronLeft, RefreshCw, X } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
-import { OpeningSkeleton } from '../components/OpeningSkeleton'
+import { OpeningSkeleton, humanizeSlug } from '../components/OpeningSkeleton'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
 
@@ -54,7 +54,9 @@ export function EditorPage({ slug }: { slug: string }) {
 type SyncState = 'connecting' | 'connected' | 'disconnected'
 
 function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
-  const [title, setTitle] = useState('New draft')
+  // Named from the slug straight away, so an existing article never flashes as
+  // "New draft" while the socket is still connecting.
+  const [title, setTitle] = useState(() => humanizeSlug(slug))
   const [status, setStatus] = useState<Status>('draft')
   const [sync, setSync] = useState<SyncState>(collab.provider.isSynced ? 'connected' : 'connecting')
   const [pending, setPending] = useState(0)
@@ -139,7 +141,8 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         }
         return true
       })
-      setTitle(found || 'New draft')
+      // No heading yet: keep whatever name the document already has.
+      if (found) setTitle(found)
     }
     readTitle()
     editor.on('update', readTitle)
@@ -153,7 +156,9 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     void api
       .document(slug)
       .then((document) => {
-        if (!cancelled) setStatus(document.status)
+        if (cancelled) return
+        setStatus(document.status)
+        setTitle(document.title)
       })
       .catch(() => {})
     return () => {
