@@ -61,6 +61,18 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   const [title, setTitle] = useState(() => humanizeSlug(slug))
   const [status, setStatus] = useState<Status>('draft')
   const [sync, setSync] = useState<SyncState>(collab.provider.isSynced ? 'connected' : 'connecting')
+  // Crossfade: the placeholder fades out while the document fades in, rather than
+  // one snapping away and the other snapping on.
+  const ready = sync === 'connected'
+  const [showSkeleton, setShowSkeleton] = useState(true)
+  const [skeletonFading, setSkeletonFading] = useState(false)
+
+  useEffect(() => {
+    if (!ready) return
+    setSkeletonFading(true)
+    const timer = window.setTimeout(() => setShowSkeleton(false), 200)
+    return () => window.clearTimeout(timer)
+  }, [ready])
   const [pending, setPending] = useState(0)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -291,8 +303,8 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       ) : null}
 
       <main className="editor" ref={editorHost} onClick={() => editor?.commands.focus()}>
-        {sync !== 'connected' ? <OpeningSkeleton title={title} /> : null}
-        <div className={sync !== 'connected' ? 'editor__body editor__body--hidden' : 'editor__body'}>
+        {showSkeleton ? <OpeningSkeleton title={title} fading={skeletonFading} /> : null}
+        <div className={`editor__body${ready ? ' is-ready' : ''}`}>
           <EditorContent editor={editor} />
         </div>
         <SelectionMenu editor={editor} />

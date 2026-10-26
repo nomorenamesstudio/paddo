@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { Check, ChevronLeft, RefreshCw, X } from 'lucide-react'
+
+import { navigate } from '../App'
 
 export type SyncState = 'connecting' | 'connected' | 'disconnected'
 
@@ -48,7 +50,18 @@ export function TopBar({
 }) {
   return (
     <header className="topbar">
-      <a className="topbar__back" href="/" aria-label="All documents" title="All documents">
+      <a
+        className="topbar__back"
+        href="/"
+        aria-label="All documents"
+        title="All documents"
+        onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+          // Client-side, so leaving never waits for the editor bundle or the socket.
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
+          event.preventDefault()
+          navigate('/')
+        }}
+      >
         <ChevronLeft size={22} aria-hidden="true" />
       </a>
       <h1 className="topbar__title">{title}</h1>

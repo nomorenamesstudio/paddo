@@ -271,6 +271,7 @@ a {
 /* --- documents ------------------------------------------------------------ */
 
 .documents {
+  animation: fade-in 220ms ease-out both;
   list-style: none;
   margin: 1.5rem 0 3rem;
   padding: 0;
@@ -385,6 +386,15 @@ a {
 
 .spin {
   animation: spin 1s linear infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
@@ -1040,8 +1050,17 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 /* --- opening a document --------------------------------------------------- */
 
-.editor__body--hidden {
-  visibility: hidden;
+.editor__body {
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+}
+
+.editor__body.is-ready {
+  opacity: 1;
+}
+
+.editor__body:not(.is-ready) {
+  pointer-events: none;
 }
 
 .skeleton {
@@ -1049,6 +1068,11 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   inset: 0;
   padding: 2rem 1.5rem;
   pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
+.skeleton.is-fading {
+  opacity: 0;
 }
 
 .skeleton__title {
@@ -1092,7 +1116,13 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton__line {
+  .skeleton__line,
+  .documents {
     animation: none;
+  }
+
+  .skeleton,
+  .editor__body {
+    transition: none;
   }
 }
