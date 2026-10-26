@@ -64,7 +64,9 @@ server.registerTool(
     const body = await call<{ slug: string; title: string; markdown: string }>(
       `/api/documents/${encodeURIComponent(document)}`,
     )
-    return text(`# ${body.title}\n\n${body.markdown}`)
+    // The markdown already carries its heading; adding the title again showed up
+    // in every quote the agent then copied.
+    return text(body.markdown)
   },
 )
 

@@ -48,7 +48,7 @@ export async function proposeEdits(
     edits.forEach((edit, index) => {
       const original = edit.original ?? ''
       const proposed = edit.proposed ?? ''
-      if (original === proposed) {
+      if (original.trim() === proposed.trim()) {
         result.errors.push({ index, error: 'unchanged', message: 'original and proposed are identical' })
         return
       }
@@ -82,6 +82,8 @@ export async function proposeEdits(
 
       from = located.from
       to = located.to
+      // Store the text that actually matched, so the editor can verify it later.
+      const matchedOriginal = located.matched
       if (!from) {
         result.errors.push({ index, error: 'not-found', message: 'could not anchor that text' })
         return
@@ -89,10 +91,10 @@ export async function proposeEdits(
 
       const suggestion: Suggestion = {
         id: randomUUID(),
-        kind: kindFor(original, proposed),
+        kind: kindFor(matchedOriginal, proposed),
         from,
         to,
-        original,
+        original: matchedOriginal,
         proposed,
         rationale: edit.rationale?.trim() || null,
         status: 'pending',

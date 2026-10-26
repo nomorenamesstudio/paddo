@@ -69,6 +69,25 @@ describe('quote anchoring', () => {
     )
   })
 
+  it('forgives the whitespace an agent leaves around a copied quote', () => {
+    // A model copying a paragraph often brings a trailing newline, a stray space,
+    // or a line break where the document has a paragraph break.
+    const ydoc = yDocFromMarkdown('# Heading\n\nFirst paragraph here.\n\nSecond paragraph here.\n')
+    const flat = flatten(ydoc.getXmlFragment('content'))
+
+    for (const quote of [
+      'Second paragraph here.\n\n',
+      '   Second paragraph here.   ',
+      'Second\nparagraph here.',
+    ]) {
+      const located = locateQuote(flat, quote)
+      expect(located.ok, JSON.stringify(quote)).toBe(true)
+      if (!located.ok) continue
+      expect(located.matched).toBe('Second paragraph here.')
+      expect(textBetween(ydoc, located.from, located.to)).toBe('Second paragraph here.')
+    }
+  })
+
   it('anchors a range that begins at the end of the document', () => {
     // Regression: appending a paragraph produced a hunk at text.length, which
     // used to anchor to nothing and silently drop the suggestion.

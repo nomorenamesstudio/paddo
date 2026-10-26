@@ -100,36 +100,95 @@ function findForward(flat: FlatText, offset: number, assoc: 0 | -1): Uint8Array 
 }
 
 export type LocateResult =
-  | { ok: true; from: Uint8Array; to: Uint8Array }
+  | { ok: true; from: Uint8Array; to: Uint8Array; matched: string }
   | { ok: false; error: 'not-found' | 'ambiguous'; matches: number[] }
 
-/** Quote-anchored wire format: the agent copies text, never counts offsets. */
-export function locateQuote(flat: FlatText, quote: string): LocateResult {
-  const matches: number[] = []
-  let at = flat.text.indexOf(quote)
-  while (at !== -1) {
-    matches.push(at)
-    at = flat.text.indexOf(quote, at + 1)
+/** Whitespace-collapsed copy of the flat text, with a map back to its offsets. */
+function collapse(flat: FlatText): { text: string; offsets: number[] } {
+  let text = ''
+  const offsets: number[] = []
+  let lastWasSpace = false
+
+  for (let index = 0; index < flat.text.length; index += 1) {
+    const char = flat.text[index] as string
+    if (/\s/.test(char)) {
+      if (lastWasSpace) continue
+      lastWasSpace = true
+      text += ' '
+      offsets.push(index)
+      continue
+    }
+    lastWasSpace = false
+    text += char
+    offsets.push(index)
   }
 
-  if (matches.length === 0) return { ok: false, error: 'not-found', matches }
+  return { text, offsets }
+}
+
+/**
+ * Quote-anchored wire format: the agent copies text, never counts offsets.
+ *
+ * Agents are careless about the edges of a copy — trailing newlines, a stray
+ * space, a line break where the document has a paragraph break. Trimming and a
+ * whitespace-collapsed second pass turn those into a match instead of a refusal,
+ * and the text actually matched is returned so the stored hunk can be verified.
+ */
+export function locateQuote(flat: FlatText, quote: string): LocateResult {
+  const needle = quote.trim()
+  if (needle === '') return { ok: false, error: 'not-found', matches: [] }
+
+  const matches: number[] = []
+  let at = flat.text.indexOf(needle)
+  while (at !== -1) {
+    matches.push(at)
+    at = flat.text.indexOf(needle, at + 1)
+  }
+
+  if (matches.length === 0) {
+    // Second chance: same words, different whitespace.
+    const collapsed = collapse(flat)
+    const collapsedNeedle = needle.replace(/\s+/g, ' ')
+    const collapsedMatches: number[] = []
+    let hit = collapsed.text.indexOf(collapsedNeedle)
+    while (hit !== -1) {
+      collapsedMatches.push(hit)
+      hit = collapsed.text.indexOf(collapsedNeedle, hit + 1)
+    }
+
+    if (collapsedMatches.length === 0) return { ok: false, error: 'not-found', matches }
+    if (collapsedMatches.length > 1) {
+      return { ok: false, error: 'ambiguous', matches: collapsedMatches }
+    }
+
+    const startOffset = collapsed.offsets[collapsedMatches[0] as number] as number
+    const endOffset = collapsed.offsets[(collapsedMatches[0] as number) + collapsedNeedle.length - 1] as number
+    return anchorsFor(flat, startOffset, endOffset + 1)
+  }
+
   if (matches.length > 1) return { ok: false, error: 'ambiguous', matches }
 
   const start = matches[0] as number
+  return anchorsFor(flat, start, start + needle.length)
+}
+
+function anchorsFor(flat: FlatText, start: number, endExclusive: number): LocateResult {
+  // Never start or end on a synthetic separator: it has no anchor to hold on to.
+  while (start < endExclusive && !flat.chars[start]) start += 1
+  while (endExclusive > start && !flat.chars[endExclusive - 1]) endExclusive -= 1
+  if (start >= endExclusive) return { ok: false, error: 'not-found', matches: [] }
+
+  const matched = flat.text.slice(start, endExclusive)
   const from = encodeAt(flat, start, 0)
+  const last = flat.chars[endExclusive - 1]
+  if (!from || !last) return { ok: false, error: 'not-found', matches: [] }
+
   // End-exclusive: the position after the last character, associated backwards.
-  const to = encodeAt(flat, start + quote.length - 1, 0)
-  if (!from || !to) return { ok: false, error: 'not-found', matches }
+  const to = Y.encodeRelativePosition(
+    Y.createRelativePositionFromTypeIndex(last.node, last.index + 1, -1),
+  )
 
-  const last = flat.chars[start + quote.length - 1]
-  if (!last) return { ok: false, error: 'not-found', matches }
-  const after =
-    last.index + 1 <= last.node.length
-      ? Y.encodeRelativePosition(Y.createRelativePositionFromTypeIndex(last.node, last.index + 1, -1))
-      : null
-  if (!after) return { ok: false, error: 'not-found', matches }
-
-  return { ok: true, from, to: after }
+  return { ok: true, from, to, matched }
 }
 
 export interface ResolvedAnchor {
