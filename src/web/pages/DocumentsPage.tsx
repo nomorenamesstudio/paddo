@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Plus } from 'lucide-react'
 
 import { api, ApiError, type DocumentMeta } from '../api'
 import { navigate } from '../App'
@@ -14,8 +15,8 @@ function when(ms: number): string {
 
 export function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentMeta[] | null>(null)
-  const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -31,23 +32,32 @@ export function DocumentsPage() {
     void load()
   }, [load])
 
-  async function create(event: FormEvent) {
-    event.preventDefault()
-    if (!name.trim()) return
+  async function create() {
+    if (creating) return
+    setCreating(true)
     try {
-      const created = await api.createDocument(name.trim())
-      setName('')
-      navigate(`/d/${created.slug}`)
+      const draft = await api.createDraft()
+      navigate(`/d/${draft.slug}`)
     } catch (problem) {
-      setError(problem instanceof ApiError ? problem.message : 'could not create that document')
+      setError(problem instanceof ApiError ? problem.message : 'could not create a document')
+      setCreating(false)
     }
   }
 
   return (
     <main className="page page--narrow">
-      <header className="masthead">
+      <header className="masthead masthead--row">
         <h1 className="wordmark">Paddō</h1>
-        <p className="muted">Drafts live as plain markdown files on the server.</p>
+        <button
+          className="button button--icon"
+          type="button"
+          onClick={create}
+          disabled={creating}
+          aria-label="New document"
+          title="New document"
+        >
+          <Plus size={20} aria-hidden="true" />
+        </button>
       </header>
 
       {error ? (
@@ -59,14 +69,19 @@ export function DocumentsPage() {
       {documents === null ? (
         <p className="muted">loading…</p>
       ) : documents.length === 0 ? (
-        <p className="muted">Nothing here yet. Start something below.</p>
+        <p className="muted">Nothing here yet. Start something with the plus above.</p>
       ) : (
         <ul className="documents">
           {documents.map((document) => (
             <li key={document.slug}>
-              <a className="documents__row" href={`/d/${document.slug}`} onClick={(event) => intercept(event, document.slug)}>
+              <a
+                className="documents__row"
+                href={`/d/${document.slug}`}
+                onClick={(event) => intercept(event, document.slug)}
+              >
                 <span className="documents__title">{document.title}</span>
                 <span className="documents__meta">
+                  <span className={`status status--${document.status}`}>{document.status}</span>
                   {document.words} {document.words === 1 ? 'word' : 'words'} · {when(document.updatedAt)}
                 </span>
               </a>
@@ -74,22 +89,6 @@ export function DocumentsPage() {
           ))}
         </ul>
       )}
-
-      <form className="newdoc" onSubmit={create}>
-        <label className="field">
-          <span className="field__label">New document</span>
-          <input
-            className="field__input"
-            type="text"
-            placeholder="A working title"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
-        <button className="button" type="submit" disabled={name.trim().length === 0}>
-          Create
-        </button>
-      </form>
     </main>
   )
 }

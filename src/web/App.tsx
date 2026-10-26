@@ -1,6 +1,8 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 
 import { api, ApiError } from './api'
+import { RefreshCw } from 'lucide-react'
+
 import { OpeningSkeleton, humanizeSlug } from './components/OpeningSkeleton'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -68,7 +70,9 @@ export function App() {
                 ←
               </a>
               <h1 className="topbar__title">{humanizeSlug(route.slug)}</h1>
-              <span className="sync sync--connecting">connecting</span>
+              <span className="sync-icon sync-icon--connecting" role="status" aria-label="sync: connecting">
+                <RefreshCw size={16} aria-hidden="true" className="spin" />
+              </span>
             </header>
             <main className="editor">
               <OpeningSkeleton />

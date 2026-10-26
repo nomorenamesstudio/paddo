@@ -104,6 +104,27 @@ export async function writeDocument(config: Config, slug: string, body: string):
   await rename(temp, target)
 }
 
+/**
+ * A draft with no name yet. The heading is the name, so it is written in place
+ * and can be edited like any other heading.
+ */
+export async function createDraft(config: Config): Promise<DocumentMeta> {
+  const base = 'new-draft'
+  let slug = base
+  for (let attempt = 2; attempt < 100; attempt += 1) {
+    try {
+      await stat(pathFor(config, slug))
+      slug = `${base}-${attempt}`
+    } catch {
+      break
+    }
+  }
+
+  await writeDocument(config, slug, '# New draft\n\n')
+  const info = await stat(pathFor(config, slug))
+  return { slug, title: 'New draft', words: 0, updatedAt: info.mtimeMs, bytes: info.size }
+}
+
 export async function createDocument(config: Config, name: string): Promise<DocumentMeta> {
   const slug = slugify(name)
   if (!slug) throw new Error('a document needs a name')

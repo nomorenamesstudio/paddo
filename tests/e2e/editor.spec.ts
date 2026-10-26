@@ -182,6 +182,31 @@ test('a paragraph moves by dragging its grip and comes back with one undo', asyn
   await expect.poll(order).toEqual(before)
 })
 
+test('a new draft is named by its heading, and its status sticks', async ({ page }) => {
+  await signIn(page)
+
+  await page.locator('.masthead--row .button--icon').click()
+  await expect(page.locator('.prose h1')).toHaveText('New draft')
+  await expect(page.locator('.topbar__title')).toHaveText('New draft')
+  const slug = page.url().split('/d/')[1] ?? ''
+  expect(slug).not.toBe('')
+
+  // The heading is the name: type into it and the title follows.
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' about tides')
+  await expect(page.locator('.topbar__title')).toHaveText('New draft about tides')
+
+  await page.selectOption('.status-select', 'published')
+  await expect
+    .poll(async () => {
+      const response = await page.request.get('/api/documents')
+      const body = (await response.json()) as { documents: Array<{ slug: string; status: string }> }
+      return body.documents.find((document) => document.slug === slug)?.status
+    })
+    .toBe('published')
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

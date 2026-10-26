@@ -31,8 +31,9 @@ so a plain edit on the `.md` file behaves exactly like `submit_markdown`.
 | `/api/login` | POST | password body | sets the signed session cookie |
 | `/api/logout` | POST | cookie | clears it |
 | `/api/documents` | GET | cookie or bearer | list `.md` files |
-| `/api/documents` | POST | cookie | create `{ name }` → metadata |
-| `/api/documents/:slug` | GET | cookie | title and markdown source |
+| `/api/documents` | POST | cookie | create: `{ name }` or no body for an untitled draft |
+| `/api/documents/:slug` | GET | cookie | title, markdown source and status |
+| `/api/documents/:slug` | PATCH | cookie | `{ status }`: draft, editing, published or archived |
 | `/api/documents/:slug/suggestions` | GET | cookie or bearer | pending hunks |
 | `/api/documents/:slug/suggestions` | POST | cookie or bearer | ingest `{ edits }` or `{ markdown }` |
 | `/api/documents/:slug/suggestions/:id` | PATCH | cookie | `{ status: "rejected" \| "accepted" }` |

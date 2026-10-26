@@ -5,7 +5,7 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
-import { api } from '../api'
+import { api, STATUSES, type Status } from '../api'
 import { caretRenderer, deviceKind } from '../editor/caret'
 import { createCollab, type Collab } from '../editor/collab'
 import {
@@ -18,7 +18,7 @@ import {
 } from '../editor/actions'
 import { DragPreviewExtension } from '../editor/drag-preview'
 import { Suggestions } from '../editor/suggestions'
-import { Bot, ChevronLeft } from 'lucide-react'
+import { Bot, Check, ChevronLeft, RefreshCw, X } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
 import { OpeningSkeleton } from '../components/OpeningSkeleton'
@@ -54,7 +54,8 @@ export function EditorPage({ slug }: { slug: string }) {
 type SyncState = 'connecting' | 'connected' | 'disconnected'
 
 function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
-  const [title, setTitle] = useState(slug)
+  const [title, setTitle] = useState('New draft')
+  const [status, setStatus] = useState<Status>('draft')
   const [sync, setSync] = useState<SyncState>(collab.provider.isSynced ? 'connected' : 'connecting')
   const [pending, setPending] = useState(0)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -126,19 +127,51 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     handle.__paddoAccept = (id: string) => (editor ? acceptSuggestion(editor, id) : 'no-editor')
   }, [editor, collab])
 
-  // Title, from the first heading once the document is synced.
+  // The document's name is its first heading: type one and the title follows.
+  useEffect(() => {
+    if (!editor) return
+    const readTitle = () => {
+      let found = ''
+      editor.state.doc.descendants((node) => {
+        if (found) return false
+        if (node.type.name === 'heading' && node.attrs.level === 1) {
+          found = node.textContent.trim()
+        }
+        return true
+      })
+      setTitle(found || 'New draft')
+    }
+    readTitle()
+    editor.on('update', readTitle)
+    return () => {
+      editor.off('update', readTitle)
+    }
+  }, [editor])
+
   useEffect(() => {
     let cancelled = false
     void api
       .document(slug)
       .then((document) => {
-        if (!cancelled) setTitle(document.title)
+        if (!cancelled) setStatus(document.status)
       })
       .catch(() => {})
     return () => {
       cancelled = true
     }
   }, [slug])
+
+  const changeStatus = useCallback(
+    async (next: Status) => {
+      setStatus(next)
+      try {
+        await api.setStatus(slug, next)
+      } catch {
+        setNotice('Could not save that status.')
+      }
+    },
+    [slug],
+  )
 
   // Feedback channel for actions that happen inside ProseMirror decorations.
   useEffect(() => {
@@ -227,9 +260,29 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           <ChevronLeft size={22} aria-hidden="true" />
         </a>
         <h1 className="topbar__title">{title}</h1>
-        <span className={`sync sync--${sync}`} title={`sync: ${sync}`}>
-          {sync === 'connected' ? 'synced' : sync}
+        <span className={`sync-icon sync-icon--${sync}`} title={`sync: ${sync}`} role="status" aria-label={`sync: ${sync}`}>
+          {sync === 'connected' ? (
+            <Check size={16} aria-hidden="true" />
+          ) : sync === 'connecting' ? (
+            <RefreshCw size={16} aria-hidden="true" className="spin" />
+          ) : (
+            <X size={16} aria-hidden="true" />
+          )}
         </span>
+        <label className="status-picker">
+          <span className="visually-hidden">Status</span>
+          <select
+            className={`status-select status--${status}`}
+            value={status}
+            onChange={(event) => void changeStatus(event.target.value as Status)}
+          >
+            {STATUSES.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           className="button button--ghost button--icon"
           type="button"

@@ -1,9 +1,13 @@
+export const STATUSES = ['draft', 'editing', 'published', 'archived'] as const
+export type Status = (typeof STATUSES)[number]
+
 export interface DocumentMeta {
   slug: string
   title: string
   words: number
   updatedAt: number
   bytes: number
+  status: Status
 }
 
 export class ApiError extends Error {
@@ -50,7 +54,17 @@ export const api = {
   createDocument: (name: string) =>
     request<DocumentMeta>('/api/documents', { method: 'POST', body: JSON.stringify({ name }) }),
 
-  document: (slug: string) => request<{ slug: string; title: string; markdown: string }>(`/api/documents/${slug}`),
+  /** A document with no name yet: its heading becomes the name. */
+  createDraft: () => request<DocumentMeta>('/api/documents', { method: 'POST' }),
+
+  document: (slug: string) =>
+    request<{ slug: string; title: string; markdown: string; status: Status }>(`/api/documents/${slug}`),
+
+  setStatus: (slug: string, status: Status) =>
+    request<{ slug: string; status: Status }>(`/api/documents/${slug}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
 }
 
 export function websocketUrl(): string {

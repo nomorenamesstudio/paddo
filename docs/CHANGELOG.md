@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-25 — Library chrome: new draft, status flags, one sync icon
+
+**Feature** — the document list loses its subtitle, the wordmark is smaller, and the
+new-document button moves to the top right: one press makes an untitled draft and
+opens it. Its name is its first heading — type one and the list and the top bar
+follow — until then it is "New draft".
+
+**Feature** — every document carries a status: draft, editing, published or archived,
+picked from a small dropdown next to the agent button and shown as a label in the
+list. Stored beside the document (`.paddo/<slug>.meta.json`), so the prose file stays
+plain markdown.
+
+**Feature** — the sync pill is now an icon: green check when synced, orange turning
+sync while connecting, red cross when the socket is gone.
+
 ## 2026-10-25 — Faster open, and a placeholder while it happens
 
 **Feature** — brotli/gzip on the wire (the editor bundle drops from 923 kB to about

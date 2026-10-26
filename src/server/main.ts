@@ -15,6 +15,7 @@ import { createCollab } from './collab'
 import { loadConfig, type Config } from './config'
 import {
   createDocument,
+  createDraft,
   hashOf,
   isValidSlug,
   listDocuments,
@@ -23,6 +24,7 @@ import {
   titleOf,
 } from './documents'
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
+import { isStatus, readAllStatuses, readStatus, writeStatus } from './meta'
 
 try {
   process.loadEnvFile('.env')
@@ -123,18 +125,25 @@ app.post('/api/logout', async (request, reply) => {
 // --- documents --------------------------------------------------------------
 
 app.get('/api/documents', { preHandler: requireSession }, async () => {
-  return { documents: await listDocuments(config) }
+  const documents = await listDocuments(config)
+  const statuses = await readAllStatuses(
+    config,
+    documents.map((document) => document.slug),
+  )
+  return {
+    documents: documents.map((document) => ({
+      ...document,
+      status: statuses.get(document.slug) ?? 'draft',
+    })),
+  }
 })
 
 app.post('/api/documents', { preHandler: requireSession }, async (request, reply) => {
   const body = request.body as { name?: unknown } | undefined
   const name = typeof body?.name === 'string' ? body.name.trim() : ''
-  if (!name) {
-    reply.code(400).send({ error: 'a document needs a name' })
-    return
-  }
   try {
-    return await createDocument(config, name)
+    // No name: an untitled draft, named by whatever heading the writer types.
+    return name ? await createDocument(config, name) : await createDraft(config)
   } catch (error) {
     reply.code(409).send({ error: (error as Error).message })
     return
@@ -149,11 +158,40 @@ app.get('/api/documents/:slug', { preHandler: requireSession }, async (request, 
   }
   try {
     const markdown = await readDocument(config, slug)
-    return { slug, title: titleOf(markdown, slug), markdown }
+    return {
+      slug,
+      title: titleOf(markdown, slug),
+      markdown,
+      status: await readStatus(config, slug),
+    }
   } catch {
     reply.code(404).send({ error: 'no such document' })
     return
   }
+})
+
+app.patch('/api/documents/:slug', { preHandler: requireSession }, async (request, reply) => {
+  const { slug } = request.params as { slug: string }
+  if (!isValidSlug(slug)) {
+    reply.code(400).send({ error: 'invalid document name' })
+    return
+  }
+
+  const body = request.body as { status?: unknown } | undefined
+  if (!isStatus(body?.status)) {
+    reply.code(400).send({ error: 'status must be draft, editing, published or archived' })
+    return
+  }
+
+  try {
+    await readDocument(config, slug)
+  } catch {
+    reply.code(404).send({ error: 'no such document' })
+    return
+  }
+
+  await writeStatus(config, slug, body.status)
+  return { slug, status: body.status }
 })
 
 // --- suggestions ------------------------------------------------------------
