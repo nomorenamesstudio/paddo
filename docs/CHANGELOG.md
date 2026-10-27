@@ -2,6 +2,14 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — Flat chrome in the header
+
+**Feature** — direction A, wired in: the sheet drops its hairline (a soft shadow does the
+lifting), the search becomes a well rather than a framed pill — `--well`, a 4% ink tint in
+light and a 22% black recess in dark, no border at all — and the two buttons in the bar go
+borderless and muted until hover. The sheet is the only outlined object in the bar, so the
+wordmark is the one strong mark in it.
+
 ## 2026-10-27 — The header is a floating sheet
 
 **Feature** — the sticky header is a sheet of paper now: near-white
