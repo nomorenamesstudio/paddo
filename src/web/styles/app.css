@@ -173,14 +173,14 @@ a {
   /* Keeps the air after the wordmark equal to the air before it. Specific enough to
      beat the base .wordmark rule further down the file. */
   .masthead--row .wordmark {
-    margin-right: 0.5rem;
+    margin-right: 0.95rem;
   }
 }
 
 .wordmark {
   /* The heading holds nothing but the drawing: no font, no line box, so the SVG's
      own height is the heading's height and it centres with the rest of the row. */
-  margin: 0 0.3rem 0 0;
+  margin: 0 0.6rem 0 0;
   font-size: 0;
   line-height: 0;
   letter-spacing: normal;

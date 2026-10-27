@@ -10,10 +10,11 @@ not padded element rects):
 | | outer left | logo → well | well → gear | gear → plus | outer right |
 |---|---|---|---|---|---|
 | desktop | 17.8 | 12.7 | 17.5 | 20.6 | 18.4 |
-| phone | 14.0 | 9.9 | 17.6 | — (FAB) | 15.2 |
+| phone | 14.0 | 17.3 | 17.6 | — (FAB) | 15.2 |
 
-The row gap dropped to 0.45rem (0.1 on a phone) and the wordmark keeps 0.3rem of its own, so
-the field no longer floats away from the gear while the logo suffocates. On the phone the sheet
+The row gap dropped to 0.45rem (0.1 on a phone) and the wordmark carries 0.6rem of its own
+(0.95 on a phone), so the two gaps either side of the well measure 17.8 / 17.5 on desktop and
+17.3 / 17.6 on a phone — optically even. On the phone the sheet
 keeps 11.9px of air above and below the well.
 
 **Fix** — a tap left the settings button wearing its hover fill: that fill is now behind
