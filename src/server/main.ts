@@ -11,10 +11,11 @@ import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
 
 import { SUGGESTIONS_MAP, type Suggestion } from '../shared/suggestions'
 import { constantTimeEquals, createSession, LoginThrottle, readCookie, SESSION_COOKIE, SESSION_TTL_MS, verifySession } from './auth'
-import { createCollab } from './collab'
+import { createCollab, markdownFromYDoc } from './collab'
 import { loadConfig, type Config } from './config'
 import {
   createDocument,
+  createDocumentWithMarkdown,
   createDraft,
   deleteSidecar,
   hashOf,
@@ -29,6 +30,17 @@ import {
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
 import { isStatus, readAllStatuses, readStatus, removeStatus, writeStatus } from './meta'
 import { normalizeSettings, readSettings, writeSettings } from './settings'
+import {
+  allows,
+  grantDocument,
+  listTokens,
+  mintToken,
+  normalizeMint,
+  revokeToken,
+  verifyToken,
+  type AgentToken,
+  type Verb,
+} from './tokens'
 
 try {
   process.loadEnvFile('.env')
@@ -62,22 +74,65 @@ function hasSession(request: FastifyRequest): boolean {
   return verifySession(config.secret, readCookie(request.headers.cookie, SESSION_COOKIE))
 }
 
-function hasToken(request: FastifyRequest): boolean {
+function bearer(request: FastifyRequest): string | undefined {
   const header = request.headers.authorization
-  if (!header?.startsWith('Bearer ')) return false
-  return constantTimeEquals(header.slice(7), config.token)
+  return header?.startsWith('Bearer ') ? header.slice(7) : undefined
+}
+
+/** `PADDO_TOKEN` is the machine's own key: every verb, every document. */
+const ENV_TOKEN: AgentToken = {
+  id: 'env',
+  name: 'environment token',
+  hash: '',
+  verbs: ['read', 'propose', 'create'],
+  documents: '*',
+  createdAt: 0,
+}
+
+type Principal = { kind: 'session' } | { kind: 'agent'; token: AgentToken }
+
+async function principalOf(request: FastifyRequest): Promise<Principal | null> {
+  if (hasSession(request)) return { kind: 'session' }
+  const secret = bearer(request)
+  if (!secret) return null
+  if (constantTimeEquals(secret, config.token)) return { kind: 'agent', token: ENV_TOKEN }
+  const token = await verifyToken(config, secret)
+  return token ? { kind: 'agent', token } : null
 }
 
 function isAuthorised(request: FastifyRequest): boolean {
-  return hasSession(request) || hasToken(request)
+  if (hasSession(request)) return true
+  const secret = bearer(request)
+  return Boolean(secret && constantTimeEquals(secret, config.token))
 }
 
+/** The browser UI (settings, status, delete, tokens) is the owner's alone. */
 function requireSession(request: FastifyRequest, reply: FastifyReply, done: () => void) {
-  if (!isAuthorised(request)) {
+  if (!hasSession(request)) {
     reply.code(401).send({ error: 'unauthorised' })
     return
   }
   done()
+}
+
+/**
+ * An agent route: a session passes freely, a token needs the verb and, when the
+ * route names a document, that document in its scope.
+ */
+function guard(verb: Verb | 'any') {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const principal = await principalOf(request)
+    if (!principal) return reply.code(401).send({ error: 'unauthorised' })
+    if (principal.kind === 'session') return
+    const { token } = principal
+    if (verb !== 'any' && !token.verbs.includes(verb)) {
+      return reply.code(403).send({ error: `this token cannot ${verb}` })
+    }
+    const slug = (request.params as { slug?: string } | undefined)?.slug
+    if (slug && !allows(token, verb === 'any' ? 'read' : verb, slug)) {
+      return reply.code(403).send({ error: `this token has no access to ${slug}` })
+    }
+  }
 }
 
 function clientKey(request: FastifyRequest): string {
@@ -128,8 +183,12 @@ app.post('/api/logout', async (request, reply) => {
 
 // --- documents --------------------------------------------------------------
 
-app.get('/api/documents', { preHandler: requireSession }, async () => {
-  const documents = await listDocuments(config)
+app.get('/api/documents', { preHandler: guard('read') }, async (request) => {
+  const principal = await principalOf(request)
+  const visible = (slug: string) =>
+    principal?.kind !== 'agent' || principal.token.documents === '*' || principal.token.documents.includes(slug)
+
+  const documents = (await listDocuments(config)).filter((document) => visible(document.slug))
   const statuses = await readAllStatuses(
     config,
     documents.map((document) => document.slug),
@@ -142,19 +201,69 @@ app.get('/api/documents', { preHandler: requireSession }, async () => {
   }
 })
 
-app.post('/api/documents', { preHandler: requireSession }, async (request, reply) => {
-  const body = request.body as { name?: unknown } | undefined
+app.post('/api/documents', { preHandler: guard('create') }, async (request, reply) => {
+  const body = request.body as { name?: unknown; markdown?: unknown } | undefined
   const name = typeof body?.name === 'string' ? body.name.trim() : ''
+  const markdown = typeof body?.markdown === 'string' ? body.markdown : undefined
+
   try {
     // No name: an untitled draft, named by whatever heading the writer types.
-    return name ? await createDocument(config, name) : await createDraft(config)
+    const created = markdown
+      ? await createDocumentWithMarkdown(config, name, markdown)
+      : name
+        ? await createDocument(config, name)
+        : await createDraft(config)
+
+    const principal = await principalOf(request)
+    if (principal?.kind === 'agent') {
+      // Dropped in by an agent: it goes on the token's list, so the file is not
+      // born outside the scope the agent can read back.
+      await grantDocument(config, principal.token.id, created.slug)
+    }
+    return created
   } catch (error) {
     reply.code(409).send({ error: (error as Error).message })
     return
   }
 })
 
-app.get('/api/documents/:slug', { preHandler: requireSession }, async (request, reply) => {
+// The exact file, for a download or for an agent taking the text away with it.
+app.get('/api/documents/:slug/raw', { preHandler: guard('read') }, async (request, reply) => {
+  const { slug } = request.params as { slug: string }
+  if (!isValidSlug(slug)) {
+    reply.code(400).send({ error: 'invalid document name' })
+    return
+  }
+
+  // The live room is ahead of the file by the store debounce; a download should be
+  // what the writer sees, not what the last save left behind.
+  let markdown: string | null = null
+  try {
+    const connection = await openDocument(slug)
+    try {
+      if (connection.document) markdown = markdownFromYDoc(connection.document)
+    } finally {
+      await connection.disconnect()
+    }
+  } catch {
+    // No room: fall through to the file.
+  }
+
+  if (markdown === null) {
+    try {
+      markdown = await readDocument(config, slug)
+    } catch {
+      reply.code(404).send({ error: 'no such document' })
+      return
+    }
+  }
+
+  reply.header('content-type', 'text/markdown; charset=utf-8')
+  reply.header('content-disposition', `attachment; filename="${slug}.md"`)
+  return markdown
+})
+
+app.get('/api/documents/:slug', { preHandler: guard('read') }, async (request, reply) => {
   const { slug } = request.params as { slug: string }
   if (!isValidSlug(slug)) {
     reply.code(400).send({ error: 'invalid document name' })
@@ -241,7 +350,7 @@ async function openDocument(slug: string) {
   return collab.server.hocuspocus.openDirectConnection(slug, {})
 }
 
-app.get('/api/documents/:slug/suggestions', { preHandler: requireSession }, async (request, reply) => {
+app.get('/api/documents/:slug/suggestions', { preHandler: guard('read') }, async (request, reply) => {
   const { slug } = request.params as { slug: string }
   if (!isValidSlug(slug)) {
     reply.code(400).send({ error: 'invalid document name' })
@@ -266,7 +375,7 @@ app.get('/api/documents/:slug/suggestions', { preHandler: requireSession }, asyn
   }
 })
 
-app.post('/api/documents/:slug/suggestions', { preHandler: requireSession }, async (request, reply) => {
+app.post('/api/documents/:slug/suggestions', { preHandler: guard('propose') }, async (request, reply) => {
   const { slug } = request.params as { slug: string }
   if (!isValidSlug(slug)) {
     reply.code(400).send({ error: 'invalid document name' })
@@ -295,7 +404,7 @@ app.post('/api/documents/:slug/suggestions', { preHandler: requireSession }, asy
 
 app.patch(
   '/api/documents/:slug/suggestions/:id',
-  { preHandler: requireSession },
+  { preHandler: guard('propose') },
   async (request, reply) => {
     const { slug, id } = request.params as { slug: string; id: string }
     const body = request.body as { status?: unknown } | undefined
@@ -329,6 +438,33 @@ app.patch(
     }
   },
 )
+
+// --- agent tokens -----------------------------------------------------------
+
+app.get('/api/tokens', { preHandler: requireSession }, async () => ({ tokens: await listTokens(config) }))
+
+app.post('/api/tokens', { preHandler: requireSession }, async (request, reply) => {
+  let input
+  try {
+    input = normalizeMint(request.body)
+  } catch (problem) {
+    reply.code(400).send({ error: problem instanceof Error ? problem.message : 'invalid token' })
+    return
+  }
+  const minted = await mintToken(config, input)
+  // The secret exists in this response and nowhere else.
+  return minted
+})
+
+app.delete('/api/tokens/:id', { preHandler: requireSession }, async (request, reply) => {
+  const { id } = request.params as { id: string }
+  const revoked = await revokeToken(config, id)
+  if (!revoked) {
+    reply.code(404).send({ error: 'no such token' })
+    return
+  }
+  return { id, revoked: true }
+})
 
 // --- file watch: an agent that just edits the .md still proposes -------------
 

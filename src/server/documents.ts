@@ -154,6 +154,32 @@ export async function createDocument(config: Config, name: string): Promise<Docu
   return { slug, title, words: 0, updatedAt: info.mtimeMs, bytes: info.size }
 }
 
+/**
+ * A document that arrives with its text — an agent dropping a draft in. The heading
+ * is taken from the markdown when there is one; the name is the fallback.
+ */
+export async function createDocumentWithMarkdown(
+  config: Config,
+  name: string,
+  markdown: string,
+): Promise<DocumentMeta> {
+  const body = normalizeMarkdown(markdown)
+  const title = titleOf(body, slugify(name) || 'untitled')
+  const slug = slugify(title) || slugify(name)
+  if (!slug) throw new Error('a document needs a name or a heading')
+
+  try {
+    await stat(pathFor(config, slug))
+    throw new Error(`document already exists: ${slug}`)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  }
+
+  await writeDocument(config, slug, body)
+  const info = await stat(pathFor(config, slug))
+  return { slug, title, words: wordCount(body), updatedAt: info.mtimeMs, bytes: info.size }
+}
+
 /** A title turned into a filename: the writer will see this on disk. */
 export async function freeSlug(config: Config, wanted: string, keep?: string): Promise<string> {
   const base = slugify(wanted) || 'untitled'

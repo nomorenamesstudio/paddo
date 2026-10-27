@@ -6,6 +6,7 @@ import * as Y from 'yjs'
 
 import { CONTENT_FIELD, markdown, schema } from '../shared/editor'
 import { constantTimeEquals, readCookie, SESSION_COOKIE, verifySession } from './auth'
+import { allows, verifyToken } from './tokens'
 import type { Config } from './config'
 import {
   freeSlug,
@@ -43,8 +44,17 @@ export function createCollab(config: Config) {
       // A machine client cannot send a cookie, and its token may ride either the
       // upgrade query string or the protocol's auth message.
       const queryToken = requestParameters.get('token')
-      if (token && constantTimeEquals(token, config.token)) return { user: 'token' }
-      if (queryToken && constantTimeEquals(queryToken, config.token)) return { user: 'token' }
+      const offered = token ?? queryToken ?? ''
+      if (offered && constantTimeEquals(offered, config.token)) return { user: 'token' }
+
+      // A minted token with read access to this document may join the room; the
+      // scope is checked here, against the room it actually asks for.
+      if (offered) {
+        const minted = await verifyToken(config, offered)
+        if (minted && allows(minted, 'read', documentName)) {
+          return { user: 'token', token: minted.id }
+        }
+      }
 
       throw new Error('unauthorized')
     },

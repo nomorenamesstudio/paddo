@@ -108,6 +108,47 @@ server.registerTool(
 )
 
 server.registerTool(
+  'create_document',
+  {
+    title: 'Create a document',
+    description:
+      'Drop a new markdown document into Paddō. The heading in the markdown names it. Fails if a document with that name already exists — it never overwrites. Use this to hand a draft to the writer; edits to it afterwards go through propose_edits.',
+    inputSchema: {
+      markdown: z.string().describe('The complete document in markdown, starting with its # heading'),
+      name: z.string().optional().describe('Fallback name when the markdown has no heading'),
+    },
+  },
+  async ({ markdown, name }) => {
+    const result = await call('/api/documents', {
+      method: 'POST',
+      body: JSON.stringify({ markdown, name }),
+    })
+    return text(result)
+  },
+)
+
+server.registerTool(
+  'export_document',
+  {
+    title: 'Export a document',
+    description:
+      'The document exactly as it stands on disk, with no commentary: what the writer sees in the editor, ready to save into a site or a repo. Pending suggestions are not included.',
+    inputSchema: {
+      document: z.string().describe('Document slug'),
+    },
+  },
+  async ({ document }) => {
+    const response = await fetch(`${baseUrl}/api/documents/${encodeURIComponent(document)}/raw`, {
+      headers: { authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) {
+      throw new Error(`Paddō ${response.status}: ${await response.text()}`)
+    }
+    return text(await response.text())
+  },
+)
+
+server.registerTool(
   'submit_markdown',
   {
     title: 'Submit rewritten markdown',

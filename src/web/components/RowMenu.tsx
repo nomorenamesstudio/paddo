@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Archive, ArchiveRestore, MoreVertical, Trash2 } from 'lucide-react'
 
 import { api, type DocumentMeta, type Status } from '../api'
 import { StatusIcon, statusLabel } from './StatusIcon'
+import { useMenu } from './useMenu'
 
 /** The statuses a document can hold while it is still in the list. */
 const STATUS_CHOICES: Status[] = ['draft', 'editing', 'published']
@@ -19,26 +20,9 @@ export function RowMenu({
   entry: DocumentMeta
   onChanged: () => void
 }) {
-  const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
-  const root = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onPointerDown = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false)
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown, true)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown, true)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+  const { open, setOpen, root } = useMenu()
 
   useEffect(() => {
     if (!confirming) return

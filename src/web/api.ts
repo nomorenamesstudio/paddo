@@ -38,6 +38,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T
 }
 
+export const VERBS = ['read', 'propose', 'create'] as const
+export type Verb = (typeof VERBS)[number]
+
+export interface AgentToken {
+  id: string
+  name: string
+  verbs: Verb[]
+  /** `'*'` or the slugs this token may touch. */
+  documents: '*' | string[]
+  createdAt: number
+  lastUsedAt?: number
+}
+
 export interface Settings {
   writingGuide: string
   theme: 'system' | 'light' | 'dark'
@@ -75,6 +88,20 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(settings),
     }),
+
+  /** The file as it stands, live edits included: what a download should contain. */
+  rawUrl: (slug: string) => `/api/documents/${slug}/raw`,
+
+  tokens: () => request<{ tokens: AgentToken[] }>('/api/tokens'),
+
+  mintToken: (input: { name: string; verbs: Verb[]; documents: '*' | string[] }) =>
+    request<{ token: AgentToken; secret: string }>('/api/tokens', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  revokeToken: (id: string) =>
+    request<{ id: string; revoked: boolean }>(`/api/tokens/${id}`, { method: 'DELETE' }),
 
   setStatus: (slug: string, status: Status) =>
     request<{ slug: string; status: Status }>(`/api/documents/${slug}`, {

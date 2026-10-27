@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, request, test, type Page } from '@playwright/test'
 
 /**
  * The integration contract nothing else covers: a person signs in, types, an
@@ -283,7 +283,8 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   const slug = await createDocument(page, `Guide check ${Date.now()}`)
   await page.goto(`/d/${slug}`)
   await page.locator('.prose h1').first().waitFor()
-  await page.getByRole('button', { name: 'Invite the agent' }).click()
+  await page.locator('.editor-menu__trigger').click()
+  await page.getByRole('menuitem', { name: 'Invite the agent' }).click()
   const sheet = page.locator('.sheet')
   await expect(sheet).toBeVisible()
   const sheetBox = await sheet.boundingBox()
@@ -307,7 +308,8 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   await expect(page.locator('.notice--info')).toHaveCount(0)
   await page.reload()
   await page.locator('.prose h1').first().waitFor()
-  await page.getByRole('button', { name: 'Invite the agent' }).click()
+  await page.locator('.editor-menu__trigger').click()
+  await page.getByRole('menuitem', { name: 'Invite the agent' }).click()
   await expect(page.locator('.notice--info')).toHaveCount(0)
   await page.getByRole('button', { name: 'Show the note about how this works' }).click()
   await expect(page.locator('.notice--info')).toBeVisible()
@@ -458,7 +460,8 @@ test('no serious accessibility violations on the main surfaces', async ({ page }
   await page.waitForTimeout(300)
   await audit('editor')
 
-  await page.getByRole('button', { name: 'Invite the agent' }).click()
+  await page.locator('.editor-menu__trigger').click()
+  await page.getByRole('menuitem', { name: 'Invite the agent' }).click()
   await expect(page.locator('.sheet')).toBeVisible()
   await audit('invite sheet')
 
@@ -467,6 +470,69 @@ test('no serious accessibility violations on the main surfaces', async ({ page }
     document.documentElement.dataset.theme = 'dark'
   })
   await audit('invite sheet, dark')
+})
+
+test('the document menu offers the invitation and the file itself', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Download ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  await page.locator('.editor-menu__trigger').click()
+  const panel = page.locator('.editor-menu .row-menu__panel')
+  await expect(panel).toBeVisible()
+  await expect(panel.getByRole('menuitem')).toHaveText(['Invite the agent', 'Download markdown'])
+
+  // The anchor has to carry the real file, named after the document.
+  const download = page.waitForEvent('download')
+  await panel.getByRole('menuitem', { name: 'Download markdown' }).click()
+  const file = await download
+  expect(file.suggestedFilename()).toBe(`${slug}.md`)
+  const path = await file.path()
+  expect(path).not.toBeNull()
+  expect(await readFile(path!, 'utf8')).toContain('# Download ')
+})
+
+test('a scoped token reaches its own documents and nothing else', async ({ page, baseURL }) => {
+  await signIn(page)
+  const mine = await createDocument(page, `Mine ${Date.now()}`)
+  const other = await createDocument(page, `Other ${Date.now()}`)
+
+  const minted = await page.request.post('/api/tokens', {
+    data: { name: 'scoped agent', verbs: ['read', 'propose', 'create'], documents: [mine] },
+  })
+  expect(minted.ok()).toBe(true)
+  const { secret } = (await minted.json()) as { secret: string }
+
+  // A bare context: page.request would carry the session cookie, and the owner's
+  // own session is allowed everything — the token has to be judged on its own.
+  const agent = await request.newContext({
+    baseURL,
+    extraHTTPHeaders: { authorization: `Bearer ${secret}` },
+  })
+  try {
+    expect((await agent.get(`/api/documents/${mine}`)).status()).toBe(200)
+    expect((await agent.get(`/api/documents/${other}`)).status()).toBe(403)
+
+    // The list is filtered, not merely guarded.
+    const listed = (await (await agent.get('/api/documents')).json()) as {
+      documents: Array<{ slug: string }>
+    }
+    expect(listed.documents.map((document) => document.slug)).toEqual([mine])
+
+    // A document the token creates joins its scope, so it can read it back.
+    const created = await agent.post('/api/documents', {
+      data: { markdown: `# Dropped by agent ${Date.now()}\n\nBody.\n` },
+    })
+    expect(created.ok()).toBe(true)
+    const { slug: dropped } = (await created.json()) as { slug: string }
+    expect((await agent.get(`/api/documents/${dropped}`)).status()).toBe(200)
+
+    // Token management is the owner's screen alone.
+    expect((await agent.get('/api/tokens')).status()).toBe(401)
+  } finally {
+    await agent.dispose()
+  }
 })
 
 test('a websocket without a session is refused', async ({ browser }) => {

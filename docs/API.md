@@ -12,6 +12,8 @@ The agent connects to `paddo-mcp` (`pnpm mcp`) over stdio. It reads `PADDO_URL` 
 | `propose_edits` | `{ document, edits: [{ original, proposed, rationale? }], rationale? }` | `{ created: [{ id, kind, original, proposed }], errors: [] }` |
 | `submit_markdown` | `{ document, markdown, rationale? }` | the hunks produced by the server-side diff |
 | `pending_suggestions` | `{ document }` | hunks still awaiting a human decision |
+| `create_document` | `{ markdown, name? }` | the new `{ slug, title, words }`; refuses an existing name |
+| `export_document` | `{ document }` | the exact markdown, no commentary: what a download contains |
 
 `propose_edits` is the primary path. `original` must be a verbatim substring of the
 current document. A substring that occurs more than once is refused, so the agent
@@ -30,9 +32,13 @@ so a plain edit on the `.md` file behaves exactly like `submit_markdown`.
 | `/api/session` | GET | none | `{ authenticated }` for the UI |
 | `/api/login` | POST | password body | sets the signed session cookie |
 | `/api/logout` | POST | cookie | clears it |
-| `/api/documents` | GET | cookie or bearer | list `.md` files |
-| `/api/documents` | POST | cookie | create: `{ name }` or no body for an untitled draft |
-| `/api/documents/:slug` | GET | cookie | title, markdown source and status |
+| `/api/documents` | GET | cookie or bearer | list `.md` files (a scoped token sees only its own) |
+| `/api/documents` | POST | cookie, or token with `create` | create: `{ name }`, `{ markdown, name? }`, or no body for an untitled draft |
+| `/api/documents/:slug` | GET | cookie or bearer | title, markdown source and status |
+| `/api/documents/:slug/raw` | GET | cookie or bearer | the markdown as `text/markdown`, `attachment; filename="<slug>.md"`, live edits included |
+| `/api/tokens` | GET | cookie | minted agent tokens, without their hashes |
+| `/api/tokens` | POST | cookie | mint: `{ name, verbs, documents }` → `{ token, secret }`, the secret shown once |
+| `/api/tokens/:id` | DELETE | cookie | revoke |
 | `/api/documents/:slug` | PATCH | cookie | `{ status }`: draft, editing, published or archived |
 | `/api/documents/:slug` | DELETE | cookie | removes the markdown, the sidecar and the status |
 | `/api/settings` | GET | cookie | `{ writingGuide, theme }` |
@@ -49,8 +55,19 @@ Auth rules:
   is no session store.
 - The shared password is compared in constant time and throttled to five attempts a
   minute per address.
-- The bearer token (`PADDO_TOKEN`) is accepted on the document and suggestion routes
-  and on the WebSocket upgrade. It is never accepted on `/api/login`.
+- Two kinds of bearer token are accepted on the document and suggestion routes and on
+  the WebSocket upgrade, never on `/api/login`:
+  - `PADDO_TOKEN` from the environment — the machine's own key: every verb, every
+    document.
+  - A **minted token** (`paddo_…`): the verbs it holds (`read`, `propose`, `create`)
+    and the documents in its scope (`"*"` or a list of slugs). Only the SHA-256 of
+    the secret is stored; the secret itself is returned once, by `POST /api/tokens`.
+- A minted token is judged on its own: an out-of-scope slug is `403`, a missing verb
+  is `403`, a session-only route (`/api/tokens`, settings, status, delete) is `401`.
+  A request carrying both a session cookie and a token is the owner's session, and
+  gets everything, which is why a token test has to use a cookie-free client.
+- Creating a document with a token adds that document to the token's scope, so an
+  agent can read back what it dropped in.
 - A WebSocket upgrade without a valid cookie or token is refused at the socket with
   a 401; `onAuthenticate` checks again once the protocol starts.
 - The server refuses to boot without `PADDO_PASSWORD`, `PADDO_SECRET` and

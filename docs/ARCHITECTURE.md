@@ -83,6 +83,29 @@ when another document already holds the name, which is why untitled drafts settl
 The catch: an old `/d/new-draft-6` bookmark 404s after the rename. The list always links
 to the current name.
 
+## The agent connects to a token, not to a document
+
+A persistent agent is not a session with its own socket. `paddo-mcp` is a stdio
+process the harness keeps alive, and it calls the HTTP API on demand — "edit my
+case study" works whenever the writer says it, because the tools can list and read
+documents then.
+
+What makes that safe is the token, not the connection:
+
+- A token carries verbs (`read`, `propose`, `create`) and a document scope, and the
+  server enforces both on every request. The scope is the blast radius, so revoking
+  a token is a complete answer to a leaked one.
+- The agent adds text one of two ways. `create_document` writes a new file outright
+  and joins the token's scope; everything else goes through `propose_edits`, which
+  lands as hunks a human accepts. That split is deliberate: an agent may put a draft
+  in, it may never silently rewrite prose that already exists.
+- Nothing pushes. MCP tools are request/response, so a server cannot wake a model
+  when a document changes. An agent that needs to know what changed asks on its next
+  call. A pull is enough because the writer is the one who decides when to ask.
+- The file watcher still exists for an agent that edits `.md` on disk by hand: the
+  diff becomes suggestions. It is a fallback, never the intended path, because a
+  direct write races the CRDT store.
+
 ## Traps found the hard way
 
 Each of these cost time during the build, and each is guarded by code or a test.

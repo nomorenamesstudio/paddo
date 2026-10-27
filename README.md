@@ -47,15 +47,30 @@ install for now (see [docs/SETUP.md](docs/SETUP.md)).
 
 ## Working with the agent
 
-1. In the editor, press **Invite agent**, type what you want changed, and copy the prompt.
+Two ways to work with it:
+
+**A one-time check** — in the editor, open the document menu (⋮) and press
+**Invite the agent**. Type what you want changed and copy the prompt.
 2. Paste it into your own agent session. It needs Paddō's MCP server:
 
    ```bash
    PADDO_URL=http://<host>:4319 PADDO_TOKEN=<from .env> pnpm mcp
    ```
 
-3. The agent reads the document, sends hunks, and they appear inline. Review them
-   on whichever device is at hand; accepting writes the `.md` file.
+The agent reads the document, sends hunks, and they appear inline. Review them on
+whichever device is at hand; accepting writes the `.md` file.
+
+**A connected agent** — mint a token in Settings → *Agent tokens* (verbs, and either
+every document or a list of them), then give it to the agent:
+
+```bash
+PADDO_URL=http://<host>:4319 PADDO_TOKEN=paddo_… pnpm mcp
+```
+
+From then on any "edit my case study" in that harness session can list, read and
+propose against the documents the token covers — no invitation sheet. It can also
+drop a new markdown file in (`create_document`) and take one out (`export_document`,
+or **Download markdown** in the document menu).
 
 Paddō never runs a model. It never writes text the agent asked for without your
 accept, and the agent never touches the file.

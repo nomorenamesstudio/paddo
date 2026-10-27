@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, Monitor, Moon, Sun } from 'lucide-react'
 
 import { api, ApiError, type Settings } from '../api'
+import { AgentTokens } from '../components/AgentTokens'
 import { TopBar } from '../components/TopBar'
 import { applyTheme, THEMES, type Theme } from '../theme'
 
@@ -145,6 +146,8 @@ export function SettingsPage() {
 
           {error ? <p className="notice notice--error">{error}</p> : null}
         </section>
+
+        <AgentTokens />
       </main>
     </>
   )

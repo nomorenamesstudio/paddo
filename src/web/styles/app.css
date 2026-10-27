@@ -1546,6 +1546,13 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   cursor: pointer;
 }
 
+.row-menu__item,
+.row-menu__item:visited {
+  /* Also used for the download link, which is an anchor. */
+  text-decoration: none;
+  color: var(--fg);
+}
+
 .row-menu__item:hover,
 .row-menu__item:focus-visible {
   background: var(--accent-soft);
@@ -1555,6 +1562,19 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 .row-menu__item:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.editor-menu .row-menu__trigger {
+  /* The bar's own button sizing, not the list row's. */
+  min-width: 1.9rem;
+  color: var(--muted);
+  opacity: 1;
+}
+
+.editor-menu .row-menu__panel {
+  top: calc(100% + 0.45rem);
+  min-width: 12rem;
+  z-index: 45;
 }
 
 .row-menu__item--danger {
@@ -1785,6 +1805,145 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+/* --- agent tokens --------------------------------------------------------- */
+
+.tokens__form {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  justify-items: start;
+}
+
+.tokens__field {
+  display: grid;
+  gap: 0.3rem;
+  width: min(24rem, 100%);
+}
+
+.tokens__label {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tokens__input {
+  min-height: 2.4rem;
+  padding: 0 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--fg);
+  background: var(--well);
+  border: 1px solid transparent;
+  border-radius: var(--radius-inner);
+}
+
+.tokens__group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.tokens__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+}
+
+.tokens__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--fg);
+}
+
+.tokens__documents {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  padding-left: 0.2rem;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.tokens__secret {
+  margin-top: 1rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--well);
+  border-radius: var(--radius-inner);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+}
+
+.tokens__secret p {
+  margin: 0 0 0.5rem;
+}
+
+.tokens__secretrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tokens__code {
+  flex: 1;
+  min-width: 12rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  word-break: break-all;
+  user-select: text;
+}
+
+.tokens__list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.tokens__item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.tokens__item:last-child {
+  border-bottom: 0;
+}
+
+.tokens__name {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.tokens__scope {
+  flex: 1;
+  min-width: 0;
+}
+
+.tokens__revoke {
+  color: var(--muted);
+}
+
+.tokens__revoke:hover {
+  color: var(--danger);
 }
 
 /* --- settings ------------------------------------------------------------- */

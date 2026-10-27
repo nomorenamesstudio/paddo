@@ -18,13 +18,13 @@ import {
 } from '../editor/actions'
 import { DragPreviewExtension } from '../editor/drag-preview'
 import { Suggestions } from '../editor/suggestions'
-import { Bot } from 'lucide-react'
 
 import { BlockMover } from '../components/BlockMover'
 import { OpeningSkeleton, humanizeSlug } from '../components/OpeningSkeleton'
 import { TopBar } from '../components/TopBar'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
+import { EditorMenu } from '../components/EditorMenu'
 import type { HeadlinePhase } from '../components/Headline'
 
 /** Who the other device is, rather than a name that means nothing on a shared doc. */
@@ -300,10 +300,9 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         phase={headlinePhase}
         actions={
           <span className="topbar__actions">
-            <button
-              className="button button--ghost button--icon"
-              type="button"
-              onClick={() => {
+            <EditorMenu
+              slug={slug}
+              onInvite={() => {
                 setInviteOpen(true)
                 // Fetched on demand: most sessions never open this sheet.
                 void api
@@ -311,11 +310,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
                   .then((settings) => setWritingGuide(settings.writingGuide))
                   .catch(() => setWritingGuide(''))
               }}
-              aria-label="Invite the agent"
-              title="Invite the agent"
-            >
-              <Bot size={20} aria-hidden="true" />
-            </button>
+            />
           </span>
         }
       />
