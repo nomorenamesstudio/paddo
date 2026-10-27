@@ -7,8 +7,13 @@ export function OpeningSkeleton({ title, fading = false }: { title?: string; fad
   return (
     <div className={`skeleton${fading ? ' is-fading' : ''}`} aria-hidden="true">
       {title ? <p className="skeleton__title">{title}</p> : null}
-      {[100, 92, 97, 64, 88, 95, 76].map((width, index) => (
-        <span key={index} className="skeleton__line" style={{ width: `${width}%` }} />
+      {/* Two paragraphs of fake prose, so the bars sit on the same rhythm as real ones. */}
+      {[[100, 96, 92, 61], [88, 100, 74]].map((lines, paragraph) => (
+        <p className="skeleton__para" key={paragraph}>
+          {lines.map((width, line) => (
+            <span key={line} className="skeleton__line" style={{ width: `${width}%` }} />
+          ))}
+        </p>
       ))}
     </div>
   )

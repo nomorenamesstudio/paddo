@@ -1165,24 +1165,38 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   letter-spacing: -0.01em;
   color: var(--muted);
   opacity: 0.5;
-  margin: 0.9rem 0 0;
+  margin: 0.9rem 0 0.65rem;
+}
+
+/* The prose's own rhythm: same font size, same line height, same paragraph gap. */
+.skeleton__para {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  margin: 1.1em 0 0;
 }
 
 .skeleton__line {
-  display: block;
-  height: 0.85rem;
-  margin-bottom: 0.85rem;
+  /* A flex box one prose line tall: the bar centres itself, so the pitch is the text's. */
+  display: flex;
+  align-items: center;
+  height: 1.75em;
+}
+
+.skeleton__line::before {
+  content: '';
+  flex: 1;
+  height: 0.8em;
   border-radius: 3px;
   background: color-mix(in srgb, var(--fg) 12%, transparent);
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
 /* Each line breathes a beat after the one above it, so the block reads as one wave. */
-.skeleton__line:nth-child(2n) {
+.skeleton__line:nth-child(2n)::before {
   animation-delay: 120ms;
 }
 
-.skeleton__line:nth-child(3n) {
+.skeleton__line:nth-child(3n)::before {
   animation-delay: 240ms;
 }
 
