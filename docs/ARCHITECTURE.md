@@ -68,6 +68,19 @@ watcher exists for agents that just edit the file. Three rules keep them apart:
 the chip or card holds the text that would replace it. Nothing is highlighted merely
 to look like a diff.
 
+## File names follow the title
+
+A document is born with a temporary slug (`new-draft-3`) and keeps it while it is being
+written, because the slug is three things at once: the filename, the CRDT room name and
+the URL. Renaming mid-session would leave a connected editor holding a room that no
+longer exists on disk — so the rename happens in `afterUnloadDocument`, the one moment
+with no client attached to the old name: the markdown, the `.y` sidecar and the
+`.meta.json` move together, and `freeSlug` picks `title-2` when another document already
+holds the name. Untitled drafts keep their temporary name until they get a heading.
+
+The catch: an old `/d/new-draft-6` bookmark 404s after the rename. The list always links
+to the current name.
+
 ## Traps found the hard way
 
 Each of these cost time during the build, and each is guarded by code or a test.

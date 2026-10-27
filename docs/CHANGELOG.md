@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The file name is the title
+
+**Feature** — documents rename themselves on disk. When the last client leaves a room,
+`afterUnloadDocument` compares the title with the slug and moves the markdown, the CRDT
+sidecar and the status file to `slugify(title)`, picking `title-2` if that name is taken.
+Temporary names stop leaking into the folder, so the files are readable from a shell.
+
+The existing library was tidied through the same path: `new-draft-6` → `the-ghosted-story`,
+`new-draft-5` → `another-test-article`, `new-draft-2` → `what-am-i-doing`, `new-draft` →
+`wut-bruh`. The two documents still headed "New draft" keep their temporary names, which
+is correct.
+
+**Break** — an old `/d/<temp-slug>` bookmark 404s after the rename; the list links to the
+current name.
+
 ## 2026-10-26 — Search looks at the title, not the slug
 
 **Fix** — search also matched the slug, so "The Ghosted Story" turned up under `new`

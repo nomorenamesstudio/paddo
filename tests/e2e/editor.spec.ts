@@ -303,6 +303,46 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   await expect(page.locator('.notice--info')).toBeVisible()
 })
 
+test('a draft takes its title as its filename once it is closed', async ({ page }) => {
+  await signIn(page)
+  const marker = `Renamed By Test ${Date.now()}`
+  const expectedSlug = marker.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
+  await page.getByRole('button', { name: 'New document' }).click()
+  await page.locator('.prose h1').first().waitFor()
+  const bornSlug = page.url().split('/d/')[1] ?? ''
+  expect(bornSlug).toMatch(/^new-draft/)
+
+  // Name it through the heading, let it store, then leave so the room unloads.
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('ControlOrMeta+a')
+  await page.keyboard.type(marker)
+  await page.waitForTimeout(900)
+  await page.goto('/')
+  await expect(page.locator('.documents')).toBeVisible()
+
+  // The file on disk is named after the title, not the name it was born with.
+  await expect
+    .poll(async () => {
+      const response = await page.request.get('/api/documents')
+      const body = (await response.json()) as { documents: Array<{ slug: string; title: string }> }
+      return body.documents.some((document) => document.slug === expectedSlug)
+    }, { timeout: 15000 })
+    .toBe(true)
+  await expect
+    .poll(async () => {
+      const response = await page.request.get('/api/documents')
+      const body = (await response.json()) as { documents: Array<{ slug: string }> }
+      return body.documents.some((document) => document.slug === bornSlug)
+    })
+    .toBe(false)
+
+  // And the row goes to the new URL.
+  const row = page.locator(`.documents__item:has(a[href="/d/${expectedSlug}"])`)
+  await expect(row).toHaveCount(1)
+  await expect(row.locator('.documents__title')).toHaveText(marker)
+})
+
 test('the search box filters the list by title and clears back', async ({ page }) => {
   await signIn(page)
   const marker = `Findable${Date.now()}`

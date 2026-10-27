@@ -154,6 +154,45 @@ export async function createDocument(config: Config, name: string): Promise<Docu
   return { slug, title, words: 0, updatedAt: info.mtimeMs, bytes: info.size }
 }
 
+/** A title turned into a filename: the writer will see this on disk. */
+export async function freeSlug(config: Config, wanted: string, keep?: string): Promise<string> {
+  const base = slugify(wanted) || 'untitled'
+  let candidate = base
+  for (let attempt = 2; attempt < 100; attempt += 1) {
+    if (candidate === keep) return candidate
+    try {
+      await stat(pathFor(config, candidate))
+    } catch {
+      return candidate
+    }
+    candidate = `${base}-${attempt}`
+  }
+  return `${base}-${Date.now()}`
+}
+
+/**
+ * Moves a document to a new slug on disk: markdown, CRDT sidecar and status file.
+ * The writer reads these files by hand, so the name has to be the title, not the
+ * name it was born with.
+ */
+export async function renameDocument(config: Config, from: string, to: string): Promise<void> {
+  if (from === to) return
+  await rename(pathFor(config, from), pathFor(config, to))
+  await renameIfPresent(sidecarPathFor(config, from), sidecarPathFor(config, to))
+  await renameIfPresent(
+    join(config.sidecarDir, `${from}.meta.json`),
+    join(config.sidecarDir, `${to}.meta.json`),
+  )
+}
+
+async function renameIfPresent(from: string, to: string): Promise<void> {
+  try {
+    await rename(from, to)
+  } catch {
+    // No sidecar or no status file: nothing to move.
+  }
+}
+
 /** Removes the markdown file itself. Missing files are not an error. */
 export async function removeDocument(config: Config, slug: string): Promise<void> {
   try {

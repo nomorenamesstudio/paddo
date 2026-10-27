@@ -8,11 +8,14 @@ import { CONTENT_FIELD, markdown, schema } from '../shared/editor'
 import { constantTimeEquals, readCookie, SESSION_COOKIE, verifySession } from './auth'
 import type { Config } from './config'
 import {
+  freeSlug,
   hashOf,
   isValidSlug,
   normalizeMarkdown,
   readDocument,
+  renameDocument,
   sidecarPathFor,
+  titleOf,
   writeDocument,
 } from './documents'
 
@@ -102,6 +105,24 @@ export function createCollab(config: Config) {
       await writeDocument(config, documentName, body)
       lastWritten.set(documentName, hash)
       await writeSidecar(config, documentName, document)
+    },
+
+    /**
+     * The last store before a room unloads is the safe moment to rename: no client
+     * is attached to the old name any more, so the file can simply become the title.
+     */
+    async afterUnloadDocument({ documentName }) {
+      if (!isValidSlug(documentName)) return
+      try {
+        const body = await readDocument(config, documentName)
+        const wanted = await freeSlug(config, titleOf(body, documentName), documentName)
+        if (wanted === documentName || !isValidSlug(wanted)) return
+        await renameDocument(config, documentName, wanted)
+        lastWritten.delete(documentName)
+        console.log(`renamed ${documentName} → ${wanted}`)
+      } catch {
+        // No file (deleted while open) or an unusable title: leave the name alone.
+      }
     },
   })
 
