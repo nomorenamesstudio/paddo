@@ -28,6 +28,8 @@ import {
   titleOf,
 } from './documents'
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
+import { createAgentServer } from './mcp'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isStatus, readAllStatuses, readStatus, removeStatus, writeStatus } from './meta'
 import { normalizeSettings, readSettings, writeSettings } from './settings'
 import {
@@ -438,6 +440,47 @@ app.patch(
     }
   },
 )
+
+// --- MCP over HTTP ----------------------------------------------------------
+//
+// The agent's tools, served by this process: a client needs a URL and a bearer
+// token, not a Node script on the agent's machine. Stateless — every request builds
+// a server bound to the caller's own token, so scoping is the same check the API
+// makes.
+
+app.post('/mcp', async (request, reply) => {
+  const secret = bearer(request)
+  const principal = secret ? await principalOf(request) : null
+  if (!secret || principal?.kind !== 'agent') {
+    reply.code(401).send({ error: 'unauthorised' })
+    return
+  }
+
+  const origin = `${request.protocol}://${request.host}`
+  const server = createAgentServer({ baseUrl: origin, token: secret })
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  })
+
+  reply.hijack()
+  await server.connect(transport)
+  try {
+    await transport.handleRequest(request.raw, reply.raw, request.body)
+  } finally {
+    await server.close()
+  }
+})
+
+// No server-initiated messages and no sessions, so the streaming and delete verbs
+// have nothing to do; saying so beats a 404 that looks like a wrong URL.
+app.get('/mcp', async (_request, reply) => {
+  reply.code(405).send({ error: 'paddo is stateless: POST to /mcp' })
+})
+
+app.delete('/mcp', async (_request, reply) => {
+  reply.code(405).send({ error: 'paddo is stateless: POST to /mcp' })
+})
 
 // --- agent tokens -----------------------------------------------------------
 

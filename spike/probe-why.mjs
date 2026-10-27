@@ -1,0 +1,17 @@
+import { readFile } from 'node:fs/promises'
+import { chromium } from '@playwright/test'
+const env = Object.fromEntries((await readFile(new URL('../.env', import.meta.url), 'utf8'))
+  .split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]))
+const browser = await chromium.launch()
+const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage()
+page.on('pageerror', (e) => console.log('[pageerror]', String(e)))
+page.on('console', (m) => { if (m.type() === 'error') console.log('[console]', m.text()) })
+await page.goto('http://127.0.0.1:4319/d/the-quiet-interface')
+await page.waitForTimeout(1500)
+console.log('before login:', (await page.locator('body').innerText()).slice(0, 120).replace(/\n/g, ' | '))
+await page.locator('input[type="password"]').fill(env.PADDO_PASSWORD)
+await page.getByRole('button', { name: /open padd/i }).click()
+await page.waitForTimeout(2500)
+console.log('after login:', (await page.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' | '))
+console.log('url:', page.url())
+await browser.close()

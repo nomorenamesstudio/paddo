@@ -2,8 +2,18 @@
 
 ## MCP tools
 
-The agent connects to `paddo-mcp` (`pnpm mcp`) over stdio. It reads `PADDO_URL` and
-`PADDO_TOKEN` from the environment and talks to the HTTP API.
+Paddō serves the tools itself at `POST /mcp` (MCP streamable HTTP, stateless), so a
+client needs a URL and a bearer token — nothing runs on the agent's machine. Settings
+→ Agent tokens hands you the block:
+
+```json
+{ "mcpServers": { "paddo": { "type": "http", "url": "https://<host>/mcp",
+  "headers": { "Authorization": "Bearer paddo_…" } } } }
+```
+
+`pnpm mcp` runs the same tool set over stdio for clients that cannot do HTTP; it reads
+`PADDO_URL` and `PADDO_TOKEN` from the environment. Both transports share one factory
+(`src/server/mcp.ts`), so the tools cannot drift apart.
 
 | Tool | Arguments | Returns |
 | --- | --- | --- |
@@ -39,6 +49,7 @@ so a plain edit on the `.md` file behaves exactly like `submit_markdown`.
 | `/api/tokens` | GET | cookie | minted agent tokens, without their hashes |
 | `/api/tokens` | POST | cookie | mint: `{ name, verbs, documents }` → `{ token, secret }`, the secret shown once |
 | `/api/tokens/:id` | DELETE | cookie | revoke |
+| `/mcp` | POST | token only | MCP streamable HTTP: `initialize`, `tools/list`, `tools/call` |
 | `/api/documents/:slug` | PATCH | cookie | `{ status }`: draft, editing, published or archived |
 | `/api/documents/:slug` | DELETE | cookie | removes the markdown, the sidecar and the status |
 | `/api/settings` | GET | cookie | `{ writingGuide, theme }` |

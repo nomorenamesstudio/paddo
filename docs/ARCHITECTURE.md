@@ -85,10 +85,12 @@ to the current name.
 
 ## The agent connects to a token, not to a document
 
-A persistent agent is not a session with its own socket. `paddo-mcp` is a stdio
-process the harness keeps alive, and it calls the HTTP API on demand — "edit my
-case study" works whenever the writer says it, because the tools can list and read
-documents then.
+A persistent agent is not a session with its own socket. The tools are served by
+Paddō's own process at `/mcp` (streamable HTTP, stateless, one server built per
+request and bound to the caller's token), so connecting a client is a URL and a
+bearer token — no second install, no version skew. `pnpm mcp` wraps the same factory
+over stdio for clients that cannot speak HTTP. Either way the agent calls the API on
+demand: "edit my case study" works whenever the writer says it.
 
 What makes that safe is the token, not the connection:
 

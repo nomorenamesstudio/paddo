@@ -530,6 +530,52 @@ test('a scoped token reaches its own documents and nothing else', async ({ page,
 
     // Token management is the owner's screen alone.
     expect((await agent.get('/api/tokens')).status()).toBe(401)
+
+    // The same token is the whole MCP connection: the tools are served here, so
+    // nothing is installed next to the agent.
+    const mcp = await request.newContext({
+      baseURL: `${baseURL}/mcp`,
+      extraHTTPHeaders: {
+        authorization: `Bearer ${secret}`,
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+      },
+    })
+    try {
+      const initialize = await mcp.post('', {
+        data: {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1' },
+          },
+        },
+      })
+      expect(initialize.status()).toBe(200)
+      expect((await initialize.json()).result.serverInfo.name).toBe('paddo')
+
+      const tools = await mcp.post('', { data: { jsonrpc: '2.0', id: 2, method: 'tools/list' } })
+      const names = ((await tools.json()).result.tools as Array<{ name: string }>).map((tool) => tool.name)
+      expect(names).toContain('propose_edits')
+
+      // Scope is enforced behind the tool, not just at the transport.
+      const refused = await mcp.post('', {
+        data: {
+          jsonrpc: '2.0',
+          id: 3,
+          method: 'tools/call',
+          params: { name: 'read_document', arguments: { document: other } },
+        },
+      })
+      const body = await refused.json()
+      expect(body.result.isError).toBe(true)
+      expect(body.result.content[0].text).toContain('no access')
+    } finally {
+      await mcp.dispose()
+    }
   } finally {
     await agent.dispose()
   }

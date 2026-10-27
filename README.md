@@ -54,23 +54,26 @@ Two ways to work with it:
 2. Paste it into your own agent session. It needs Paddō's MCP server:
 
    ```bash
-   PADDO_URL=http://<host>:4319 PADDO_TOKEN=<from .env> pnpm mcp
+   PADDO_URL=http://<host>:4319 PADDO_TOKEN=<minted in Settings> pnpm mcp
    ```
 
 The agent reads the document, sends hunks, and they appear inline. Review them on
 whichever device is at hand; accepting writes the `.md` file.
 
-**A connected agent** — mint a token in Settings → *Agent tokens* (verbs, and either
-every document or a list of them), then give it to the agent:
+**A connected agent** — Settings → *Agent tokens*: name it, pick the verbs (`read`,
+`propose edits`, `create documents`) and either every document or a list of them. The
+mint hands you a block to paste into your agent's MCP configuration:
 
-```bash
-PADDO_URL=http://<host>:4319 PADDO_TOKEN=paddo_… pnpm mcp
+```json
+{ "mcpServers": { "paddo": { "type": "http", "url": "http://<host>:4319/mcp",
+  "headers": { "Authorization": "Bearer paddo_…" } } } }
 ```
 
-From then on any "edit my case study" in that harness session can list, read and
-propose against the documents the token covers — no invitation sheet. It can also
-drop a new markdown file in (`create_document`) and take one out (`export_document`,
-or **Download markdown** in the document menu).
+Paddō serves the agent's tools itself, so there is nothing to install next to the
+agent and no version to keep in step. From then on any "edit my case study" in that
+session can list, read and propose against the documents the token covers — no
+invitation sheet. It can also drop a new markdown file in (`create_document`) and take
+one out (`export_document`, or **Download markdown** in the document menu).
 
 Paddō never runs a model. It never writes text the agent asked for without your
 accept, and the agent never touches the file.
@@ -90,7 +93,7 @@ content/          the .md files themselves
 src/server/       Fastify app, Hocuspocus hooks, anchors, diff, MCP ingest
 src/shared/       editor schema, markdown serializer, suggestion record
 src/web/          editor UI, suggestion decorations, block moving
-src/mcp/          the stdio MCP server agents connect to
+src/server/mcp.ts the agent's MCP tools, served at /mcp and over stdio
 spike/            phase 0 probes, kept as evidence
 tests/            unit tests and the Playwright suite
 docs/             INDEX, API, ARCHITECTURE, SETUP, CHANGELOG

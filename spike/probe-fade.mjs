@@ -19,12 +19,14 @@ let sawFading = false
 for (let attempt = 0; attempt < 400; attempt += 1) {
   const state = await page.evaluate(() => {
     const body = document.querySelector('.editor__body')
-    const skeleton = document.querySelector('.skeleton')
+    const loading = document.querySelector('.loading')
     return {
       bodyOpacity: body ? Number(getComputedStyle(body).opacity).toFixed(2) : null,
-      skeletonOpacity: skeleton ? Number(getComputedStyle(skeleton).opacity).toFixed(2) : null,
-      fading: skeleton?.classList.contains('is-fading') ?? false,
-      gone: !skeleton,
+      bodyTransform: body ? getComputedStyle(body).transform : null,
+      loadingOpacity: loading ? Number(getComputedStyle(loading).opacity).toFixed(2) : null,
+      label: loading?.textContent?.trim() ?? null,
+      fading: loading?.classList.contains('is-fading') ?? false,
+      gone: !loading,
     }
   })
   if (state.fading) sawFading = true

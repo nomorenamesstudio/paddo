@@ -1893,16 +1893,26 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   flex-wrap: wrap;
 }
 
-.tokens__code {
+.tokens__config {
   flex: 1;
-  min-width: 12rem;
-  padding: 0.35rem 0.5rem;
+  min-width: 14rem;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
   background: var(--bg);
   border-radius: 6px;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  /* Wrap rather than scroll: the token has to be visible to be checked. */
+  white-space: pre-wrap;
   word-break: break-all;
   user-select: text;
+}
+
+.tokens__hint {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
 }
 
 .tokens__list {

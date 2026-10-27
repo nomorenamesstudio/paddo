@@ -3,6 +3,28 @@ import { Check, Copy, KeyRound, Trash2 } from 'lucide-react'
 
 import { api, ApiError, VERBS, type AgentToken, type DocumentMeta, type Verb } from '../api'
 
+/** The tools live on this origin, so the block never needs a hostname typed by hand. */
+function mcpUrl(): string {
+  return `${window.location.origin}/mcp`
+}
+
+/** What most clients read: Claude Desktop, Cursor, and anything speaking MCP over HTTP. */
+function configBlock(secret: string): string {
+  return JSON.stringify(
+    {
+      mcpServers: {
+        paddo: {
+          type: 'http',
+          url: mcpUrl(),
+          headers: { Authorization: `Bearer ${secret}` },
+        },
+      },
+    },
+    null,
+    2,
+  )
+}
+
 const VERB_LABELS: Record<Verb, string> = {
   read: 'read',
   propose: 'propose edits',
@@ -188,21 +210,26 @@ export function AgentTokens() {
       {secret ? (
         <div className="tokens__secret">
           <p>
-            <strong>Copy this now.</strong> It is not stored and cannot be shown again.
+            <strong>Copy this now.</strong> It is not stored and cannot be shown again. Paste the
+            block into your agent&rsquo;s MCP configuration — it is the whole connection.
           </p>
           <div className="tokens__secretrow">
-            <code className="tokens__code">{secret}</code>
+            <pre className="tokens__config">{configBlock(secret)}</pre>
             <button
               className="button"
               type="button"
               onClick={() => {
-                void navigator.clipboard.writeText(secret).then(() => setCopied(true))
+                void navigator.clipboard.writeText(configBlock(secret)).then(() => setCopied(true))
               }}
             >
               {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? 'Copied' : 'Copy config'}
             </button>
           </div>
+          <p className="tokens__hint">
+            Paddō serves the agent&rsquo;s tools itself at <code>{mcpUrl()}</code>, so nothing has to
+            be installed next to the agent.
+          </p>
         </div>
       ) : null}
 
