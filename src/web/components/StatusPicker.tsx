@@ -36,7 +36,9 @@ export function StatusPicker({ value, onChange }: { value: Status; onChange: (ne
         aria-label={`Status: ${statusLabel(value)}`}
         title={`Status: ${statusLabel(value)}`}
       >
-        <StatusIcon status={value} size={18} current />
+        {/* In the bar it is one quiet control among the others; the menu is where the
+            current status is marked. */}
+        <StatusIcon status={value} size={18} />
         <ChevronDown size={12} className="status__caret" aria-hidden="true" />
       </button>
 
