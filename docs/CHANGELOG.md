@@ -2,6 +2,15 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The header is a floating sheet
+
+**Feature** — the sticky header is a sheet of paper now: near-white
+(`color-mix(#fff 62%, var(--bg))`, 8% in dark), 16px corners (14 on a phone), a hairline,
+a soft two-layer shadow, and margin on all four sides. The page's top padding equals the
+sticky offset (0.6rem, 0.45 on a phone), so the sheet does not jump when it starts
+sticking, and the search field reads as a well in it because it keeps the page's paper
+colour.
+
 ## 2026-10-27 — The stray line under the header
 
 **Fix** — `.documents` opened with its own `border-top`, which read as a rule between the

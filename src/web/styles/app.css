@@ -26,6 +26,8 @@
 
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --radius-pill: 999px;
+  /* The header is a sheet of paper floating over the page, a touch lighter than it. */
+  --header-bg: color-mix(in srgb, #ffffff 62%, var(--bg));
   --danger: #b3261e;
   --measure: 40rem;
   --tap: 2.75rem;
@@ -41,6 +43,7 @@
   --ok: #8bcfb6;
   --ok-soft: rgba(139, 207, 182, 0.12);
   --danger: #f0938a;
+  --header-bg: color-mix(in srgb, #ffffff 8%, var(--bg));
   --line: rgba(240, 236, 226, 0.2);
   --raised: #232019;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -107,7 +110,13 @@ a {
 .page {
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 1.25rem 1.5rem 3rem;
+  padding: 0.6rem 1.5rem 3rem;
+}
+
+@media (max-width: 40rem) {
+  .page {
+    padding: 0.45rem 1.1rem 3rem;
+  }
 }
 
 .page--narrow {
@@ -120,24 +129,30 @@ a {
 
 .masthead--row {
   position: sticky;
-  top: 0;
+  top: 0.6rem;
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  /* Tighter than the page padding, and it carries its own paper so rows can pass
-     underneath it. */
-  margin: 0 -1.5rem 1.5rem;
-  padding: 0.7rem 1.5rem;
-  padding-top: max(0.7rem, env(safe-area-inset-top));
-  background: var(--bg);
+  gap: 0.7rem;
+  /* A floating sheet rather than a band: margin all round, soft corners, a shadow,
+     and paper light enough to sit above the page it covers. */
+  margin: 0 0 1.35rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--header-bg);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(42, 40, 37, 0.07);
+}
+
+[data-theme='dark'] .masthead--row {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
 @media (max-width: 40rem) {
   .masthead--row {
-    margin: 0 -1.1rem 1.1rem;
-    padding: 0.55rem 1.1rem;
-    padding-top: max(0.55rem, env(safe-area-inset-top));
+    top: max(0.45rem, env(safe-area-inset-top));
+    padding: 0.42rem 0.5rem;
+    border-radius: 14px;
   }
 }
 
@@ -1830,6 +1845,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   width: 100%;
   min-height: 2.4rem;
   padding: 0 2.4rem 0 2.3rem;
+  background: var(--bg);
   line-height: 1.2;
   font-family: var(--font-sans);
   /* 16px is the floor: anything smaller makes iOS Safari zoom on focus. */
