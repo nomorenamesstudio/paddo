@@ -1721,3 +1721,43 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   color: var(--accent);
   margin-top: 0.15rem;
 }
+
+/* A thumb reaches the corner, not the header: below 40rem the new-document button
+   floats there instead of sitting beside the settings gear. */
+@media (max-width: 40rem) {
+  .documents__new {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 25;
+    width: 3.4rem;
+    height: 3.4rem;
+    min-width: 3.4rem;
+    color: var(--bg);
+    background: var(--fg);
+    border-color: var(--fg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 12px 28px rgba(0, 0, 0, 0.16);
+    animation: fade-in 240ms var(--ease) both;
+  }
+
+  .documents__new:hover {
+    background: color-mix(in srgb, var(--fg) 86%, var(--bg));
+    border-color: color-mix(in srgb, var(--fg) 86%, var(--bg));
+  }
+
+  .documents__new:disabled {
+    opacity: 0.5;
+  }
+
+  /* Room for the floating button plus a thumb's width, so the last row clears it. */
+  .documents,
+  .archive {
+    padding-bottom: 6.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .documents__new {
+    animation: none;
+  }
+}

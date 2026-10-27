@@ -87,7 +87,7 @@ export function DocumentsPage() {
             <Settings size={18} aria-hidden="true" />
           </a>
           <button
-            className="button button--icon"
+            className="button button--icon documents__new"
             type="button"
             onClick={create}
             disabled={creating}

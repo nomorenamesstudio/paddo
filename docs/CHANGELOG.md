@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — The new-document button floats on a phone
+
+**Feature** — below 40rem the plus leaves the header and becomes a 56 px ink circle in
+the bottom-right corner, where a thumb actually is, with safe-area insets, a fade-in and
+6.5rem of clearance under the list so the last row never hides behind it. Desktop keeps
+it in the header beside the settings gear.
+
 ## 2026-10-26 — The disclaimer became an info box you can put away
 
 **Feature** — the "Paddō does not run the model" paragraph is now the house notice:
