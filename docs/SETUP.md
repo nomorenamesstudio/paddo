@@ -2,8 +2,8 @@
 
 ## Where agent MCP configs live
 
-Only needed if you go the config-file route; the *Copy prompt* block on the token
-screen needs none of this.
+Only needed if you go the config-file route. The pairing panel's prompt needs none of
+this, and neither does a minted token's *Copy prompt* block.
 
 | Client | File |
 | --- | --- |

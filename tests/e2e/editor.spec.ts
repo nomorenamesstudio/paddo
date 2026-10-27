@@ -581,6 +581,60 @@ test('a scoped token reaches its own documents and nothing else', async ({ page,
   }
 })
 
+test('pairing hands a token to an agent only after the writer approves, and only once', async ({
+  page,
+  baseURL,
+}) => {
+  await signIn(page)
+  const mine = await createDocument(page, `Paired ${Date.now()}`)
+
+  const started = await page.request.post('/api/pair', {
+    data: { name: 'paired agent', verbs: ['read'], documents: [mine] },
+  })
+  expect(started.ok()).toBe(true)
+  const { code } = (await started.json()) as { code: string }
+
+  // The agent has no cookie: the code is its only credential, and it is not the token.
+  const agent = await request.newContext({ baseURL })
+  try {
+    const claim = await agent.post('/api/pair/claim', { data: { code } })
+    expect(claim.status()).toBe(202)
+    const pending = (await claim.json()) as { state: string; token?: string }
+    expect(pending.state).toBe('claimed')
+    expect(pending.token).toBeUndefined()
+
+    // The writer sees the claim and approves it.
+    const listed = (await (await page.request.get('/api/pair')).json()) as {
+      pairings: Array<{ code: string; state: string }>
+    }
+    expect(listed.pairings).toContainEqual(
+      expect.objectContaining({ code, state: 'claimed' }),
+    )
+    expect((await page.request.post(`/api/pair/${code}/approve`)).ok()).toBe(true)
+
+    // The token arrives over the agent's own connection, once.
+    const collected = await agent.post('/api/pair/claim', { data: { code } })
+    expect(collected.ok()).toBe(true)
+    const { token } = (await collected.json()) as { token: string }
+    expect(token.startsWith('paddo_')).toBe(true)
+    expect((await agent.post('/api/pair/claim', { data: { code } })).status()).toBe(404)
+
+    // And it is the scoped token it was promised to be.
+    const scoped = await request.newContext({
+      baseURL,
+      extraHTTPHeaders: { authorization: `Bearer ${token}` },
+    })
+    try {
+      expect((await scoped.get(`/api/documents/${mine}`)).status()).toBe(200)
+      expect((await scoped.get('/api/documents').then((r) => r.json())).documents).toHaveLength(1)
+    } finally {
+      await scoped.dispose()
+    }
+  } finally {
+    await agent.dispose()
+  }
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

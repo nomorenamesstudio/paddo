@@ -31,6 +31,7 @@ import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
 import { createAgentServer } from './mcp'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isStatus, readAllStatuses, readStatus, removeStatus, writeStatus } from './meta'
+import { approvePairing, claimPairing, denyPairing, listPairings, startPairing } from './pairing'
 import { normalizeSettings, readSettings, writeSettings } from './settings'
 import {
   allows,
@@ -440,6 +441,66 @@ app.patch(
     }
   },
 )
+
+// --- pairing: a token that never travels through a chat log -------------------
+//
+// The writer starts a pairing and reads out a short code; the agent claims it; the
+// writer approves; the agent collects the token over its own connection. The code is
+// the only thing that reaches the conversation, and it is dead once used.
+
+app.get('/api/pair', { preHandler: requireSession }, async () => ({ pairings: listPairings() }))
+
+app.post('/api/pair', { preHandler: requireSession }, async (request, reply) => {
+  let input
+  try {
+    input = normalizeMint(request.body)
+  } catch (problem) {
+    reply.code(400).send({ error: problem instanceof Error ? problem.message : 'invalid pairing' })
+    return
+  }
+  return startPairing(input)
+})
+
+app.post('/api/pair/claim', async (request, reply) => {
+  const body = request.body as { code?: unknown } | undefined
+  const code = typeof body?.code === 'string' ? body.code : ''
+  if (!code) {
+    reply.code(400).send({ error: 'send the code from Paddō' })
+    return
+  }
+
+  const claimed = claimPairing(code)
+  if (claimed.state === 'unknown') {
+    // Nothing to leak: an unknown code and an expired one look the same.
+    reply.code(404).send({ error: 'that code is unknown or has expired' })
+    return
+  }
+  if (claimed.state === 'approved') {
+    return { state: 'approved', token: claimed.secret }
+  }
+  // Still waiting on the writer: the agent polls, it does not retry blindly.
+  reply.code(202)
+  return { state: claimed.state }
+})
+
+app.post('/api/pair/:code/approve', { preHandler: requireSession }, async (request, reply) => {
+  const { code } = request.params as { code: string }
+  const result = await approvePairing(config, code)
+  if (!result.approved) {
+    reply.code(404).send({ error: result.reason })
+    return
+  }
+  return { code, approved: true }
+})
+
+app.post('/api/pair/:code/deny', { preHandler: requireSession }, async (request, reply) => {
+  const { code } = request.params as { code: string }
+  if (!denyPairing(code)) {
+    reply.code(404).send({ error: 'no such pairing' })
+    return
+  }
+  return { code, denied: true }
+})
 
 // --- MCP over HTTP ----------------------------------------------------------
 //

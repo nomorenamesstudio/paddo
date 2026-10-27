@@ -50,6 +50,24 @@ function configBlock(secret: string): string {
   )
 }
 
+/** The code is all the agent needs; the token never appears in the conversation. */
+function pairBrief(code: string): string {
+  const base = window.location.origin
+  return `I want you to help me edit my writing in Paddō, a markdown editor at ${base}.
+
+It needs pairing first. POST this to ${base}/api/pair/claim with:
+  {"code": "${code}"}
+
+While I have not approved it you get HTTP 202 — wait a couple of seconds and ask again.
+Once I approve, the same request returns {"token": "paddo_…"}: use that token from then
+on, and never print it back to me.
+
+Then either register ${base}/mcp as a remote MCP server (header: "Authorization: Bearer
+<token>"), or call the HTTP API with it: GET /api/documents, GET /api/documents/<slug>,
+POST /api/documents/<slug>/suggestions with {"edits": [{"original": "…", "proposed": "…"}]}.
+Quote "original" verbatim from the document; a human approves each hunk in the editor.`
+}
+
 const VERB_LABELS: Record<Verb, string> = {
   read: 'read',
   propose: 'propose edits',
@@ -80,6 +98,10 @@ export function AgentTokens() {
   const [allDocuments, setAllDocuments] = useState(true)
   const [chosen, setChosen] = useState<string[]>([])
   const [secret, setSecret] = useState<string | null>(null)
+  const [pairing, setPairing] = useState<{ code: string; expiresAt: number } | null>(null)
+  const [waiting, setWaiting] = useState<
+    Array<{ code: string; name: string; state: string; createdAt: number }>
+  >([])
   const [copied, setCopied] = useState(false)
   const [briefCopied, setBriefCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -101,6 +123,63 @@ export function AgentTokens() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!pairing) return
+    let cancelled = false
+    const look = () => {
+      void api
+        .pairings()
+        .then((result) => {
+          if (!cancelled) setWaiting(result.pairings)
+        })
+        .catch(() => {
+          // A failed poll is not worth an error banner; the next one may work.
+        })
+    }
+    look()
+    const timer = window.setInterval(look, 2000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [pairing])
+
+  async function pair() {
+    setBusy(true)
+    setError(null)
+    try {
+      setPairing(await api.startPairing({ name: name.trim(), verbs, documents: allDocuments ? '*' : chosen }))
+      setSecret(null)
+    } catch (problem) {
+      setError(problem instanceof ApiError ? problem.message : 'could not start the pairing')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function approve(code: string) {
+    try {
+      await api.approvePairing(code)
+      setWaiting((current) => current.filter((entry) => entry.code !== code))
+      // The token exists now, so the list can show what was granted.
+      const refreshed = await api.tokens()
+      setTokens(refreshed.tokens)
+      setPairing(null)
+    } catch (problem) {
+      setError(problem instanceof ApiError ? problem.message : 'could not approve the pairing')
+    }
+  }
+
+  async function deny(code: string) {
+    try {
+      await api.denyPairing(code)
+      setWaiting((current) => current.filter((entry) => entry.code !== code))
+      setPairing(null)
+    } catch (problem) {
+      setError(problem instanceof ApiError ? problem.message : 'could not cancel the pairing')
+    }
+  }
 
   function toggleVerb(verb: Verb) {
     setVerbs((current) =>
@@ -224,15 +303,72 @@ export function AgentTokens() {
           ) : null}
         </fieldset>
 
-        <button
-          className="button button--primary"
-          type="button"
-          onClick={() => void mint()}
-          disabled={!canMint || busy}
-        >
-          {busy ? 'Creating…' : 'Create token'}
-        </button>
+        <div className="tokens__buttons">
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={() => void pair()}
+            disabled={!canMint || busy}
+          >
+            {busy ? 'Preparing…' : 'Pair an agent'}
+          </button>
+          <button
+            className="button"
+            type="button"
+            onClick={() => void mint()}
+            disabled={!canMint || busy}
+          >
+            Create a token instead
+          </button>
+        </div>
       </div>
+
+      {pairing ? (
+        <div className="tokens__secret">
+          <p>
+            Give this code to the agent — <strong>only the code</strong>. Nothing happens until
+            you approve it here.
+          </p>
+          <p className="tokens__paircode">{pairing.code}</p>
+
+          <div className="tokens__secretrow">
+            <pre className="tokens__brief" tabIndex={0}>
+              {pairBrief(pairing.code)}
+            </pre>
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(pairBrief(pairing.code)).then(() => setBriefCopied(true))
+              }}
+            >
+              {briefCopied ? (
+                <Check size={15} aria-hidden="true" />
+              ) : (
+                <Copy size={15} aria-hidden="true" />
+              )}
+              {briefCopied ? 'Copied' : 'Copy prompt'}
+            </button>
+          </div>
+
+          <p className="tokens__hint">
+            {waiting.length === 0
+              ? 'Waiting for an agent to claim the code…'
+              : 'An agent claimed it. Approve to hand over its token:'}
+          </p>
+          {waiting.map((entry) => (
+            <div key={entry.code} className="tokens__secretrow">
+              <code className="tokens__code">{entry.code}</code>
+              <button className="button button--accept" type="button" onClick={() => void approve(entry.code)}>
+                Approve
+              </button>
+              <button className="button button--danger" type="button" onClick={() => void deny(entry.code)}>
+                Deny
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {secret ? (
         <div className="tokens__secret">

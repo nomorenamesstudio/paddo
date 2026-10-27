@@ -14,7 +14,7 @@ for (const scheme of ['light', 'dark']) {
   await page.goto('http://127.0.0.1:4319/settings')
   await page.locator('.tokens__form').waitFor()
   await page.locator('.tokens__input').fill('axe check')
-  await page.getByRole('button', { name: 'Create token' }).click()
+  await page.getByRole('button', { name: 'Create a token instead' }).click()
   await page.locator('.tokens__secret').waitFor()
   await page.addScriptTag({ content: axeSource })
   const violations = await page.evaluate(async () => {

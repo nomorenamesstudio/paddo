@@ -50,6 +50,11 @@ so a plain edit on the `.md` file behaves exactly like `submit_markdown`.
 | `/api/tokens` | POST | cookie | mint: `{ name, verbs, documents }` → `{ token, secret }`, the secret shown once |
 | `/api/tokens/:id` | DELETE | cookie | revoke |
 | `/mcp` | POST | token only | MCP streamable HTTP: `initialize`, `tools/list`, `tools/call` |
+| `/api/pair` | GET | cookie | pairings waiting on the writer, with their state |
+| `/api/pair` | POST | cookie | start a pairing: `{ name, verbs, documents }` → `{ code, expiresAt }` |
+| `/api/pair/claim` | POST | none | the agent's side: `{ code }` → `202 { state }` until approved, then `{ state: "approved", token }` **once** |
+| `/api/pair/:code/approve` | POST | cookie | mint the token and release it to the waiting claim |
+| `/api/pair/:code/deny` | POST | cookie | drop the pairing |
 | `/api/documents/:slug` | PATCH | cookie | `{ status }`: draft, editing, published or archived |
 | `/api/documents/:slug` | DELETE | cookie | removes the markdown, the sidecar and the status |
 | `/api/settings` | GET | cookie | `{ writingGuide, theme }` |
@@ -83,6 +88,22 @@ Auth rules:
   a 401; `onAuthenticate` checks again once the protocol starts.
 - The server refuses to boot without `PADDO_PASSWORD`, `PADDO_SECRET` and
   `PADDO_TOKEN`.
+
+## Pairing
+
+The token never has to travel through a chat log. The writer starts a pairing in
+Settings, which prints a code (`XXXX-XXXX`, ten minutes, in memory only). The code is
+the only thing that goes into the conversation:
+
+1. Agent: `POST /api/pair/claim {"code"}` → `202 {"state":"claimed"}`.
+2. Paddō's pairing panel sees the claim and offers **Approve** / **Deny**.
+3. Approval mints the token with the verbs and documents chosen when the pairing was
+   started; the agent collects it on its next claim, and that hand-over deletes the
+   pairing — a second claim is a `404`.
+4. Before approval the claim returns no token at all, so a leaked code buys an attacker
+   a request the writer never approves.
+
+A restart cancels pending pairings: they live in memory, like the login throttle.
 
 ## Suggestion record
 

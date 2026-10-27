@@ -60,9 +60,14 @@ Two ways to work with it:
 The agent reads the document, sends hunks, and they appear inline. Review them on
 whichever device is at hand; accepting writes the `.md` file.
 
-**A connected agent** — Settings → *Agent tokens*: name it, pick the verbs (`read`,
-`propose edits`, `create documents`) and either every document or a list of them. The
-mint hands you a block to paste into your agent's MCP configuration:
+**A connected agent** — Settings → *Agent tokens*, name it, pick the verbs (`read`,
+`propose edits`, `create documents`) and either every document or a list of them, then
+**Pair an agent**. Paddō prints a short code and a prompt; paste the prompt into your
+agent's chat. The agent claims the code, Paddō shows it waiting, you press **Approve**,
+and the agent collects its token over its own connection — the secret never goes through
+the conversation.
+
+If your client takes a config file instead, **Create a token** hands you the block:
 
 ```json
 { "mcpServers": { "paddo": { "type": "http", "url": "http://<host>:4319/mcp",

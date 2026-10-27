@@ -94,6 +94,24 @@ export const api = {
 
   tokens: () => request<{ tokens: AgentToken[] }>('/api/tokens'),
 
+  /** Start a pairing: the code goes to the agent, the approval stays with the writer. */
+  startPairing: (input: { name: string; verbs: Verb[]; documents: '*' | string[] }) =>
+    request<{ code: string; expiresAt: number }>('/api/pair', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  pairings: () =>
+    request<{ pairings: Array<{ code: string; name: string; state: string; createdAt: number }> }>(
+      '/api/pair',
+    ),
+
+  approvePairing: (code: string) =>
+    request<{ code: string; approved: boolean }>(`/api/pair/${code}/approve`, { method: 'POST' }),
+
+  denyPairing: (code: string) =>
+    request<{ code: string; denied: boolean }>(`/api/pair/${code}/deny`, { method: 'POST' }),
+
   mintToken: (input: { name: string; verbs: Verb[]; documents: '*' | string[] }) =>
     request<{ token: AgentToken; secret: string }>('/api/tokens', {
       method: 'POST',
