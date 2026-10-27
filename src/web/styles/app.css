@@ -1157,12 +1157,15 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 }
 
 .skeleton__title {
+  /* Same box as the live h1, so nothing moves when the real title replaces it. */
   font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 600;
+  font-size: 1.9rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--muted);
   opacity: 0.5;
-  margin: 0 0 1.5rem;
+  margin: 0.9rem 0 0;
 }
 
 .skeleton__line {
