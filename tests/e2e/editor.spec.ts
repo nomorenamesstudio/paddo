@@ -303,6 +303,26 @@ test('a writing guide saved in settings reaches the agent invitation', async ({ 
   await expect(page.locator('.notice--info')).toBeVisible()
 })
 
+test('the search box filters the list by title and clears back', async ({ page }) => {
+  await signIn(page)
+  await createDocument(page, `Findable ${Date.now()}`)
+  await page.goto('/')
+  await expect(page.locator('.documents')).toBeVisible()
+
+  const search = page.getByLabel('Search documents')
+  const before = await page.locator('.documents__item').count()
+  await search.fill('findable')
+  await expect(page.locator('.documents__item')).toHaveCount(1)
+  await expect(page.locator('.documents__title')).toContainText('Findable')
+
+  await search.fill('nothing-matches-this')
+  await expect(page.locator('.documents__item')).toHaveCount(0)
+  await expect(page.locator('.documents__empty')).toContainText('Nothing matches')
+
+  await page.getByRole('button', { name: 'Clear search' }).click()
+  await expect(page.locator('.documents__item')).toHaveCount(before)
+})
+
 test('the theme is a saved choice, and switching it keeps the writing guide', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings')

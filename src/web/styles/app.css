@@ -286,7 +286,18 @@ a {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  padding: 0 0.65rem;
+  margin: 0 -0.65rem;
   border-bottom: 1px solid var(--line);
+  border-radius: 8px;
+  transition: background 120ms var(--ease);
+}
+
+/* Touch has no hover, and a sticky tint on a phone reads as a selection. */
+@media (hover: hover) {
+  .documents__item:hover {
+    background: var(--accent-soft);
+  }
 }
 
 .documents__row {
@@ -300,9 +311,7 @@ a {
   text-decoration: none;
 }
 
-.documents__row:hover {
-  background: var(--accent-soft);
-}
+
 
 .documents__title {
   font-family: var(--font-display);
@@ -1760,4 +1769,70 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   .documents__new {
     animation: none;
   }
+}
+
+/* --- search --------------------------------------------------------------- */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.search__icon {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search__input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 2.6rem 0 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--fg);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  appearance: none;
+}
+
+.search__input::placeholder {
+  color: var(--muted);
+}
+
+.search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.search__clear {
+  position: absolute;
+  right: 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.search__clear:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.documents__empty {
+  margin: 1.5rem 0 3rem;
 }

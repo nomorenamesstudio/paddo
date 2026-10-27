@@ -2,6 +2,17 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Search over the list, and rows that breathe
+
+**Feature** — a search field above the list filters by title (and slug, for documents
+whose title has not caught up), with a clear button and a "nothing matches" line. It
+filters the archive too, and the count in its summary follows.
+
+**Fix** — the row hover tint used to start at the panel edge with the text almost on top
+of it. Rows now carry 0.65rem of inset with an 8px radius, so the tint frames the row and
+the title sits 14px inside it. Hover is scoped to `@media (hover: hover)`, because a
+sticky tint on a phone reads as a selection.
+
 ## 2026-10-26 — The new-document button floats on a phone
 
 **Feature** — below 40rem the plus leaves the header and becomes a 56 px ink circle in

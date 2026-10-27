@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronRight, Plus, Settings } from 'lucide-react'
+import { ChevronRight, Plus, Search, Settings, X } from 'lucide-react'
 
 import { api, ApiError, type DocumentMeta } from '../api'
 import { RowMenu } from '../components/RowMenu'
@@ -19,6 +19,7 @@ export function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentMeta[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [query, setQuery] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -46,8 +47,21 @@ export function DocumentsPage() {
     }
   }
 
-  const active = (documents ?? []).filter((document) => document.status !== 'archived')
-  const archived = (documents ?? []).filter((document) => document.status === 'archived')
+  // Search filters by what the reader sees: the title, plus the slug for the
+  // documents whose title has not caught up yet.
+  const needle = query.trim().toLowerCase()
+  const matching = (document: DocumentMeta) =>
+    needle === '' ||
+    `${document.title} ${document.slug}`.toLowerCase().includes(needle)
+
+  const active = (documents ?? [])
+    .filter((document) => document.status !== 'archived')
+    .filter(matching)
+  const archived = (documents ?? [])
+    .filter((document) => document.status === 'archived')
+    .filter(matching)
+  const searching = needle !== ''
+  const nothingFound = searching && active.length === 0 && archived.length === 0
 
   const row = (document: DocumentMeta) => (
     <li key={document.slug} className="documents__item">
@@ -107,14 +121,41 @@ export function DocumentsPage() {
 
       {documents === null ? (
         <p className="muted">loading…</p>
-      ) : active.length === 0 && archived.length === 0 ? (
+      ) : documents.length === 0 ? (
         <p className="muted">Nothing here yet. Start something with the plus above.</p>
       ) : (
         <>
-          {active.length > 0 ? (
+          <div className="search">
+            <Search className="search__icon" size={16} aria-hidden="true" />
+            <input
+              className="search__input"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search documents"
+              aria-label="Search documents"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {searching ? (
+              <button
+                className="search__clear"
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                title="Clear search"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+
+          {nothingFound ? (
+            <p className="muted documents__empty">Nothing matches “{query.trim()}”.</p>
+          ) : active.length > 0 ? (
             <ul className="documents">{active.map(row)}</ul>
           ) : (
-            <p className="muted">Everything is archived. Open one and change its status to bring it back.</p>
+            <p className="muted documents__empty">Everything is archived. Open one and change its status to bring it back.</p>
           )}
 
           {archived.length > 0 ? (

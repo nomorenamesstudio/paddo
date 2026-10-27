@@ -1,0 +1,16 @@
+import { readFile } from 'node:fs/promises'
+import { chromium } from '@playwright/test'
+const env = Object.fromEntries((await readFile(new URL('../.env', import.meta.url), 'utf8'))
+  .split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]))
+const browser = await chromium.launch()
+const page = await (await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })).newPage()
+await page.goto('http://127.0.0.1:4319/')
+await page.locator('input[type="password"]').fill(env.PADDO_PASSWORD)
+await page.getByRole('button', { name: /open padd/i }).click()
+await page.locator('.documents').waitFor()
+await page.waitForTimeout(600)
+await page.getByLabel('Search documents').fill('draft')
+await page.waitForTimeout(300)
+await page.screenshot({ path: 'screenshots/search-mobile.png' })
+console.log('rows', await page.locator('.documents__item').count())
+await browser.close()
