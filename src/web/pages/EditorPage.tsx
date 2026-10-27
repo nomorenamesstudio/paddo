@@ -73,7 +73,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     return () => window.clearTimeout(timer)
   }, [ready])
   const [pending, setPending] = useState(0)
-  const [headlinePhase, setHeadlinePhase] = useState<HeadlinePhase>('loading')
+  const [headlinePhase, setHeadlinePhase] = useState<HeadlinePhase>('syncing')
   const [inviteOpen, setInviteOpen] = useState(false)
   const [writingGuide, setWritingGuide] = useState('')
   const [includeGuide, setIncludeGuide] = useState(
@@ -263,13 +263,17 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   )
 
   // The header says what is happening, then gets out of the way: the title appears a
-  // couple of seconds after the document is ready, never before it.
+  // couple of seconds after the document is ready, never before it. Any drop and
+  // reconnect plays the whole sequence again, because the state is the dependency.
   useEffect(() => {
-    if (!ready) return
+    if (sync !== 'connected') {
+      setHeadlinePhase('syncing')
+      return
+    }
     setHeadlinePhase('synced')
     const timer = window.setTimeout(() => setHeadlinePhase('title'), 2600)
     return () => window.clearTimeout(timer)
-  }, [ready])
+  }, [sync])
 
   const acceptAll = useCallback(() => {
     if (!editor) return

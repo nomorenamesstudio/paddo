@@ -1,32 +1,16 @@
-import { CircleCheck, CircleX, Loader2 } from 'lucide-react'
-
-import type { SyncState } from './TopBar'
+import { CircleCheck, RefreshCw } from 'lucide-react'
 
 /** How the writing UI's header announces itself, in order. */
-export type HeadlinePhase = 'loading' | 'synced' | 'title'
+export type HeadlinePhase = 'syncing' | 'synced' | 'title'
 
-const ORDER: HeadlinePhase[] = ['loading', 'synced', 'title']
-
-function SyncMark({ state }: { state: SyncState }) {
-  if (state === 'connected') return <CircleCheck size={17} aria-hidden="true" />
-  if (state === 'connecting') return <Loader2 size={16} className="spin" aria-hidden="true" />
-  return <CircleX size={17} aria-hidden="true" />
-}
+const ORDER: HeadlinePhase[] = ['syncing', 'synced', 'title']
 
 /**
  * One line of header text at a time, sliding: the old one leaves upwards while the new
  * one rises from below, and the sheet clips both. All three states stay mounted so the
  * movement is a CSS transition rather than a mount/unmount race.
  */
-export function Headline({
-  phase,
-  title,
-  sync,
-}: {
-  phase: HeadlinePhase
-  title: string
-  sync: SyncState
-}) {
+export function Headline({ phase, title }: { phase: HeadlinePhase; title: string }) {
   const current = ORDER.indexOf(phase)
 
   const placement = (index: number) =>
@@ -41,8 +25,8 @@ export function Headline({
         data-state={placement(0)}
         aria-hidden={hidden(0)}
       >
-        <Loader2 size={16} className="spin" aria-hidden="true" />
-        <span>loading document</span>
+        <RefreshCw size={16} className="spin" aria-hidden="true" />
+        <span>syncing document</span>
       </div>
 
       <div
@@ -60,9 +44,6 @@ export function Headline({
         aria-hidden={hidden(2)}
       >
         <h1 className="topbar__title">{title}</h1>
-        <span className="headline__sync">
-          <SyncMark state={sync} />
-        </span>
       </div>
     </div>
   )

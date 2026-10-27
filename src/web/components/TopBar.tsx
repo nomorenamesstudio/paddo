@@ -1,30 +1,11 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { ChevronLeft, CircleCheck, CircleX, RefreshCw } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 
 import { Headline, type HeadlinePhase } from './Headline'
 
 import { navigate } from '../App'
 
 export type SyncState = 'connecting' | 'connected' | 'disconnected'
-
-function SyncIcon({ state }: { state: SyncState }) {
-  return (
-    <span
-      className={`sync-icon sync-icon--${state}`}
-      title={`sync: ${state}`}
-      role="status"
-      aria-label={`sync: ${state}`}
-    >
-      {state === 'connected' ? (
-        <CircleCheck size={17} aria-hidden="true" />
-      ) : state === 'connecting' ? (
-        <RefreshCw size={16} aria-hidden="true" className="spin" />
-      ) : (
-        <CircleX size={17} aria-hidden="true" />
-      )}
-    </span>
-  )
-}
 
 /** Empty controls of the same size, so nothing shifts when the real ones arrive. */
 export function TopBarActionsPlaceholder() {
@@ -71,11 +52,10 @@ export function TopBar({
       {/* Title and sync state travel together: the state belongs to this document,
           not to the row of controls on the right. */}
       {phase ? (
-        <Headline phase={phase} title={title} sync={sync} />
+        <Headline phase={phase} title={title} />
       ) : (
         <div className="topbar__heading">
           <h1 className="topbar__title">{title}</h1>
-          <SyncIcon state={sync} />
         </div>
       )}
       {actions ?? <TopBarActionsPlaceholder />}

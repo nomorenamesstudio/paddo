@@ -90,7 +90,7 @@ export function App() {
       <Suspense
         fallback={
           <div className="shell">
-            <TopBar title={humanizeSlug(route.slug)} sync="connecting" phase="loading" />
+            <TopBar title={humanizeSlug(route.slug)} sync="connecting" phase="syncing" />
             <main className="editor">
               <LoadingDocument />
             </main>
