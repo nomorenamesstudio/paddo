@@ -1942,6 +1942,13 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   user-select: text;
 }
 
+.tokens__claimant {
+  flex: 1;
+  min-width: 8rem;
+  color: var(--fg);
+  font-weight: 600;
+}
+
 .tokens__code {
   min-width: 9rem;
   padding: 0.35rem 0.5rem;

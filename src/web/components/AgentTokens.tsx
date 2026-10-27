@@ -358,11 +358,21 @@ export function AgentTokens() {
           </p>
           {waiting.map((entry) => (
             <div key={entry.code} className="tokens__secretrow">
-              <code className="tokens__code">{entry.code}</code>
-              <button className="button button--accept" type="button" onClick={() => void approve(entry.code)}>
+              <span className="tokens__claimant">{entry.name}</span>
+              <button
+                className="button button--accept"
+                type="button"
+                onClick={() => void approve(entry.code)}
+                aria-label={`Approve ${entry.name}`}
+              >
                 Approve
               </button>
-              <button className="button button--danger" type="button" onClick={() => void deny(entry.code)}>
+              <button
+                className="button button--danger"
+                type="button"
+                onClick={() => void deny(entry.code)}
+                aria-label={`Deny ${entry.name}`}
+              >
                 Deny
               </button>
             </div>

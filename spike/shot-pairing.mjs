@@ -12,6 +12,14 @@ await page.locator('.documents').waitFor()
 await page.goto(`${base}/settings`)
 await page.locator('.tokens__form').waitFor()
 
+// Leftovers from earlier probes would clutter the shot.
+await page.evaluate(async () => {
+  const { pairings } = await (await fetch('/api/pair')).json()
+  for (const pairing of pairings) {
+    await fetch(`/api/pair/${pairing.code}/deny`, { method: 'POST' })
+  }
+})
+
 await page.locator('.tokens__input').fill('my case study agent')
 await page.locator('.tokens__choice', { hasText: 'only these' }).click()
 await page.locator('.tokens__documents .tokens__choice', { hasText: 'The quiet interface' }).click()
@@ -25,10 +33,10 @@ await fetch(`${base}/api/pair/claim`, {
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ code }),
 })
-await page.waitForTimeout(2600)
+await page.waitForTimeout(3200)
 await page.locator('.tokens__paircode').scrollIntoViewIfNeeded()
-await page.waitForTimeout(200)
+await page.waitForTimeout(400)
 const box = await page.locator('.tokens__secret').boundingBox()
 await page.screenshot({ path: 'screenshots/agent-pairing.png', clip: { x: box.x - 12, y: box.y - 12, width: box.width + 24, height: Math.min(box.height + 24, 1250) } })
-console.log(JSON.stringify({ code, approveVisible: await page.getByRole('button', { name: 'Approve' }).isVisible() }))
+console.log(JSON.stringify({ code, approveVisible: await page.getByRole('button', { name: /^Approve/ }).first().isVisible() }))
 await browser.close()
