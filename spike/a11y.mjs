@@ -45,7 +45,7 @@ for (const scheme of ['light', 'dark']) {
   await page.locator('.settings__themes').waitFor()
   await page.waitForTimeout(500)
   await audit('settings')
-  await page.goto('http://127.0.0.1:4319/d/new-draft-6')
+  await page.goto('http://127.0.0.1:4319/d/the-ghosted-story')
   await page.locator('.prose h1').first().waitFor()
   await page.waitForTimeout(1500)
   await audit('editor with hunks')

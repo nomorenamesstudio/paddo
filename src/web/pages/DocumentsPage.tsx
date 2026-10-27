@@ -4,7 +4,11 @@ import { ChevronRight, Plus, Search, Settings, X } from 'lucide-react'
 import { api, ApiError, type DocumentMeta } from '../api'
 import { RowMenu } from '../components/RowMenu'
 import { StatusIcon, statusLabel } from '../components/StatusIcon'
-import wordmark from '../assets/wordmark.svg?raw'
+import wordmarkSource from '../assets/wordmark.svg?raw'
+
+// Collapse the file's newlines: as text nodes they build a line box inside the heading,
+// which pushes the drawing off the row's centre line.
+const wordmark = wordmarkSource.replace(/>\s+</g, '><').trim()
 import { navigate } from '../App'
 
 function when(ms: number): string {

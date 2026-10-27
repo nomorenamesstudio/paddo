@@ -2,6 +2,17 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — One centre line in the masthead
+
+**Fix** — the wordmark sat 4px above the row's centre: the SVG file's newlines became text
+nodes inside the heading and built a line box around the drawing. The import collapses
+them, and the heading keeps `font-size: 0` / `line-height: 0` so its height *is* the
+drawing's. The search icon and clear button are pinned to the field's middle with
+`top: 50%`, so the mark, the field, its icon, its text, the ✕ and the buttons all measure
+the same centre line (74.4px desktop, 72.2px phone).
+
+**Fix** — the wordmark is a touch smaller again (22px of ink at 1.32rem, 20px on a phone).
+
 ## 2026-10-27 — The wordmark is cropped to its ink
 
 **Fix** — the SVG viewBox carried the font's full ascender and descender, so most of the

@@ -109,40 +109,35 @@ a {
 
 .masthead--row {
   display: flex;
-  gap: 0.9rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.9rem;
   margin-bottom: 2rem;
 }
 
 .wordmark {
+  /* The heading holds nothing but the drawing: no font, no line box, so the SVG's
+     own height is the heading's height and it centres with the rest of the row. */
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 0;
+  line-height: 0;
+  letter-spacing: normal;
 }
 
 /* The viewBox is cropped to the ink, so this height is how tall the letters are. */
 .wordmark svg {
   display: block;
-  height: 1.5rem;
+  height: 1.32rem;
   width: auto;
   fill: currentColor;
 }
 
 @media (max-width: 40rem) {
   .wordmark svg {
-    height: 1.35rem;
+    height: 1.2rem;
   }
 }
 
-.wordmark {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 2rem;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.5rem;
-}
+
 
 .muted {
   color: var(--muted);
@@ -1798,7 +1793,9 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 .search__icon {
   position: absolute;
-  left: 0.85rem;
+  top: 50%;
+  left: 0.8rem;
+  transform: translateY(-50%);
   color: var(--muted);
   pointer-events: none;
 }
@@ -1807,6 +1804,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   width: 100%;
   min-height: 2.4rem;
   padding: 0 2.4rem 0 2.3rem;
+  line-height: 1.2;
   font-family: var(--font-mono);
   /* 16px is the floor: anything smaller makes iOS Safari zoom on focus. */
   font-size: 16px;
@@ -1832,7 +1830,9 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 .search__clear {
   position: absolute;
-  right: 0.55rem;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
