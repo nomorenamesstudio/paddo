@@ -1144,6 +1144,61 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   pointer-events: none;
 }
 
+.skeleton {
+  position: absolute;
+  inset: 0;
+  padding: 2rem 1.5rem;
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
+.skeleton.is-fading {
+  opacity: 0;
+}
+
+.skeleton__title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--muted);
+  opacity: 0.5;
+  margin: 0 0 1.5rem;
+}
+
+.skeleton__line {
+  display: block;
+  height: 0.85rem;
+  margin-bottom: 0.85rem;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fg) 6%, transparent) 0%,
+    color-mix(in srgb, var(--fg) 11%, transparent) 50%,
+    color-mix(in srgb, var(--fg) 6%, transparent) 100%
+  );
+  background-size: 220% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton__line {
+    animation: none;
+  }
+
+  .skeleton {
+    transition: none;
+  }
+}
+
 /* One entrance, not a reveal on every section: the text rises, the hint follows. */
 @media (prefers-reduced-motion: no-preference) {
   .editor__body.is-ready {
