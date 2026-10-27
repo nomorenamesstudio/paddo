@@ -2,6 +2,14 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The small type is sans
+
+**Feature** — `--font-mono` is gone. Meta lines, labels, buttons, the search field, the hunk
+rationale and the actions are all `--font-sans` now: a system stack
+(`system-ui, -apple-system, Segoe UI, Roboto, …`), so nothing is downloaded for it. The app
+has no code surface to justify a monospace, and the width it bought was the only thing it
+gave in return.
+
 ## 2026-10-27 — One centre line in the masthead
 
 **Fix** — the wordmark sat 4px above the row's centre: the SVG file's newlines became text
