@@ -140,7 +140,7 @@ a {
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.25rem;
   /* A floating sheet rather than a band: margin all round, soft corners, a shadow,
      and paper light enough to sit above the page it covers. The left padding is the
      widest of the three, so the wordmark has air behind it. */
@@ -173,14 +173,14 @@ a {
   /* Keeps the air after the wordmark equal to the air before it. Specific enough to
      beat the base .wordmark rule further down the file. */
   .masthead--row .wordmark {
-    margin-right: 0.95rem;
+    margin-right: 0.75rem;
   }
 }
 
 .wordmark {
   /* The heading holds nothing but the drawing: no font, no line box, so the SVG's
      own height is the heading's height and it centres with the rest of the row. */
-  margin: 0 0.6rem 0 0;
+  margin: 0 0.58rem 0 0;
   font-size: 0;
   line-height: 0;
   letter-spacing: normal;
@@ -1649,16 +1649,17 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 }
 
 @media (pointer: coarse) {
-  /* A thumb needs the 44px target the field gives up on a mouse. */
+  /* A thumb needs a real target here; 2.6rem keeps one while leaving the button's own
+     padding as small as the gap on the other side of the field. */
   .search__input {
     min-height: var(--tap);
   }
 
   .masthead__actions .button--icon {
-    width: var(--tap);
-    min-width: var(--tap);
-    height: var(--tap);
-    min-height: var(--tap);
+    width: 2.6rem;
+    min-width: 2.6rem;
+    height: 2.6rem;
+    min-height: 2.6rem;
   }
 }
 
