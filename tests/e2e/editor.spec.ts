@@ -581,7 +581,7 @@ test('a scoped token reaches its own documents and nothing else', async ({ page,
   }
 })
 
-test('pairing hands a token to an agent only after the writer approves, and only once', async ({
+test('pairing hands a token to an agent only after the writer approves, and it collects again', async ({
   page,
   baseURL,
 }) => {
@@ -612,12 +612,22 @@ test('pairing hands a token to an agent only after the writer approves, and only
     )
     expect((await page.request.post(`/api/pair/${code}/approve`)).ok()).toBe(true)
 
-    // The token arrives over the agent's own connection, once.
+    // Approval alone mints nothing: no token exists until the agent collects, so an
+    // abandoned pairing cannot leave an orphan behind.
+    const afterApproval = (await (await page.request.get('/api/tokens')).json()) as {
+      tokens: Array<{ name: string }>
+    }
+    expect(afterApproval.tokens.filter((token) => token.name === 'paired agent')).toHaveLength(0)
+
+    // The token arrives over the agent's own connection, and again if the first
+    // collection is lost — an agent whose scratch directory is wiped needs that.
     const collected = await agent.post('/api/pair/claim', { data: { code } })
     expect(collected.ok()).toBe(true)
     const { token } = (await collected.json()) as { token: string }
     expect(token.startsWith('paddo_')).toBe(true)
-    expect((await agent.post('/api/pair/claim', { data: { code } })).status()).toBe(404)
+    const again = await agent.post('/api/pair/claim', { data: { code } })
+    expect(again.ok()).toBe(true)
+    expect(((await again.json()) as { token: string }).token).toBe(token)
 
     // And it is the scoped token it was promised to be.
     const scoped = await request.newContext({

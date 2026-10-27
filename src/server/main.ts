@@ -469,7 +469,7 @@ app.post('/api/pair/claim', async (request, reply) => {
     return
   }
 
-  const claimed = claimPairing(code)
+  const claimed = await claimPairing(config, code)
   if (claimed.state === 'unknown') {
     // Nothing to leak: an unknown code and an expired one look the same.
     reply.code(404).send({ error: 'that code is unknown or has expired' })
@@ -485,7 +485,7 @@ app.post('/api/pair/claim', async (request, reply) => {
 
 app.post('/api/pair/:code/approve', { preHandler: requireSession }, async (request, reply) => {
   const { code } = request.params as { code: string }
-  const result = await approvePairing(config, code)
+  const result = approvePairing(code)
   if (!result.approved) {
     reply.code(404).send({ error: result.reason })
     return

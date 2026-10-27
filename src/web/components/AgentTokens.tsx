@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, Copy, KeyRound, Trash2 } from 'lucide-react'
 
 import { api, ApiError, VERBS, type AgentToken, type DocumentMeta, type Verb } from '../api'
+import { copyText, selectElementText } from '../clipboard'
 
 /** The tools live on this origin, so the block never needs a hostname typed by hand. */
 function mcpUrl(): string {
@@ -59,8 +60,9 @@ It needs pairing first. POST this to ${base}/api/pair/claim with:
   {"code": "${code}"}
 
 While I have not approved it you get HTTP 202 — wait a couple of seconds and ask again.
-Once I approve, the same request returns {"token": "paddo_…"}: use that token from then
-on, and never print it back to me.
+Once I approve, the same request returns {"token": "paddo_…"}: save it to a file that
+survives between your commands (not /tmp), and never print it back to me. If you lose it,
+the same code returns it again for ten minutes, so ask me to be re-paired only after that.
 
 Then either register ${base}/mcp as a remote MCP server (header: "Authorization: Bearer
 <token>"), or call the HTTP API with it: GET /api/documents, GET /api/documents/<slug>,
@@ -349,8 +351,11 @@ export function AgentTokens() {
             <button
               className="button"
               type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(pairBrief(pairing.code)).then(() => setBriefCopied(true))
+              onClick={(event) => {
+                void copyText(pairBrief(pairing.code)).then((ok) => {
+                  setBriefCopied(ok)
+                  if (!ok) selectElementText(event.currentTarget.previousElementSibling as HTMLElement)
+                })
               }}
             >
               {briefCopied ? (
@@ -361,6 +366,12 @@ export function AgentTokens() {
               {briefCopied ? 'Copied' : 'Copy prompt'}
             </button>
           </div>
+          {briefCopied === false ? (
+            <p className="tokens__hint">
+              This browser will not let the page copy (no HTTPS). The prompt above is selected —
+              long-press it and copy.
+            </p>
+          ) : null}
 
           <p className="tokens__hint">
             {waiting.length === 0
@@ -402,8 +413,11 @@ export function AgentTokens() {
             <button
               className="button"
               type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(configBlock(secret)).then(() => setCopied(true))
+              onClick={(event) => {
+                void copyText(configBlock(secret)).then((ok) => {
+                  setCopied(ok)
+                  if (!ok) selectElementText(event.currentTarget.previousElementSibling as HTMLElement)
+                })
               }}
             >
               {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
@@ -426,8 +440,11 @@ export function AgentTokens() {
             <button
               className="button"
               type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(agentBrief(secret)).then(() => setBriefCopied(true))
+              onClick={(event) => {
+                void copyText(agentBrief(secret)).then((ok) => {
+                  setBriefCopied(ok)
+                  if (!ok) selectElementText(event.currentTarget.previousElementSibling as HTMLElement)
+                })
               }}
             >
               {briefCopied ? (
@@ -438,6 +455,12 @@ export function AgentTokens() {
               {briefCopied ? 'Copied' : 'Copy prompt'}
             </button>
           </div>
+          {briefCopied === false ? (
+            <p className="tokens__hint">
+              This browser will not let the page copy (no HTTPS). The prompt above is selected —
+              long-press it and copy.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -2,6 +2,19 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — Copying without HTTPS, and a pairing that survives a lost token
+
+**Fix** — the copy buttons did nothing on a phone over plain LAN HTTP: `navigator.clipboard`
+only exists in a secure context, so the promise never settled. There is a `document.execCommand`
+fallback now, and if the browser refuses even that, the block is selected and the panel says so.
+Measured on `http://10.10.10.20:4319` (`isSecureContext: false`): the button reads *Copied*.
+
+**Fix** — approval minted the token and the first collection deleted the pairing, so an agent that
+wrote it to a scratch directory its sandbox wipes lost it forever and needed a fresh pairing. The
+token is minted on first collection instead — no orphan if nobody collects — and the same code
+returns the same token for the rest of its ten minutes, up to five hand-overs. The brief now tells
+the agent to save it somewhere that survives and that re-collecting works.
+
 ## 2026-10-27 — Pairing: the token never enters the transcript
 
 **Feature** — Settings → *Agent tokens* → **Pair an agent** prints a code and a prompt. The agent

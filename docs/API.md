@@ -97,11 +97,14 @@ the only thing that goes into the conversation:
 
 1. Agent: `POST /api/pair/claim {"code"}` → `202 {"state":"claimed"}`.
 2. Paddō's pairing panel sees the claim and offers **Approve** / **Deny**.
-3. Approval mints the token with the verbs and documents chosen when the pairing was
-   started; the agent collects it on its next claim, and that hand-over deletes the
-   pairing — a second claim is a `404`.
-4. Before approval the claim returns no token at all, so a leaked code buys an attacker
-   a request the writer never approves.
+3. Approval mints nothing on its own. The token is created on the **first collection**,
+   with the verbs and documents chosen when the pairing was started, so a pairing nobody
+   collects leaves no orphan token behind.
+4. Collection can be repeated while the code lives (up to five hand-overs of the *same*
+   token), because an agent whose scratch directory is wiped between commands would
+   otherwise lose it for good.
+5. Before approval the claim returns no token at all, so a leaked code buys an attacker a
+   request the writer never approves.
 
 A restart cancels pending pairings: they live in memory, like the login throttle.
 

@@ -26,10 +26,18 @@ interface Pairing {
   state: PairingState
   createdAt: number
   claimedAt?: number
-  /** Set at approval, handed over exactly once. */
+  /** Minted on the first collection, not at approval: an unclaimed pairing leaves no token. */
   secret?: string
   tokenId?: string
+  handovers: number
 }
+
+/**
+ * A collection can be lost: an agent whose shell wipes its scratch directory between
+ * commands gets the token once and then has nothing. Within the code's lifetime it may
+ * collect again, up to this many times.
+ */
+const MAX_HANDOVERS = 5
 
 // In memory on purpose: one process, personal service, and an abandoned pairing
 // should die with it rather than linger on disk.
@@ -61,7 +69,7 @@ function prune(): void {
 export function startPairing(input: MintInput): { code: string; expiresAt: number } {
   prune()
   const code = newCode()
-  pairings.set(code, { code, input, state: 'waiting', createdAt: Date.now() })
+  pairings.set(code, { code, input, state: 'waiting', createdAt: Date.now(), handovers: 0 })
   return { code, expiresAt: Date.now() + TTL_MS }
 }
 
@@ -85,40 +93,51 @@ export function listPairings(): PendingPairing[] {
     }))
 }
 
-/** The agent's side: claim the code and wait, then collect the token once approved. */
-export function claimPairing(code: string): { state: 'unknown' } | { state: PairingState; secret?: string } {
+export interface ClaimResult {
+  state: 'unknown' | PairingState
+  secret?: string
+}
+
+/**
+ * The agent's side: claim the code, wait, then collect. The token is minted at the
+ * first collection, so an approval nobody collects leaves no orphan behind, and a
+ * collection that gets lost can be repeated while the code still lives.
+ */
+export async function claimPairing(config: Config, code: string): Promise<ClaimResult> {
   prune()
   const pairing = pairings.get(normalizeCode(code))
   if (!pairing) return { state: 'unknown' }
-
-  if (pairing.state === 'approved' && pairing.secret) {
-    const secret = pairing.secret
-    // One hand-over: the secret lives in the agent's config from here, and in this
-    // map it would only be a liability.
-    pairings.delete(pairing.code)
-    return { state: 'approved', secret }
-  }
 
   if (pairing.state === 'waiting') {
     pairing.state = 'claimed'
     pairing.claimedAt = Date.now()
   }
-  return { state: pairing.state }
+
+  if (pairing.state !== 'approved') return { state: pairing.state }
+
+  if (pairing.handovers >= MAX_HANDOVERS) {
+    pairings.delete(pairing.code)
+    return { state: 'unknown' }
+  }
+
+  if (!pairing.secret) {
+    const { token, secret } = await mintToken(config, pairing.input)
+    pairing.secret = secret
+    pairing.tokenId = token.id
+  }
+
+  pairing.handovers += 1
+  return { state: 'approved', secret: pairing.secret }
 }
 
-export async function approvePairing(
-  config: Config,
-  code: string,
-): Promise<{ approved: boolean; reason?: string }> {
+export function approvePairing(code: string): { approved: boolean; reason?: string } {
   prune()
   const pairing = pairings.get(normalizeCode(code))
   if (!pairing) return { approved: false, reason: 'that code is unknown or has expired' }
   if (pairing.state === 'approved') return { approved: false, reason: 'already approved' }
 
-  const { token, secret } = await mintToken(config, pairing.input)
+  // No token yet: nothing exists to orphan if the agent never comes back for it.
   pairing.state = 'approved'
-  pairing.secret = secret
-  pairing.tokenId = token.id
   return { approved: true }
 }
 
