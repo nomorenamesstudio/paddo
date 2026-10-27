@@ -75,7 +75,15 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* `hidden`, not `clip`: on the root, clip also cuts fixed overlays, which showed up
+   as a hard edge across the floating button's shadow. */
 html {
+  overflow-x: hidden;
+}
+
+/* Belt as well as braces: `hidden` on the root stops the drag, `clip` on the body
+   keeps the layout from reporting a scrollable width at all. */
+body {
   overflow-x: clip;
 }
 
@@ -99,7 +107,7 @@ a {
 .page {
   max-width: var(--measure);
   margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
+  padding: 1.25rem 1.5rem 3rem;
 }
 
 .page--narrow {
@@ -111,10 +119,26 @@ a {
 }
 
 .masthead--row {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  margin-bottom: 2rem;
+  /* Tighter than the page padding, and it carries its own paper so rows can pass
+     underneath it. */
+  margin: 0 -1.5rem 1.5rem;
+  padding: 0.7rem 1.5rem;
+  padding-top: max(0.7rem, env(safe-area-inset-top));
+  background: var(--bg);
+}
+
+@media (max-width: 40rem) {
+  .masthead--row {
+    margin: 0 -1.1rem 1.1rem;
+    padding: 0.55rem 1.1rem;
+    padding-top: max(0.55rem, env(safe-area-inset-top));
+  }
 }
 
 .wordmark {

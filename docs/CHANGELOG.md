@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — A sticky header, less padding, and a shadow that survives
+
+**Feature** — the documents header sticks to the top, so the search field is reachable while
+the list scrolls. Page padding drops from 3rem/5rem to 1.25rem/3rem and the bar itself runs
+0.7rem top and bottom (0.55rem on a phone), with the safe-area inset respected.
+
+**Fix** — `overflow-x: clip` on the root also clipped fixed overlays, which cut the floating
+button's shadow in a hard line at the viewport edge. The guard is now `overflow-x: hidden` on
+`html` plus `clip` on `body`: the drag is still stopped (a 2000px element cannot pan the
+page) and the shadow paints in full.
+
+**Fix** — the sticky bar had a `backdrop-filter`, which makes it the containing block for
+fixed descendants: the floating button pinned itself to the bar (12px from the top) instead
+of the viewport. The bar is opaque now, and the button is back at 17px from the bottom right.
+
 ## 2026-10-27 — The small type is sans
 
 **Feature** — `--font-mono` is gone. Meta lines, labels, buttons, the search field, the hunk
