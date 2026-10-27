@@ -131,7 +131,15 @@ export function AgentTokens() {
       void api
         .pairings()
         .then((result) => {
-          if (!cancelled) setWaiting(result.pairings)
+          // Only the pairing this panel started: other codes are not his to approve
+          // from here, and a stale one read as "it already happened".
+          // Only this pairing, and only once someone has actually claimed it: a row
+          // before the claim reads as "it already happened".
+          if (!cancelled) {
+            setWaiting(
+              result.pairings.filter((entry) => entry.code === pairing.code && entry.state === 'claimed'),
+            )
+          }
         })
         .catch(() => {
           // A failed poll is not worth an error banner; the next one may work.
