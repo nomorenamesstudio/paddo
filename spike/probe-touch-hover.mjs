@@ -1,0 +1,25 @@
+import { readFile } from 'node:fs/promises'
+import { chromium } from '@playwright/test'
+const env = Object.fromEntries((await readFile(new URL('../.env', import.meta.url), 'utf8'))
+  .split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]))
+const browser = await chromium.launch()
+const page = await (await browser.newContext({ viewport: { width: 430, height: 800 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true })).newPage()
+await page.goto('http://127.0.0.1:4319/')
+await page.locator('input[type="password"]').fill(env.PADDO_PASSWORD)
+await page.getByRole('button', { name: /open padd/i }).click()
+await page.locator('.documents').waitFor()
+await page.waitForTimeout(400)
+const read = () => page.evaluate(() => {
+  const button = document.querySelector('.masthead__actions a')
+  return getComputedStyle(button).backgroundColor
+})
+const before = await read()
+await page.locator('.masthead__actions a').tap()
+await page.locator('.settings__themes').waitFor().catch(() => {})
+await page.goBack()
+await page.locator('.documents').waitFor()
+await page.waitForTimeout(400)
+const after = await read()
+await page.screenshot({ path: 'screenshots/touch-header.png', clip: { x: 0, y: 0, width: 430, height: 120 } })
+console.log(JSON.stringify({ before, after }))
+await browser.close()

@@ -2,6 +2,23 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The header measured in ink, not boxes
+
+**Fix** — measured to the pixels that are actually painted (glyph bounds and the well's edge,
+not padded element rects):
+
+| | outer left | logo → well | well → gear | gear → plus | outer right |
+|---|---|---|---|---|---|
+| desktop | 17.8 | 12.7 | 17.5 | 20.6 | 18.4 |
+| phone | 14.0 | 9.9 | 17.6 | — (FAB) | 15.2 |
+
+The row gap dropped to 0.45rem (0.1 on a phone) and the wordmark keeps 0.3rem of its own, so
+the field no longer floats away from the gear while the logo suffocates. On the phone the sheet
+keeps 11.9px of air above and below the well.
+
+**Fix** — a tap left the settings button wearing its hover fill: that fill is now behind
+`@media (hover: hover)`, so a touch device never keeps it.
+
 ## 2026-10-27 — The wordmark a notch smaller
 
 **Fix** — the wordmark drops from 1.32rem to 1.16rem of ink (20px tall, 17.5px on a phone), so
