@@ -2,6 +2,15 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The header's paddings, rebalanced
+
+**Fix** — three things were off: the wordmark sat 12px from the sheet's edge with the field
+right behind it, the search field's own padding made the gap to the settings button read
+twice its CSS value, and the bar was 53px tall around a 41px field. The sheet pads 18px on
+the left (14 on a phone) and 6.5px top and bottom, the buttons are sized to their icons
+instead of the touch target, and the field is 2.15rem — 44px again under `pointer: coarse`.
+Measured on desktop: 18px left, 14px to the field, 19px to the gear, 14px right.
+
 ## 2026-10-27 — Flat chrome in the header
 
 **Feature** — direction A, wired in: the sheet drops its hairline (a soft shadow does the
