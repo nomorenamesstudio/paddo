@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The logo is outlines, and the fonts finally cover ō
+
+**Fix** — the ō was never a `unicode-range` problem. `tools/fetch-fonts.py` now reads the
+full fonts from the google/fonts repo instead of the CSS API: Google's subsets carry 227
+glyphs (basic Latin, no macron, no double acute), the full font carries 567. Subset to the
+Latin ranges prose needs and shipped as one woff2 per face, `ō`, `ő` and `ű` render in
+Young Serif and Source Serif 4 alike — verified by glyph coverage and by eye.
+
+**Feature** — the Paddō wordmark is an SVG (`src/web/assets/wordmark.svg`, generated from
+the font outlines by `tools/make-wordmark.py`), filled with `currentColor`, so the logo
+cannot fall back to a system serif whatever the browser does with fonts.
+
+**Feature** — the search field moved into the masthead, between the wordmark and the
+settings button, with a "search…" placeholder; the list keeps its full width.
+
 ## 2026-10-26 — Ghost hunks, and why they appeared
 
 **Fix** — a rename made the file watcher diff the markdown against the CRDT and report a

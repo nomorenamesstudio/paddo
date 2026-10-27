@@ -29,15 +29,20 @@ Playwright's browser lives in `.cache/ms-playwright` too, for the same reason:
 ## Fonts
 
 Self-hosted, one woff2 per face in `public/fonts`, declared in
-`src/web/styles/fonts.css`. That file is generated — regenerate with:
+`src/web/styles/fonts.css`. Both the fonts and the logo are generated:
 
 ```bash
-node tools/fetch-fonts.mjs
+python3 tools/fetch-fonts.py     # needs fontTools + brotli
+python3 tools/make-wordmark.py   # writes src/web/assets/wordmark.svg
 ```
 
-The script deliberately keeps the `unicode-range` out of the declarations: Google's
-ranges are narrower than the files they describe, and honouring them sends characters
-like `ō` (in Paddō) to a system serif.
+`tools/fetch-fonts.py` does **not** use the Google CSS API. That API serves basic Latin
+only for these families — 227 glyphs, no macron, no double acute — which is why the `ō`
+in Paddō kept falling back to a system serif no matter what the CSS said. The script
+takes the full font from the google/fonts repo, subsets it to the Latin ranges prose
+needs, and writes one woff2 per face with no `unicode-range`: the file really does cover
+what it claims. The wordmark is outlines now, so the logo does not depend on the webfont
+at all.
 
 ## Configuration
 

@@ -109,15 +109,29 @@ a {
 
 .masthead--row {
   display: flex;
+  gap: 0.9rem;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.masthead--row .wordmark {
+.wordmark {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.wordmark svg {
+  display: block;
+  height: 1.55rem;
+  width: auto;
+  fill: currentColor;
+}
+
+@media (max-width: 40rem) {
+  .wordmark svg {
+    height: 1.3rem;
+  }
 }
 
 .wordmark {
@@ -1559,6 +1573,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 .masthead__actions {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 0.5rem;
 }
@@ -1775,8 +1790,9 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 .search {
   position: relative;
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
-  margin-top: 1.25rem;
 }
 
 .search__icon {
@@ -1788,8 +1804,8 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 .search__input {
   width: 100%;
-  min-height: var(--tap);
-  padding: 0 2.6rem 0 2.5rem;
+  min-height: 2.4rem;
+  padding: 0 2.4rem 0 2.3rem;
   font-family: var(--font-mono);
   /* 16px is the floor: anything smaller makes iOS Safari zoom on focus. */
   font-size: 16px;

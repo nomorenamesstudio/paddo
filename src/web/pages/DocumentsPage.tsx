@@ -4,6 +4,7 @@ import { ChevronRight, Plus, Search, Settings, X } from 'lucide-react'
 import { api, ApiError, type DocumentMeta } from '../api'
 import { RowMenu } from '../components/RowMenu'
 import { StatusIcon, statusLabel } from '../components/StatusIcon'
+import wordmark from '../assets/wordmark.svg?raw'
 import { navigate } from '../App'
 
 function when(ms: number): string {
@@ -85,7 +86,33 @@ export function DocumentsPage() {
   return (
     <main className="page page--narrow">
       <header className="masthead masthead--row">
-        <h1 className="wordmark">Paddō</h1>
+        <h1 className="wordmark" aria-label="Paddō" dangerouslySetInnerHTML={{ __html: wordmark }} />
+
+        <div className="search">
+          <Search className="search__icon" size={16} aria-hidden="true" />
+          <input
+            className="search__input"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="search…"
+            aria-label="Search documents"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {searching ? (
+            <button
+              className="search__clear"
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+
         <div className="masthead__actions">
           <a
             className="button button--icon"
@@ -125,32 +152,7 @@ export function DocumentsPage() {
         <p className="muted">Nothing here yet. Start something with the plus above.</p>
       ) : (
         <>
-          <div className="search">
-            <Search className="search__icon" size={16} aria-hidden="true" />
-            <input
-              className="search__input"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search documents"
-              aria-label="Search documents"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            {searching ? (
-              <button
-                className="search__clear"
-                type="button"
-                onClick={() => setQuery('')}
-                aria-label="Clear search"
-                title="Clear search"
-              >
-                <X size={14} aria-hidden="true" />
-              </button>
-            ) : null}
-          </div>
-
-          {nothingFound ? (
+                    {nothingFound ? (
             <p className="muted documents__empty">Nothing matches “{query.trim()}”.</p>
           ) : active.length > 0 ? (
             <ul className="documents">{active.map(row)}</ul>
