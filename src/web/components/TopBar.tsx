@@ -1,5 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { Check, ChevronLeft, RefreshCw, X } from 'lucide-react'
+import { ChevronLeft, CircleCheck, CircleX, RefreshCw } from 'lucide-react'
 
 import { navigate } from '../App'
 
@@ -14,11 +14,11 @@ function SyncIcon({ state }: { state: SyncState }) {
       aria-label={`sync: ${state}`}
     >
       {state === 'connected' ? (
-        <Check size={16} aria-hidden="true" />
+        <CircleCheck size={17} aria-hidden="true" />
       ) : state === 'connecting' ? (
         <RefreshCw size={16} aria-hidden="true" className="spin" />
       ) : (
-        <X size={16} aria-hidden="true" />
+        <CircleX size={17} aria-hidden="true" />
       )}
     </span>
   )
