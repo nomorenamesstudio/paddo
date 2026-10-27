@@ -47,12 +47,12 @@ export function DocumentsPage() {
     }
   }
 
-  // Search filters by what the reader sees: the title, plus the slug for the
-  // documents whose title has not caught up yet.
+  // Title only. The slug is a name the writer never chose and never sees — an
+  // untitled draft keeps "new-draft-7" forever, and matching it would surface
+  // every renamed article on a search for "new".
   const needle = query.trim().toLowerCase()
   const matching = (document: DocumentMeta) =>
-    needle === '' ||
-    `${document.title} ${document.slug}`.toLowerCase().includes(needle)
+    needle === '' || document.title.toLowerCase().includes(needle)
 
   const active = (documents ?? [])
     .filter((document) => document.status !== 'archived')

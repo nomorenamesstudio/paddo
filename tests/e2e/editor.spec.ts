@@ -323,6 +323,17 @@ test('the search box filters the list by title and clears back', async ({ page }
 
   await page.getByRole('button', { name: 'Clear search' }).click()
   await expect(row).toHaveCount(1)
+
+  // The slug is not a searchable name: a document called "Flux Capacitor…" has the
+  // slug "flux-capacitor…", and searching the dashed form must find nothing.
+  const spaced = `Flux Capacitor${Date.now()}`
+  const spacedSlug = await createDocument(page, spaced)
+  await page.goto('/')
+  await expect(page.locator('.documents')).toBeVisible()
+  await page.getByLabel('Search documents').fill(spacedSlug.replace(/[0-9]+$/, ''))
+  await expect(page.locator(`.documents__item:has(a[href="/d/${spacedSlug}"])`)).toHaveCount(0)
+  await page.getByLabel('Search documents').fill(spaced.split(' ')[0]!.toLowerCase())
+  await expect(page.locator(`.documents__item:has(a[href="/d/${spacedSlug}"])`)).toHaveCount(1)
 })
 
 test('the theme is a saved choice, and switching it keeps the writing guide', async ({ page }) => {

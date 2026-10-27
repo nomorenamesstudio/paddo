@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Search looks at the title, not the slug
+
+**Fix** — search also matched the slug, so "The Ghosted Story" turned up under `new`
+because its file is still `new-draft-6.md`. The slug is a name the writer never chose and
+never sees; search is title-only now. An e2e case pins it with a document titled
+"Flux Capacitor…" whose slug is `flux-capacitor…`: the dashed form finds nothing.
+
 ## 2026-10-26 — Square rows, and fields iOS will not zoom
 
 **Fix** — the row hover band lost its 8px radius: a rounded fill inside a ruled list read as
