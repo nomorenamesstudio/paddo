@@ -1915,16 +1915,19 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 }
 
 /* A thumb reaches the corner, not the header: below 40rem the new-document button
-   floats there instead of sitting beside the settings gear. */
+   floats there instead of sitting beside the settings gear. The selector matches the
+   header's button rules so the circle, its size and its ink survive them. */
 @media (max-width: 40rem) {
-  .documents__new {
+  .masthead__actions .documents__new {
     position: fixed;
     right: max(1rem, env(safe-area-inset-right));
     bottom: max(1rem, env(safe-area-inset-bottom));
     z-index: 25;
     width: 3.4rem;
-    height: 3.4rem;
     min-width: 3.4rem;
+    height: 3.4rem;
+    min-height: 3.4rem;
+    border-radius: var(--radius-pill);
     color: var(--bg);
     background: var(--fg);
     border-color: var(--fg);
@@ -1932,12 +1935,14 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
     animation: fade-in 240ms var(--ease) both;
   }
 
-  .documents__new:hover {
+  .masthead__actions .documents__new:hover,
+  .masthead__actions .documents__new:active {
+    color: var(--bg);
     background: color-mix(in srgb, var(--fg) 86%, var(--bg));
     border-color: color-mix(in srgb, var(--fg) 86%, var(--bg));
   }
 
-  .documents__new:disabled {
+  .masthead__actions .documents__new:disabled {
     opacity: 0.5;
   }
 
