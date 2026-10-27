@@ -2,6 +2,14 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — Concentric corners in the header
+
+**Fix** — the field and the buttons used a 999px pill inside a 16px sheet, so the bar mixed two
+shape languages. They take `--radius-inner` now (10px desktop, 9px on a phone), concentric with
+the sheet's corners. On a phone the sheet also gained vertical air (0.42rem, 59px tall around a
+44px field) and lost its right padding, since the gear's own 44px box provides it — measured:
+14px left, 12px to the field, 19px to the gear, 11px right.
+
 ## 2026-10-27 — The header's paddings, rebalanced
 
 **Fix** — three things were off: the wordmark sat 12px from the sheet's edge with the field
