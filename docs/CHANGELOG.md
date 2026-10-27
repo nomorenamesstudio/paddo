@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The wordmark is cropped to its ink
+
+**Fix** — the SVG viewBox carried the font's full ascender and descender, so most of the
+1.55rem box was empty space and the letters read small. `make-wordmark.py` now measures the
+glyph bounds and crops the box to them, which makes the CSS height *the height of the
+letters*: 24px of ink at 1.5rem, 21px on a phone.
+
 ## 2026-10-27 — The logo is outlines, and the fonts finally cover ō
 
 **Fix** — the ō was never a `unicode-range` problem. `tools/fetch-fonts.py` now reads the
