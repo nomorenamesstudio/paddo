@@ -24,6 +24,7 @@ client needs a URL and a bearer token — nothing runs on the agent's machine. S
 | `pending_suggestions` | `{ document }` | hunks still awaiting a human decision |
 | `create_document` | `{ markdown, name? }` | the new `{ slug, title, words }`; refuses an existing name |
 | `export_document` | `{ document }` | the exact markdown, no commentary: what a download contains |
+| `get_writing_guide` | — | `{ writingGuide }` — the writer's own rules for voice and tone |
 
 `propose_edits` is the primary path. `original` must be a verbatim substring of the
 current document. A substring that occurs more than once is refused, so the agent
@@ -58,6 +59,7 @@ so a plain edit on the `.md` file behaves exactly like `submit_markdown`.
 | `/api/documents/:slug` | PATCH | cookie | `{ status }`: draft, editing, published or archived |
 | `/api/documents/:slug` | DELETE | cookie | removes the markdown, the sidecar and the status |
 | `/api/settings` | GET | cookie | `{ writingGuide, theme }` |
+| `/api/settings/guide` | GET | cookie or bearer | `{ writingGuide }` — the guide alone, for an agent that has to follow it |
 | `/api/settings` | PUT | cookie | `{ writingGuide, theme }` — guide up to 20 000 characters, theme `system`/`light`/`dark` |
 | `/api/documents/:slug/suggestions` | GET | cookie or bearer | pending hunks |
 | `/api/documents/:slug/suggestions` | POST | cookie or bearer | ingest `{ edits }` or `{ markdown }` |

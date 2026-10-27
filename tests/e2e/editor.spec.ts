@@ -560,6 +560,14 @@ test('a scoped token reaches its own documents and nothing else', async ({ page,
       const tools = await mcp.post('', { data: { jsonrpc: '2.0', id: 2, method: 'tools/list' } })
       const names = ((await tools.json()).result.tools as Array<{ name: string }>).map((tool) => tool.name)
       expect(names).toContain('propose_edits')
+      expect(names).toContain('get_writing_guide')
+
+      // The guide is reachable with the token alone: an agent must not need the disk.
+      const guide = await agent.get('/api/settings/guide')
+      expect(guide.status()).toBe(200)
+      expect(await guide.json()).toHaveProperty('writingGuide')
+      // But the rest of the settings stay the owner's.
+      expect((await agent.get('/api/settings')).status()).toBe(401)
 
       // Scope is enforced behind the tool, not just at the transport.
       const refused = await mcp.post('', {

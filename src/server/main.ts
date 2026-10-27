@@ -288,6 +288,13 @@ app.get('/api/documents/:slug', { preHandler: guard('read') }, async (request, r
 
 app.get('/api/settings', { preHandler: requireSession }, async () => readSettings(config))
 
+// The writing guide alone, for an agent that has to follow it: no theme, no token
+// management, nothing an agent could change.
+app.get('/api/settings/guide', { preHandler: guard('read') }, async () => {
+  const settings = await readSettings(config)
+  return { writingGuide: settings.writingGuide }
+})
+
 app.put('/api/settings', { preHandler: requireSession }, async (request, reply) => {
   let settings
   try {

@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The writing guide is reachable with a token
+
+**Feature** — `GET /api/settings/guide` returns `{ writingGuide }` to a session or a token with
+`read`, and MCP gained `get_writing_guide`. An agent no longer needs the disk (`.paddo/settings.json`)
+to follow the writer's voice, and the rest of the settings stay the owner's: `/api/settings` with a
+token is still `401`.
+
 ## 2026-10-27 — Accepting a batch no longer splices stale offsets
 
 **Fix** — *Accept all* built one transaction from ranges captured before the batch, so two hunks

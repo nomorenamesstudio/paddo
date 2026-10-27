@@ -74,6 +74,17 @@ server.registerTool(
 )
 
 server.registerTool(
+  'get_writing_guide',
+  {
+    title: 'Read the writing guide',
+    description:
+      'The writer\'s own rules for voice, tone and formatting. Read it before proposing edits: it is the difference between a change that sounds like them and one that sounds like you.',
+    inputSchema: {},
+  },
+  async () => text(await call<unknown>('/api/settings/guide')),
+)
+
+server.registerTool(
   'propose_edits',
   {
     title: 'Propose edits',
