@@ -2,6 +2,12 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The stray line under the header
+
+**Fix** — `.documents` opened with its own `border-top`, which read as a rule between the
+sticky header and the first row, owned by neither. Rows already carry their separators, so
+the list starts with space instead.
+
 ## 2026-10-27 — A sticky header, less padding, and a shadow that survives
 
 **Feature** — the documents header sticks to the top, so the search field is reachable while
