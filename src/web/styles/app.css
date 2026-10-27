@@ -350,7 +350,8 @@ a {
 .documents {
   animation: fade-in 220ms ease-out both;
   list-style: none;
-  margin: 1.5rem 0 3rem;
+  /* Sits right above the archive row: the group belongs to the list, not below it. */
+  margin: 1.5rem 0 0;
   padding: 0;
 }
 
@@ -1510,7 +1511,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 /* --- archive -------------------------------------------------------------- */
 
 .archive {
-  margin-top: 2rem;
+  margin-top: 0.6rem;
 }
 
 .archive__summary {
@@ -1946,10 +1947,10 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
     opacity: 0.5;
   }
 
-  /* Room for the floating button plus a thumb's width, so the last row clears it. */
-  .documents,
-  .archive {
-    padding-bottom: 6.5rem;
+  /* Room for the floating button, under everything: padding on the list pushed the
+     archive row away from the articles it belongs to. */
+  .page {
+    padding-bottom: 7rem;
   }
 }
 
