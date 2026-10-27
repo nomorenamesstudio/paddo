@@ -20,8 +20,26 @@ export function statusLabel(status: Status): string {
   return LABELS[status]
 }
 
-/** The state of a document, as one mark: a page, a pen, a globe, a box. */
-export function StatusIcon({ status, size = 15 }: { status: Status; size?: number }) {
+/**
+ * The state of a document, as one mark: a page, a pen, a globe, a box. The mark is
+ * neutral ink — a status is metadata, not a signal — except when `current` says it is
+ * the one the document is in.
+ */
+export function StatusIcon({
+  status,
+  size = 15,
+  current = false,
+}: {
+  status: Status
+  size?: number
+  current?: boolean
+}) {
   const Icon = ICONS[status]
-  return <Icon size={size} className={`status-icon status-icon--${status}`} aria-hidden="true" />
+  return (
+    <Icon
+      size={size}
+      className={`status-icon status-icon--${status}${current ? ' status-icon--current' : ''}`}
+      aria-hidden="true"
+    />
+  )
 }
