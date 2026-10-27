@@ -365,6 +365,12 @@ a {
   transition: background 120ms var(--ease);
 }
 
+/* The archive row draws the line under the list; a closing rule on the last article
+   would sit a few pixels above it and read as a double line. */
+.documents__item:last-child {
+  border-bottom: 0;
+}
+
 /* Touch has no hover, and a sticky tint on a phone reads as a selection. */
 @media (hover: hover) {
   .documents__item:hover {
