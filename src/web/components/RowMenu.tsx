@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Archive, ArchiveRestore, MoreVertical, Trash2 } from 'lucide-react'
 
-import { api, type DocumentMeta } from '../api'
+import { api, type DocumentMeta, type Status } from '../api'
+import { StatusIcon, statusLabel } from './StatusIcon'
+
+/** The statuses a document can hold while it is still in the list. */
+const STATUS_CHOICES: Status[] = ['draft', 'editing', 'published']
 
 /**
  * The per-document actions. Archive is a status change, so it is reversible;
@@ -73,6 +77,26 @@ export function RowMenu({
 
       {open ? (
         <div className="row-menu__panel" role="menu" aria-label={`Actions for ${entry.title}`}>
+          {/* Status lives here now, not in the editor's bar. */}
+          <div className="row-menu__group" role="group" aria-label="Status">
+            {STATUS_CHOICES.map((status) => (
+              <button
+                key={status}
+                type="button"
+                role="menuitemradio"
+                aria-checked={entry.status === status}
+                className={`row-menu__item${entry.status === status ? ' is-active' : ''}`}
+                disabled={busy || entry.status === status}
+                onClick={() => void run(() => api.setStatus(entry.slug, status))}
+              >
+                <StatusIcon status={status} size={16} current={entry.status === status} />
+                <span>{statusLabel(status)}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="row-menu__separator" role="separator" />
+
           {entry.status === 'archived' ? (
             <button
               type="button"

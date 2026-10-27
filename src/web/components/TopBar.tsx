@@ -28,7 +28,6 @@ function SyncIcon({ state }: { state: SyncState }) {
 export function TopBarActionsPlaceholder() {
   return (
     <span className="topbar__actions" aria-hidden="true">
-      <span className="button button--ghost button--icon status-placeholder" />
       <span className="button button--ghost button--icon" />
     </span>
   )

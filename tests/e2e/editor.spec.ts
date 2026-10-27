@@ -210,13 +210,23 @@ test('a new draft is named by its heading, and its status sticks', async ({ page
   await page.keyboard.type(' about tides')
   await expect(page.locator('.topbar__title')).toHaveText('New draft about tides')
 
-  await page.locator('.status button').click()
-  await page.locator('.status__item', { hasText: 'Published' }).click()
+  // Status lives in the list's kebab menu now. Leaving the editor renames the file to
+  // its title, so the row is found by title rather than by the slug it was born with.
+  await page.goto('/')
+  await expect(page.locator('.documents')).toBeVisible()
+  // The fixture folder keeps documents from earlier runs, so match the title exactly
+  // rather than filtering on a substring of every row.
+  const row = page
+    .locator('.documents__item')
+    .filter({ has: page.locator('.documents__title', { hasText: /^New draft about tides$/ }) })
+  await expect(row).toHaveCount(1)
+  await row.locator('.row-menu__trigger').click()
+  await page.locator('.row-menu__item', { hasText: 'Published' }).click()
   await expect
     .poll(async () => {
       const response = await page.request.get('/api/documents')
-      const body = (await response.json()) as { documents: Array<{ slug: string; status: string }> }
-      return body.documents.find((document) => document.slug === slug)?.status
+      const body = (await response.json()) as { documents: Array<{ title: string; status: string }> }
+      return body.documents.find((document) => document.title === 'New draft about tides')?.status
     })
     .toBe('published')
 })
@@ -411,11 +421,22 @@ test('no serious accessibility violations on the main surfaces', async ({ page }
       })
       return run.violations
         .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
-        .map((violation) => `${violation.id} (${violation.nodes.length})`)
+        .map(
+          (violation) =>
+            `${violation.id}: ${violation.nodes.length} node(s) — ${violation.nodes
+              .slice(0, 3)
+              .map((node) => `${node.target.join(' ')} [${(node.failureSummary ?? '').replace(/\s+/g, ' ').slice(0, 190)}]`)
+              .join(', ')}`,
+        )
     }))
     expect(violations, `${label}: ${violations.join(', ')}`).toEqual([])
   }
 
+  // The list fades in; axe composites the text against the ancestor's opacity, so audit
+  // the settled page rather than a half-transparent one.
+  await page
+    .locator('.documents')
+    .evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)))
   await audit('documents')
 
   const slug = await createDocument(page, `A11y check ${Date.now()}`)

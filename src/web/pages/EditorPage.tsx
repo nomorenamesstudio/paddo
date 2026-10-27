@@ -6,7 +6,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import { buildInvitePrompt } from '../../shared/invite'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
-import { api, type Status } from '../api'
+import { api } from '../api'
 import { caretRenderer, deviceKind } from '../editor/caret'
 import { createCollab, type Collab } from '../editor/collab'
 import {
@@ -23,7 +23,6 @@ import { Bot } from 'lucide-react'
 import { BlockMover } from '../components/BlockMover'
 import { LoadingDocument, humanizeSlug } from '../components/LoadingDocument'
 import { TopBar } from '../components/TopBar'
-import { StatusPicker } from '../components/StatusPicker'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
 
@@ -59,7 +58,6 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   // Named from the slug straight away, so an existing article never flashes as
   // "New draft" while the socket is still connecting.
   const [title, setTitle] = useState(() => humanizeSlug(slug))
-  const [status, setStatus] = useState<Status>('draft')
   const [sync, setSync] = useState<SyncState>(collab.provider.isSynced ? 'connected' : 'connecting')
   // Crossfade: the placeholder fades out while the document fades in, rather than
   // one snapping away and the other snapping on.
@@ -178,7 +176,6 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       .document(slug)
       .then((document) => {
         if (cancelled) return
-        setStatus(document.status)
         setTitle(document.title)
       })
       .catch(() => {})
@@ -186,18 +183,6 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       cancelled = true
     }
   }, [slug])
-
-  const changeStatus = useCallback(
-    async (next: Status) => {
-      setStatus(next)
-      try {
-        await api.setStatus(slug, next)
-      } catch {
-        setNotice('Could not save that status.')
-      }
-    },
-    [slug],
-  )
 
   // Feedback channel for actions that happen inside ProseMirror decorations.
   useEffect(() => {
@@ -293,7 +278,6 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
         sync={sync}
         actions={
           <span className="topbar__actions">
-            <StatusPicker value={status} onChange={(next) => void changeStatus(next)} />
             <button
               className="button button--ghost button--icon"
               type="button"
