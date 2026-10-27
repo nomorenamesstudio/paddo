@@ -2,6 +2,20 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — Accepting a batch no longer splices stale offsets
+
+**Fix** — *Accept all* built one transaction from ranges captured before the batch, so two hunks
+whose ranges overlapped were applied against offsets that no longer existed and swallowed the
+characters between them (`devices and apps.nd the agent`, `nonsense.nse?`). The batch now walks the
+hunks one at a time through the same verified path a single accept uses, and after every apply it
+re-checks each waiting hunk's quote against the document as it is: a hunk whose text no longer
+matches is marked **conflicted** — shown with the reason, Accept and Edit disabled — instead of
+being applied. Rejecting it is the only way out, and asking the agent for a fresh hunk is the fix.
+
+The regression test proves it: two hunks, the second nested inside the first, *Accept all* → only
+the outer change lands, the inner one shows `Overlaps a change you already accepted`, and the file
+never contains the inner replacement. Measured failing on the pre-fix code.
+
 ## 2026-10-27 — Copying without HTTPS, and a pairing that survives a lost token
 
 **Fix** — the copy buttons did nothing on a phone over plain LAN HTTP: `navigator.clipboard`

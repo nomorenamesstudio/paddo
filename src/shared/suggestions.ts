@@ -23,6 +23,12 @@ export interface Suggestion {
   status: SuggestionStatus
   author: SuggestionAuthor
   createdAt: number
+  /**
+   * Why this hunk can no longer be applied. Set when another hunk's change was
+   * accepted inside its range: its quoted text may still exist, but inside text that
+   * did not exist when the agent wrote it.
+   */
+  conflict?: string
 }
 
 export function kindFor(original: string, proposed: string): SuggestionKind {

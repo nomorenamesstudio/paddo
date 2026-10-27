@@ -788,7 +788,18 @@ a {
   color: var(--fg);
 }
 
-.sug-hunk .sug-actions {
+.sug-hunk .sug-hunk--conflict {
+  border-left: 2px solid var(--danger);
+}
+
+.sug-conflict {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  color: var(--danger);
+}
+
+.sug-actions {
   display: inline-flex;
   gap: 0.3rem;
   margin-left: auto;
@@ -862,7 +873,18 @@ a {
     padding: 0.65rem 0.75rem;
   }
 
-  .sug-hunk .sug-actions {
+  .sug-hunk .sug-hunk--conflict {
+  border-left: 2px solid var(--danger);
+}
+
+.sug-conflict {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  color: var(--danger);
+}
+
+.sug-actions {
     flex: 1 1 100%;
     justify-content: flex-end;
     margin-left: 0;

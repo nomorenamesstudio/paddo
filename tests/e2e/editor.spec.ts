@@ -645,6 +645,47 @@ test('pairing hands a token to an agent only after the writer approves, and it c
   }
 })
 
+test('an accepted change refuses the hunks whose range it overwrote', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Overlap ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  const sentence = 'a seam here in the text.'
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type(sentence)
+  await expect.poll(async () => (await readFile(`tests/fixtures/content/${slug}.md`, 'utf8')).includes(sentence)).toBe(true)
+
+  // Two hunks on the same sentence, the second nested inside the first: applying the
+  // first rewrites the text the second's anchors point into.
+  const proposed = await page.request.post(`/api/documents/${slug}/suggestions`, {
+    data: {
+      edits: [
+        { original: 'a seam here in the text.', proposed: 'A seam here in the text, tightened.' },
+        { original: 'here in the text', proposed: 'here in the sentence' },
+      ],
+    },
+  })
+  expect(proposed.ok()).toBe(true)
+  await expect(page.locator('.sug-hunk')).toHaveCount(2)
+
+  // Accept the batch — the path that used to splice stale offsets.
+  await page.getByRole('button', { name: 'Accept all' }).click()
+
+  // The nested one cannot be applied any more: its quote now sits inside text the
+  // agent never saw. It says so instead of splicing stale offsets.
+  const inner = page.locator('.sug-hunk--conflict')
+  await expect(inner).toHaveCount(1)
+  await expect(inner.locator('.sug-conflict')).toContainText('Overlaps a change you already accepted')
+  await expect(inner.locator('[data-sug-action="accept"]')).toBeDisabled()
+
+  await expect.poll(async () => (await readFile(`tests/fixtures/content/${slug}.md`, 'utf8'))).toContain(
+    'A seam here in the text, tightened.',
+  )
+  const body = await readFile(`tests/fixtures/content/${slug}.md`, 'utf8')
+  expect(body).not.toContain('here in the sentence')
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

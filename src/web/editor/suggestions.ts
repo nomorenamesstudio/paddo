@@ -83,13 +83,32 @@ function hunkWidget(suggestion: Suggestion): HTMLElement {
 
   hunk.append(swap)
 
+  if (suggestion.conflict) {
+    const conflict = document.createElement('p')
+    conflict.className = 'sug-conflict'
+    conflict.textContent = suggestion.conflict
+    hunk.append(conflict)
+    hunk.classList.add('sug-hunk--conflict')
+  }
+
   const actions = document.createElement('div')
   actions.className = 'sug-actions'
-  actions.append(
-    actionButton('Accept', 'Accept this change', 'accept'),
-    actionButton('Reject', 'Reject this change', 'reject'),
-    actionButton('Edit', 'Accept, then select the new text so you can adjust it', 'edit'),
-  )
+  if (suggestion.conflict) {
+    // Applying it would splice stale text into an accepted sentence.
+    const accept = actionButton('Accept', 'Accept this change', 'accept')
+    const edit = actionButton('Edit', 'Accept, then select the new text so you can adjust it', 'edit')
+    for (const button of [accept, edit]) {
+      button.disabled = true
+      button.title = 'Cannot be applied: it overlaps a change you already accepted'
+    }
+    actions.append(accept, actionButton('Reject', 'Reject this change', 'reject'), edit)
+  } else {
+    actions.append(
+      actionButton('Accept', 'Accept this change', 'accept'),
+      actionButton('Reject', 'Reject this change', 'reject'),
+      actionButton('Edit', 'Accept, then select the new text so you can adjust it', 'edit'),
+    )
+  }
   hunk.append(actions)
 
   return hunk
@@ -160,6 +179,14 @@ export const Suggestions = Extension.create<SuggestionsOptions>({
             if (action !== 'accept' && action !== 'edit') return
 
             const result = acceptSuggestion(editor, id, { select: action === 'edit' })
+            if (result === 'conflict') {
+              window.dispatchEvent(
+                new CustomEvent('paddo:notice', {
+                  detail: 'That change overlaps one you already accepted. Reject it and ask for a fresh one.',
+                }),
+              )
+              return
+            }
             if (result === 'stale') {
               // Never a silent no-op: say what happened, then drop the dead hunk.
               window.dispatchEvent(

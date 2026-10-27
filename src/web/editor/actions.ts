@@ -193,7 +193,7 @@ function replaceRange(editor: Editor, from: number, to: number, proposed: string
   return { tr, end: from + nodes.reduce((total, node) => total + node.nodeSize, 0) }
 }
 
-export type AcceptResult = 'applied' | 'stale'
+export type AcceptResult = 'applied' | 'stale' | 'conflict'
 
 export function acceptSuggestion(
   editor: Editor,
@@ -206,6 +206,10 @@ export function acceptSuggestion(
   const map = sync.doc.getMap<Record<string, unknown>>(SUGGESTIONS_MAP)
   const suggestion = map.get(id) as unknown as Suggestion | undefined
   if (!suggestion) return 'stale'
+
+  // A hunk whose range another accepted change has overwritten can never be applied:
+  // its quote may still be found, but inside text that was not there before.
+  if (suggestion.conflict) return 'conflict'
 
   const resolved = pendingRanges(editor).find((range) => range.suggestion.id === id)
   let range = resolved ? { from: resolved.from, to: resolved.to } : null
@@ -229,6 +233,19 @@ export function acceptSuggestion(
 
   editor.view.dispatch(tr)
   map.delete(id)
+
+  // Every hunk still waiting has to be re-checked against the document as it is now.
+  // Its anchors may have collapsed onto the change just made, and its quote may sit
+  // inside text the agent never saw: applying that splices stale offsets.
+  for (const other of pendingRanges(editor)) {
+    const text = editor.state.doc.textBetween(other.from, other.to, '', '')
+    if (text === other.suggestion.original) continue
+    map.set(other.suggestion.id, {
+      ...(other.suggestion as unknown as Record<string, unknown>),
+      conflict: 'Overlaps a change you already accepted — reject it and ask for a fresh one.',
+    })
+  }
+
   return 'applied'
 }
 
@@ -264,41 +281,42 @@ export function rejectSuggestion(editor: Editor, id: string): void {
 }
 
 /** All pending hunks as a single transaction, so one undo takes them all back. */
-export function acceptAllSuggestions(editor: Editor): number {
-  const ranges = [...pendingRanges(editor)].sort((a, b) => b.from - a.from)
-  if (ranges.length === 0) return 0
-
+export function markConflict(editor: Editor, id: string, reason: string): void {
   const sync = syncStateOf(editor)
-  if (!sync) return 0
+  if (!sync) return
   const map = sync.doc.getMap<Record<string, unknown>>(SUGGESTIONS_MAP)
+  const suggestion = map.get(id) as unknown as Suggestion | undefined
+  if (!suggestion || suggestion.conflict) return
+  map.set(id, { ...(suggestion as unknown as Record<string, unknown>), conflict: reason })
+}
 
-  const { tr } = editor.state
-  const applied: string[] = []
+/**
+ * Accept every hunk that can still be placed. It reuses the single-hunk path one hunk
+ * at a time on purpose: the old version built one transaction from ranges captured
+ * before the batch, so two overlapping hunks were applied against offsets that no
+ * longer existed and swallowed characters between them.
+ */
+export function acceptAllSuggestions(editor: Editor): number {
+  let applied = 0
+  // A hunk that cannot be applied is marked, so this always terminates.
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const next = pendingRanges(editor).find((range) => !range.suggestion.conflict)
+    if (!next) break
 
-  for (const { suggestion, from, to } of ranges) {
-    const currentText = editor.state.doc.textBetween(from, to, '', '')
-    if (currentText !== suggestion.original) continue
-
-    const blocks = suggestion.proposed.split(/\n{2,}/).map((block) => block.replace(/\n/g, ' '))
-    if (blocks.length <= 1) {
-      const text = blocks[0] ?? ''
-      if (text === '') tr.delete(from, to)
-      else tr.replaceWith(from, to, editor.schema.text(text))
-    } else {
-      const paragraph = paragraphType(editor)
-      const nodes = blocks.map((block) =>
-        paragraph.create(null, block ? editor.schema.text(block) : undefined),
-      )
-      tr.replaceWith(from, to, nodes)
+    const result = acceptSuggestion(editor, next.suggestion.id)
+    if (result === 'applied') {
+      applied += 1
+      continue
     }
-    applied.push(suggestion.id)
+    markConflict(
+      editor,
+      next.suggestion.id,
+      result === 'conflict'
+        ? 'Overlaps a change you already accepted — reject it and ask for a fresh one.'
+        : 'The text under this change has moved — reject it and ask for a fresh one.',
+    )
   }
-
-  if (applied.length === 0) return 0
-
-  editor.view.dispatch(tr)
-  for (const id of applied) map.delete(id)
-  return applied.length
+  return applied
 }
 
 export function rejectAllSuggestions(editor: Editor): number {
