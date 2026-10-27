@@ -25,6 +25,7 @@ import { LoadingDocument, humanizeSlug } from '../components/LoadingDocument'
 import { TopBar } from '../components/TopBar'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
+import type { HeadlinePhase } from '../components/Headline'
 
 /** Who the other device is, rather than a name that means nothing on a shared doc. */
 export function deviceName(): string {
@@ -72,6 +73,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     return () => window.clearTimeout(timer)
   }, [ready])
   const [pending, setPending] = useState(0)
+  const [headlinePhase, setHeadlinePhase] = useState<HeadlinePhase>('loading')
   const [inviteOpen, setInviteOpen] = useState(false)
   const [writingGuide, setWritingGuide] = useState('')
   const [includeGuide, setIncludeGuide] = useState(
@@ -260,6 +262,15 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     [slug, title, writingGuide, includeGuide],
   )
 
+  // The header says what is happening, then gets out of the way: the title appears a
+  // couple of seconds after the document is ready, never before it.
+  useEffect(() => {
+    if (!ready) return
+    setHeadlinePhase('synced')
+    const timer = window.setTimeout(() => setHeadlinePhase('title'), 2600)
+    return () => window.clearTimeout(timer)
+  }, [ready])
+
   const acceptAll = useCallback(() => {
     if (!editor) return
     const applied = acceptAllSuggestions(editor)
@@ -272,10 +283,13 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   }, [editor])
 
   return (
-    <div className="shell">
-      <TopBar
+    <>
+      {/* A modal hides the page behind it from pointers, focus and screen readers. */}
+      <div className="shell" inert={inviteOpen}>
+        <TopBar
         title={title}
         sync={sync}
+        phase={headlinePhase}
         actions={
           <span className="topbar__actions">
             <button
@@ -329,6 +343,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           </div>
         </div>
       ) : null}
+      </div>
 
       {inviteOpen ? (
         <InviteSheet
@@ -354,7 +369,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           onCopied={() => setNotice('Prompt copied. Paddō will show the hunks when the agent sends them.')}
         />
       ) : null}
-    </div>
+    </>
   )
 }
 

@@ -1,6 +1,8 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { ChevronLeft, CircleCheck, CircleX, RefreshCw } from 'lucide-react'
 
+import { Headline, type HeadlinePhase } from './Headline'
+
 import { navigate } from '../App'
 
 export type SyncState = 'connecting' | 'connected' | 'disconnected'
@@ -42,10 +44,13 @@ export function TopBar({
   title,
   sync,
   actions,
+  phase,
 }: {
   title: string
   sync: SyncState
   actions?: ReactNode
+  /** Writing UI only: the header states from loading to the title. */
+  phase?: HeadlinePhase
 }) {
   return (
     <header className="topbar">
@@ -65,10 +70,14 @@ export function TopBar({
       </a>
       {/* Title and sync state travel together: the state belongs to this document,
           not to the row of controls on the right. */}
-      <div className="topbar__heading">
-        <h1 className="topbar__title">{title}</h1>
-        <SyncIcon state={sync} />
-      </div>
+      {phase ? (
+        <Headline phase={phase} title={title} sync={sync} />
+      ) : (
+        <div className="topbar__heading">
+          <h1 className="topbar__title">{title}</h1>
+          <SyncIcon state={sync} />
+        </div>
+      )}
       {actions ?? <TopBarActionsPlaceholder />}
     </header>
   )

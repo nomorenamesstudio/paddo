@@ -415,7 +415,18 @@ test('no serious accessibility violations on the main surfaces', async ({ page }
     await page.addScriptTag({ content: axe })
     const violations = (await page.evaluate(async () => {
       const run = await (window as unknown as {
-        axe: { run: (context: Document, options: unknown) => Promise<{ violations: Array<{ id: string; impact: string | null; nodes: unknown[] }> }> }
+        axe: {
+          run: (
+            context: Document,
+            options: unknown,
+          ) => Promise<{
+            violations: Array<{
+              id: string
+              impact: string | null
+              nodes: Array<{ target: string[]; failureSummary?: string }>
+            }>
+          }>
+        }
       }).axe.run(document, {
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
       })

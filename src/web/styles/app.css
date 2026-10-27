@@ -487,6 +487,65 @@ a {
   }
 }
 
+.headline {
+  /* One line tall, clipped by the sheet: the layers slide through it. */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: min(62%, 24rem);
+  height: 1.9rem;
+  overflow: hidden;
+}
+
+.headline__layer {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition:
+    transform 280ms var(--ease),
+    opacity 280ms var(--ease);
+}
+
+.headline__layer[data-state='before'] {
+  transform: translateY(105%);
+  opacity: 0;
+}
+
+.headline__layer[data-state='current'] {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.headline__layer[data-state='after'] {
+  transform: translateY(-105%);
+  opacity: 0;
+}
+
+.headline__layer--status {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.headline__layer--synced {
+  color: var(--ok);
+}
+
+.headline__sync {
+  display: inline-flex;
+  color: var(--ok);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headline__layer {
+    transition: none;
+  }
+}
+
 .topbar__heading {
   /* Absolutely centred in the sheet, so the title sits in the middle of the bar
      whatever the width of the controls on either side. */
