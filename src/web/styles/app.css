@@ -735,6 +735,11 @@ a {
   margin-top: 0;
 }
 
+/* A little air between the floating bar and the first line of the piece. */
+.prose > h1:first-child {
+  margin-top: 0.9rem;
+}
+
 .prose h2 {
   font-size: 1.45rem;
   margin-top: 1.8em;
