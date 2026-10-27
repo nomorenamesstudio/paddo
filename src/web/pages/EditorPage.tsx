@@ -73,7 +73,11 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     return () => window.clearTimeout(timer)
   }, [ready])
   const [pending, setPending] = useState(0)
-  const [headlinePhase, setHeadlinePhase] = useState<HeadlinePhase>('syncing')
+  // Only ever the truth: a room that is already synced opens straight on the title, and
+  // a fresh one starts where it is — still connecting.
+  const [headlinePhase, setHeadlinePhase] = useState<HeadlinePhase>(
+    collab.provider.isSynced ? 'title' : 'syncing',
+  )
   const [inviteOpen, setInviteOpen] = useState(false)
   const [writingGuide, setWritingGuide] = useState('')
   const [includeGuide, setIncludeGuide] = useState(
@@ -271,7 +275,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       return
     }
     setHeadlinePhase('synced')
-    const timer = window.setTimeout(() => setHeadlinePhase('title'), 2600)
+    const timer = window.setTimeout(() => setHeadlinePhase('title'), 1400)
     return () => window.clearTimeout(timer)
   }, [sync])
 
