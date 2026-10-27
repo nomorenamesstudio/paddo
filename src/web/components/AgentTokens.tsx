@@ -8,6 +8,31 @@ function mcpUrl(): string {
   return `${window.location.origin}/mcp`
 }
 
+/**
+ * The other way in: an agent that can run commands needs no config file at all —
+ * Paddō is an HTTP API with this token on it. Says what to do, not where to put it.
+ */
+function agentBrief(secret: string): string {
+  const base = window.location.origin
+  return `You can edit my writing in Paddō, a markdown editor I run at ${base}.
+
+Connect with this bearer token: ${secret}
+Paddō serves MCP over HTTP at ${base}/mcp, if your client can register a remote MCP
+server (header: "Authorization: Bearer <token>"). Its tools are list_documents,
+read_document, propose_edits, create_document and export_document.
+
+If you cannot register an MCP server, call the HTTP API directly with the same token:
+  GET  ${base}/api/documents                     which documents the token reaches
+  GET  ${base}/api/documents/<slug>              one document, as markdown
+  POST ${base}/api/documents/<slug>/suggestions  propose edits
+  GET  ${base}/api/documents/<slug>/raw          the exact file, to take away
+
+Edits go through review: send {"edits": [{"original": "…", "proposed": "…"}]} and I
+accept or reject each hunk in the editor. "original" must be text you copied verbatim
+from the current document — never a guess, never a character offset. For a new file
+use POST /api/documents with {"markdown": "…"}.`
+}
+
 /** What most clients read: Claude Desktop, Cursor, and anything speaking MCP over HTTP. */
 function configBlock(secret: string): string {
   return JSON.stringify(
@@ -56,6 +81,7 @@ export function AgentTokens() {
   const [chosen, setChosen] = useState<string[]>([])
   const [secret, setSecret] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [briefCopied, setBriefCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -92,6 +118,7 @@ export function AgentTokens() {
     setBusy(true)
     setError(null)
     setCopied(false)
+    setBriefCopied(false)
     try {
       const minted = await api.mintToken({
         name: name.trim(),
@@ -230,6 +257,30 @@ export function AgentTokens() {
             Paddō serves the agent&rsquo;s tools itself at <code>{mcpUrl()}</code>, so nothing has to
             be installed next to the agent.
           </p>
+
+          <p className="tokens__hint">
+            <strong>No config file?</strong> Paste this to the agent instead — it carries the URL,
+            the token, and how to reach the documents without MCP at all.
+          </p>
+          <div className="tokens__secretrow">
+            <pre className="tokens__brief" tabIndex={0}>
+              {agentBrief(secret)}
+            </pre>
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(agentBrief(secret)).then(() => setBriefCopied(true))
+              }}
+            >
+              {briefCopied ? (
+                <Check size={15} aria-hidden="true" />
+              ) : (
+                <Copy size={15} aria-hidden="true" />
+              )}
+              {briefCopied ? 'Copied' : 'Copy prompt'}
+            </button>
+          </div>
         </div>
       ) : null}
 

@@ -1909,6 +1909,23 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   user-select: text;
 }
 
+.tokens__brief {
+  flex: 1;
+  /* Scrolls, so it takes focus: axe flags a scroll region nobody can reach. */
+  min-width: 14rem;
+  max-height: 13rem;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  background: var(--bg);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  user-select: text;
+}
+
 .tokens__hint {
   margin: 0.6rem 0 0;
   color: var(--muted);

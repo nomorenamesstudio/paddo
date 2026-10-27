@@ -1,5 +1,22 @@
 # Setup
 
+## Where agent MCP configs live
+
+Only needed if you go the config-file route; the *Copy prompt* block on the token
+screen needs none of this.
+
+| Client | File |
+| --- | --- |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS), `%APPDATA%\Claude\claude_desktop_config.json` (Windows) |
+| Cursor | `~/.cursor/mcp.json`, or `.cursor/mcp.json` in a project |
+| VS Code (Copilot) | `.vscode/mcp.json` in the workspace |
+| Claude Code | `claude mcp add --transport http paddo <url> --header "Authorization: Bearer …"` |
+| DeepSeek Harness | an `@deepseek-ai/dsh-mcp-client` plugin entry in the profile, with `serverName`, `command`, `args`, `env` |
+
+These paths move between releases; treat the table as a starting point, not gospel.
+An agent that can run commands does not need any of it — Paddō's API is reachable with
+the same bearer token.
+
 ## Requirements
 
 - Node 22 (this machine: 22.23.1)
