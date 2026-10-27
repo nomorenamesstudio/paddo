@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Ghost hunks, and why they appeared
+
+**Fix** — a rename made the file watcher diff the markdown against the CRDT and report a
+suggestion that deleted two newlines: an open editor keeps an empty paragraph the file does
+not have. Three changes close that class:
+
+- `diffToHunks` drops any hunk whose sides differ only in whitespace, with a unit test.
+- The watcher ignores an `add` event for a name that already has CRDT state — that is a
+  rename, and the load path owns it. Hand edits (`change`) still become suggestions, which
+  was verified by editing a file behind the editor.
+- `renameDocument` moves the sidecar and the status file before the markdown, so the
+  watcher can never see the file under its new name while the CRDT state is elsewhere.
+
+Three blank hunks from the earlier renames were rejected out of the library.
+
 ## 2026-10-26 — The file name is the title
 
 **Feature** — documents rename themselves on disk. When the last client leaves a room,

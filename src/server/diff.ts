@@ -35,7 +35,12 @@ export function diffToHunks(oldText: string, newText: string, mergeGap = 12): Te
 
   const flush = () => {
     if (!pending) return
-    if (pending.original !== pending.proposed) hunks.push(pending)
+    // A difference in whitespace alone is never worth a hunk: an editor keeps an
+    // empty paragraph in the CRDT, and the file does not, which would otherwise show
+    // up as a suggestion that deletes two newlines.
+    if (pending.original !== pending.proposed && pending.original.trim() !== pending.proposed.trim()) {
+      hunks.push(pending)
+    }
     pending = null
     tail = null
   }

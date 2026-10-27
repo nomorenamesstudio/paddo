@@ -40,4 +40,12 @@ describe('diff to hunks', () => {
   it('returns nothing when the text is unchanged', () => {
     expect(diffToHunks('Same text here.', 'Same text here.')).toEqual([])
   })
+
+  it('ignores a change that is only whitespace', () => {
+    // Measured: a rename made the watcher diff a file without the trailing blank
+    // paragraph the editor keeps, and the reader got a hunk that deleted "\n\n".
+    expect(diffToHunks('Case closed.\n\n', 'Case closed.\n')).toEqual([])
+    expect(diffToHunks('a\n\nb', 'a b')).toEqual([])
+    expect(diffToHunks('Case closed.', 'Case closed. Indeed.')).toHaveLength(1)
+  })
 })

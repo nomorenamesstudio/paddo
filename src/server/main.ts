@@ -23,6 +23,7 @@ import {
   normalizeMarkdown,
   readDocument,
   removeDocument,
+  sidecarPathFor,
   titleOf,
 } from './documents'
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
@@ -344,7 +345,7 @@ watcher.on('all', (event, path) => {
   const slug = basename(path, '.md')
   if (!isValidSlug(slug)) return
   app.log.info({ event, slug }, 'file changed on disk')
-  void ingestFile(slug, path).catch((error: unknown) => {
+  void ingestFile(slug, path, event).catch((error: unknown) => {
     app.log.error({ err: error, slug }, 'file ingest failed')
   })
 })
@@ -354,7 +355,12 @@ watcher.on('all', (event, path) => {
  * change to the file is someone else's text. Our own writes are recognised by
  * the hash we recorded, so they never come back as suggestions.
  */
-async function ingestFile(slug: string, path: string) {
+async function ingestFile(slug: string, path: string, event: 'add' | 'change') {
+  // A file appearing under a name that already has CRDT state is a rename, not an
+  // edit: the load path owns it, and diffing it here produces noise like a hunk that
+  // deletes two newlines.
+  if (event === 'add' && existsSync(sidecarPathFor(config, slug))) return
+
   const body = normalizeMarkdown(await readFile(path, 'utf8'))
   if (collab.lastWritten.get(slug) === hashOf(body)) return
 

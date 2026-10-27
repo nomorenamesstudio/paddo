@@ -177,12 +177,14 @@ export async function freeSlug(config: Config, wanted: string, keep?: string): P
  */
 export async function renameDocument(config: Config, from: string, to: string): Promise<void> {
   if (from === to) return
-  await rename(pathFor(config, from), pathFor(config, to))
+  // Sidecar and status first: the watcher must never see the markdown under its new
+  // name before the CRDT state has moved with it, or the file looks like a new one.
   await renameIfPresent(sidecarPathFor(config, from), sidecarPathFor(config, to))
   await renameIfPresent(
     join(config.sidecarDir, `${from}.meta.json`),
     join(config.sidecarDir, `${to}.meta.json`),
   )
+  await rename(pathFor(config, from), pathFor(config, to))
 }
 
 async function renameIfPresent(from: string, to: string): Promise<void> {

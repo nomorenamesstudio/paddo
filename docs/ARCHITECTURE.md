@@ -75,8 +75,10 @@ written, because the slug is three things at once: the filename, the CRDT room n
 the URL. Renaming mid-session would leave a connected editor holding a room that no
 longer exists on disk — so the rename happens in `afterUnloadDocument`, the one moment
 with no client attached to the old name: the markdown, the `.y` sidecar and the
-`.meta.json` move together, and `freeSlug` picks `title-2` when another document already
-holds the name. Untitled drafts keep their temporary name until they get a heading.
+`.meta.json` move together — sidecar first, so the watcher never sees the markdown under
+a new name while the CRDT state is still under the old one. `freeSlug` picks `title-2`
+when another document already holds the name, which is why untitled drafts settle on
+`new-draft`, `new-draft-2`: their title is "New draft", and the name follows the title.
 
 The catch: an old `/d/new-draft-6` bookmark 404s after the rename. The list always links
 to the current name.
