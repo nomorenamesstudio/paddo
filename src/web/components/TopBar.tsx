@@ -64,8 +64,12 @@ export function TopBar({
       >
         <ChevronLeft size={22} aria-hidden="true" />
       </a>
-      <h1 className="topbar__title">{title}</h1>
-      <SyncIcon state={sync} />
+      {/* Title and sync state travel together: the state belongs to this document,
+          not to the row of controls on the right. */}
+      <div className="topbar__heading">
+        <h1 className="topbar__title">{title}</h1>
+        <SyncIcon state={sync} />
+      </div>
       {actions ?? <TopBarActionsPlaceholder />}
     </header>
   )
