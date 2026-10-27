@@ -430,6 +430,8 @@ a {
   top: 0.6rem;
   z-index: 20;
   display: flex;
+  /* The title is centred over the sheet; the two controls sit at the edges. */
+  justify-content: space-between;
   align-items: center;
   gap: 0.1rem;
   /* The sheet sits over the reading column, not the whole window. It needs an explicit
@@ -486,11 +488,29 @@ a {
 }
 
 .topbar__heading {
+  /* Absolutely centred in the sheet, so the title sits in the middle of the bar
+     whatever the width of the controls on either side. */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex: 1;
   min-width: 0;
+  max-width: min(62%, 24rem);
   align-items: center;
   gap: 0.4rem;
+  justify-content: center;
+}
+
+.topbar__title {
+  text-align: center;
+}
+
+/* The sync mark hangs off the end of the title instead of sitting in its box, so the
+   title itself stays on the sheet's centre line. */
+.topbar__heading .sync-icon {
+  position: absolute;
+  left: 100%;
+  margin-left: 0.4rem;
 }
 
 .topbar__title {
