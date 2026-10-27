@@ -1170,22 +1170,26 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   height: 0.85rem;
   margin-bottom: 0.85rem;
   border-radius: 3px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--fg) 6%, transparent) 0%,
-    color-mix(in srgb, var(--fg) 11%, transparent) 50%,
-    color-mix(in srgb, var(--fg) 6%, transparent) 100%
-  );
-  background-size: 220% 100%;
-  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes skeleton-sweep {
-  from {
-    background-position: 120% 0;
+/* Each line breathes a beat after the one above it, so the block reads as one wave. */
+.skeleton__line:nth-child(2n) {
+  animation-delay: 120ms;
+}
+
+.skeleton__line:nth-child(3n) {
+  animation-delay: 240ms;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
   }
-  to {
-    background-position: -120% 0;
+  50% {
+    opacity: 1;
   }
 }
 
