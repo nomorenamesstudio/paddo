@@ -289,7 +289,6 @@ a {
   padding: 0 0.65rem;
   margin: 0 -0.65rem;
   border-bottom: 1px solid var(--line);
-  border-radius: 8px;
   transition: background 120ms var(--ease);
 }
 
@@ -1590,7 +1589,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   min-height: 22rem;
   padding: 0.85rem 1rem;
   font-family: var(--font-body);
-  font-size: 0.98rem;
+  font-size: 1rem;
   line-height: 1.7;
   color: var(--fg);
   background: var(--raised);
@@ -1792,7 +1791,8 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   min-height: var(--tap);
   padding: 0 2.6rem 0 2.5rem;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  /* 16px is the floor: anything smaller makes iOS Safari zoom on focus. */
+  font-size: 16px;
   color: var(--fg);
   background: var(--raised);
   border: 1px solid var(--line);
@@ -1835,4 +1835,14 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 .documents__empty {
   margin: 1.5rem 0 3rem;
+}
+
+/* Every field keeps 16px so a phone never zooms when it takes focus. */
+.field__input,
+.settings__guide,
+textarea,
+input[type='text'],
+input[type='search'],
+input[type='password'] {
+  font-size: max(16px, 1em);
 }

@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-26 — Square rows, and fields iOS will not zoom
+
+**Fix** — the row hover band lost its 8px radius: a rounded fill inside a ruled list read as
+a stray shadowed card. The inset stays, so the text still sits off the container edge. Every
+field now has 16px of text minimum — `max(16px, 1em)` on the inputs, 16px flat on the search
+box — because iOS Safari zooms the viewport when a focused field is smaller.
+
 ## 2026-10-26 — Search over the list, and rows that breathe
 
 **Feature** — a search field above the list filters by title (and slug, for documents
