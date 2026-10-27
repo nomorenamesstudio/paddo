@@ -326,10 +326,13 @@ export function AgentTokens() {
       {pairing ? (
         <div className="tokens__secret">
           <p>
-            Give this code to the agent — <strong>only the code</strong>. Nothing happens until
-            you approve it here.
+            Paste the prompt into the agent. The code inside it is all it needs — nothing happens
+            until you approve here, and the token goes straight to the agent, never through chat.
           </p>
-          <p className="tokens__paircode">{pairing.code}</p>
+          <p className="tokens__pairline">
+            code <span className="tokens__paircode">{pairing.code}</span>
+            <span className="tokens__hint"> — type it if the agent asks, instead of the whole prompt</span>
+          </p>
 
           <div className="tokens__secretrow">
             <pre className="tokens__brief" tabIndex={0}>

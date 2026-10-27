@@ -1933,13 +1933,22 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   align-items: center;
 }
 
+.tokens__pairline {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .tokens__paircode {
-  margin: 0.2rem 0 0.7rem;
   font-family: var(--font-mono);
-  font-size: 1.35rem;
-  letter-spacing: 0.14em;
+  font-size: 0.88rem;
+  letter-spacing: 0.1em;
   color: var(--fg);
   user-select: text;
+}
+
+.tokens__pairline .tokens__hint {
+  margin: 0;
 }
 
 .tokens__claimant {
