@@ -421,13 +421,15 @@ a {
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.1rem;
   /* The sheet sits over the reading column, not the whole window. It needs an explicit
-     width: the shell centres its children, so a flex item would shrink to its content. */
+     width: the shell centres its children, so a flex item would shrink to its content.
+     The chevron and the robot carry their own ink inset, so the sheet's own padding is
+     tiny: it only tops up to the gap the library header uses. */
   width: 100%;
   max-width: calc(var(--measure) - 3rem);
   margin: 0.6rem auto 0;
-  padding: 0.3rem 0.35rem 0.3rem 0.4rem;
+  padding: 0.3rem 0.55rem 0.3rem 0.15rem;
   background: var(--header-bg);
   border-radius: 16px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04), 0 14px 30px rgba(42, 40, 37, 0.08);
@@ -442,6 +444,7 @@ a {
     top: max(0.45rem, env(safe-area-inset-top));
     max-width: calc(100% - 2.2rem);
     margin: 0.45rem auto 0;
+    padding: 0.3rem 0.1rem 0.3rem 0;
     border-radius: 14px;
   }
 }
@@ -468,7 +471,7 @@ a {
   .topbar__back {
     min-width: 2.6rem;
     min-height: 2.6rem;
-    margin-left: -0.1rem;
+    margin-left: -0.3rem;
   }
 }
 
