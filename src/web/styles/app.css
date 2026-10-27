@@ -189,14 +189,14 @@ a {
 /* The viewBox is cropped to the ink, so this height is how tall the letters are. */
 .wordmark svg {
   display: block;
-  height: 1.32rem;
+  height: 1.16rem;
   width: auto;
   fill: currentColor;
 }
 
 @media (max-width: 40rem) {
   .wordmark svg {
-    height: 1.2rem;
+    height: 1.06rem;
   }
 }
 

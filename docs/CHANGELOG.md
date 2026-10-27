@@ -2,6 +2,11 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — The wordmark a notch smaller
+
+**Fix** — the wordmark drops from 1.32rem to 1.16rem of ink (20px tall, 17.5px on a phone), so
+it sits with the field and the buttons instead of over them.
+
 ## 2026-10-27 — Concentric corners in the header
 
 **Fix** — the field and the buttons used a 999px pill inside a 16px sheet, so the bar mixed two
