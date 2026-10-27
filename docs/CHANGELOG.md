@@ -2,6 +2,76 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-27 — Pairing: the token never enters the transcript
+
+**Feature** — Settings → *Agent tokens* → **Pair an agent** prints a code and a prompt. The agent
+claims the code (`POST /api/pair/claim`), gets `202` and **no token** until the writer approves in
+Paddō, then collects its token on the next claim, which deletes the pairing. Codes are ten minutes,
+in memory, and drawn without `I`, `O`, `0`, `1`.
+
+**Fix** — the panel listed every pairing in the server's map, including ones still waiting, so a
+stale pairing read as "it already happened". It shows only its own pairing, and only once claimed:
+zero rows on start, zero for an unrelated code, one for its own.
+
+**Fix** — the code printed three times (display, prompt, claim row). The claim row names the agent,
+and the display is one muted line, kept for an agent that asks for the code mid-conversation.
+
+## 2026-10-27 — The server is the MCP server
+
+**Feature** — Paddō serves the agent's tools at `POST /mcp` (MCP streamable HTTP, stateless, one
+server per request bound to the caller's token). Connecting a client is a URL and a bearer token:
+nothing installed next to the agent, no version to keep in step. Minting prints the `mcpServers`
+block with the URL taken from the request origin, and a second block — a prompt for the agent — for
+clients that cannot register a remote server, naming the HTTP routes to use instead. `pnpm mcp`
+wraps the same factory over stdio; both transports share `src/server/mcp.ts`, so they cannot drift.
+
+## 2026-10-27 — Scoped agent tokens, create and export
+
+**Feature** — a token carries verbs (`read`, `propose`, `create`) and either every document or a
+checked list; only its SHA-256 is stored, the secret is shown once, revoking is deleting, and the
+server enforces verbs and scope on every route. `PADDO_TOKEN` stays the machine's own key. A token
+that creates a document gets it added to its scope, so an agent can read back what it dropped in.
+MCP gained `create_document` and `export_document`; the API gained
+`GET /api/documents/:slug/raw` (live markdown as an attachment, pending hunks excluded).
+
+**Fix** — a request carrying both a session cookie and a token is the owner's session and is allowed
+everything, so the scoping test judges a token from a cookie-free client.
+
+## 2026-10-27 — The writing bar is a menu, and the header says what it is doing
+
+**Feature** — the robot button became a document menu: *Invite the agent* and *Download markdown*.
+The title is centred on the sheet, and the header holds one line at a time — *syncing document* while
+the room connects, *synced* for 1.4s when it does, then the title — sliding up and out, clipped by
+the sheet. A drop returns it to *syncing document* and the title only comes back when the room does.
+The status setting (draft / editing / published) moved from the writing bar to the list's kebab.
+
+**Fix** — `--muted` darkened to `#5b564d`: the meta line was 4.4:1 under a row's hover tint. The
+accessibility test audits the list after its fade-in, because axe composites text against an
+ancestor's opacity and read a half-transparent list as 4.05:1.
+
+## 2026-10-27 — The skeleton is measured like prose
+
+**Feature** — the skeleton loader returns to the article body and pulses: 12% ink, opacity 0.45 → 1
+over 1.5s, each line a beat behind the one above, none of it under reduced motion.
+
+**Fix** — its heading was 1.6rem at weight 600 against a 1.9rem weight-400 h1, and its bars were
+13.6px on a 27.2px pitch. It now borrows the prose's own rhythm — `1.05rem` at `line-height: 1.75`,
+two paragraphs with the same `1.1em` gap, each bar a flex child centred in a real line box — and
+takes `padding: inherit`, because the hard-coded `2rem 1.5rem` was 12px out on every side below
+40rem. Measured against the live text at 390px: title x 18.1 / y 95.7, first line x 18.1 / y 150.7,
+identical in both states.
+
+## 2026-10-27 — The list and the sheet
+
+**Feature** — search in the header, real file rename so `.md` names follow titles, the floating
+new-document button on phones.
+
+**Fix** — the archive row sat five rems under the last article (stacked margins plus the list's own
+clearance for the floating button), its rule was 21.5px narrower than the row rules, and a closing
+border on the last row read as a double line. One line now, matched widths, and the clearance moved
+to the page bottom. The floating button had inherited the header's `--radius-inner` and its icon
+sizing, so it was a 9px square with muted ink; it is a 56px circle with the paper plus again.
+
 ## 2026-10-27 — The header measured in ink, not boxes
 
 **Fix** — measured to the pixels that are actually painted (glyph bounds and the well's edge,
