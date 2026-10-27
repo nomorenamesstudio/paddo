@@ -1147,7 +1147,9 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 .skeleton {
   position: absolute;
   inset: 0;
-  padding: 2rem 1.5rem;
+  /* The editor's own insets, including the phone's: hard-coding them was 12px out
+     on every side below 40rem. */
+  padding: inherit;
   pointer-events: none;
   transition: opacity 200ms ease-out;
 }
