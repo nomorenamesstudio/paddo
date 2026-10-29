@@ -237,12 +237,13 @@ export function AgentTokens() {
   const canMint = name.trim().length > 0 && verbs.length > 0 && (allDocuments || chosen.length > 0)
 
   return (
-    <section className="settings__section">
-      <h2 className="settings__heading">Agent tokens</h2>
+    <>
+    <section className="settings__card">
+      <h2 className="settings__heading">Connect an agent</h2>
       <p className="muted settings__note">
-        A token lets an agent read and propose against the documents you give it, whenever you tell
-        it to — no invitation sheet needed. Copy it into the agent&rsquo;s MCP configuration as{' '}
-        <code>PADDO_TOKEN</code>. It is shown once.
+        An agent with a token can read and propose against the documents you give it, whenever you
+        tell it to — no invitation sheet needed. Pairing hands the token over without it ever
+        passing through a chat log.
       </p>
 
       <div className="tokens__form">
@@ -464,8 +465,17 @@ export function AgentTokens() {
         </div>
       ) : null}
 
+      {error ? <p className="notice notice--error">{error}</p> : null}
+    </section>
+
+    <section className="settings__card">
+      <h2 className="settings__heading">Connected agents</h2>
+      <p className="muted settings__note">
+        Revoking a token cuts that agent off on its next request — nothing else changes.
+      </p>
+
       {tokens.length === 0 ? (
-        <p className="muted settings__note">No tokens yet.</p>
+        <p className="muted settings__note tokens__empty">Nothing connected yet.</p>
       ) : (
         <ul className="tokens__list">
           {tokens.map((token) => (
@@ -489,8 +499,7 @@ export function AgentTokens() {
           ))}
         </ul>
       )}
-
-      {error ? <p className="notice notice--error">{error}</p> : null}
     </section>
+    </>
   )
 }

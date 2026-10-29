@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — Settings reads as sheets, not a column of text
+
+**Feature** — the settings page is a stack of cards now, using the same material as the bars
+(`--header-bg`, 18px radius, the soft shadow), with an intro line, a segmented theme track instead of
+loose buttons, and the guide in a well-inset textarea. "Agent tokens" split into **Connect an agent**
+and **Connected agents** — pairing is the thing you came to do, the list is what you check later.
+
 ## 2026-10-29 — One test article's sidecar rebuilt from scratch
 
 **Fix** — after compaction the sidecar for `the-quiet-interface` was still 1.4 MB, all of it CRDT

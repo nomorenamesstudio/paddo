@@ -74,7 +74,11 @@ export function SettingsPage() {
       <TopBar title="Settings" sync="connected" actions={<span className="topbar__actions" />} />
 
       <main className="page page--narrow settings">
-        <section className="settings__section">
+        <p className="muted settings__intro">
+          How Paddō looks, how the agent should write, and which agents can reach your work.
+        </p>
+
+        <section className="settings__card">
           <h2 className="settings__heading">Appearance</h2>
           <p className="muted settings__note">
             System follows your device, which is usually what you want — dark at night, paper in
@@ -99,7 +103,7 @@ export function SettingsPage() {
           </div>
         </section>
 
-        <section className="settings__section">
+        <section className="settings__card">
           <h2 className="settings__heading">Writing guide</h2>
           <p className="muted settings__note">
             Handed to the agent with every invitation, so it edits in your voice instead of its own.
