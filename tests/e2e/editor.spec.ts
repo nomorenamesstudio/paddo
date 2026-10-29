@@ -271,13 +271,19 @@ test('a document can be archived and then deleted from the list', async ({ page 
 test('a writing guide saved in settings reaches the agent invitation', async ({ page }) => {
   await signIn(page)
 
-  // The guide lives in settings, not in a document.
+  // The guide lives in settings, not in a document — and it is read-only until asked,
+  // so a misclick cannot rewrite the brief the agent works from.
   await page.goto('/settings')
+  await expect(page.getByLabel('Writing guide')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Edit guide' }).click()
   const guide = page.getByLabel('Writing guide')
   await expect(guide).toBeVisible()
   await guide.fill('Never use the word leverage. Short sentences. Em dashes are fine.')
   await page.getByRole('button', { name: 'Save guide' }).click()
   await expect(page.locator('.settings__saved')).toBeVisible()
+  // Saving closes the editor again.
+  await expect(page.getByLabel('Writing guide')).toHaveCount(0)
+  await expect(page.locator('.settings__guideview')).toContainText('Never use the word leverage')
 
   // And it travels with the prompt the writer copies into their agent session.
   const slug = await createDocument(page, `Guide check ${Date.now()}`)
@@ -391,6 +397,7 @@ test('the search box filters the list by title and clears back', async ({ page }
 test('the theme is a saved choice, and switching it keeps the writing guide', async ({ page }) => {
   await signIn(page)
   await page.goto('/settings')
+  await page.getByRole('button', { name: 'Edit guide' }).click()
   const guide = page.getByLabel('Writing guide')
   await guide.fill('Keep the guide while the theme changes.')
   await page.getByRole('button', { name: 'Save guide' }).click()
@@ -403,7 +410,7 @@ test('the theme is a saved choice, and switching it keeps the writing guide', as
   // the guide — and the choice has to survive a reload.
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect(page.getByLabel('Writing guide')).toHaveValue('Keep the guide while the theme changes.')
+  await expect(page.locator('.settings__guideview')).toHaveText('Keep the guide while the theme changes.')
 
   await page.getByRole('radio', { name: 'System' }).click()
   await expect(page.locator('html')).toHaveAttribute('data-theme-setting', 'system')

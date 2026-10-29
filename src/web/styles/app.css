@@ -2138,6 +2138,31 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   line-height: 1.55;
 }
 
+.settings__guideview {
+  max-height: 21rem;
+  padding: 0.9rem 1rem;
+  overflow-y: auto;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--fg);
+  white-space: pre-wrap;
+  background: var(--well);
+  border-radius: 12px;
+  user-select: text;
+}
+
+.settings__guideview:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.settings__buttons {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .settings__guide {
   width: 100%;
   min-height: 20rem;

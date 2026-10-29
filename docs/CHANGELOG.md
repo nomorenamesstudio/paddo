@@ -2,6 +2,13 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — The writing guide is read-only until you edit it
+
+**Feature** — the guide renders as prose in the card, with its word count and a single **Edit guide**
+button; the textarea only exists while editing, next to **Save guide** and **Cancel**. A stray tap on
+the way past settings can no longer rewrite the brief the agent works from. Saving closes the editor
+again; a cancelled edit leaves the stored guide untouched.
+
 ## 2026-10-29 — Settings reads as sheets, not a column of text
 
 **Feature** — the settings page is a stack of cards now, using the same material as the bars

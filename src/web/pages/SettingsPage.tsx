@@ -12,6 +12,10 @@ Example: Be direct. Use contractions. Vary sentence length. Have opinions. No co
 
 const THEME_LABELS: Record<Theme, string> = { system: 'System', light: 'Light', dark: 'Dark' }
 
+function countWords(text: string): number {
+  return text.trim() ? text.trim().split(/\s+/).length : 0
+}
+
 function ThemeIcon({ theme }: { theme: Theme }) {
   if (theme === 'light') return <Sun size={16} aria-hidden="true" />
   if (theme === 'dark') return <Moon size={16} aria-hidden="true" />
@@ -21,6 +25,9 @@ function ThemeIcon({ theme }: { theme: Theme }) {
 export function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
+  // The guide is read-only until asked: a misclick should not rewrite the agent's brief.
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -49,6 +56,7 @@ export function SettingsPage() {
     try {
       const stored = await api.saveSettings(next)
       setSettings(stored)
+      setEditing(false)
       setSaved(new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }))
     } catch (problem) {
       setError(problem instanceof ApiError ? problem.message : 'could not save settings')
@@ -67,7 +75,7 @@ export function SettingsPage() {
   }
 
   const guide = settings?.writingGuide ?? null
-  const words = guide === null ? 0 : guide.trim() ? guide.trim().split(/\s+/).length : 0
+  const words = countWords(guide ?? '')
 
   return (
     <>
@@ -112,20 +120,51 @@ export function SettingsPage() {
 
           {guide === null ? (
             <p className="muted">reading…</p>
-          ) : (
+          ) : editing ? (
             <>
               <textarea
                 className="settings__guide"
-                value={guide}
+                value={draft}
                 onChange={(event) => {
-                  setSettings({ writingGuide: event.target.value, theme: settings?.theme ?? 'system' })
+                  setDraft(event.target.value)
                   setSaved(null)
                 }}
                 placeholder={PLACEHOLDER}
                 spellCheck
                 aria-label="Writing guide"
                 rows={16}
+                autoFocus
               />
+
+              <div className="settings__actions">
+                <span className="settings__meta">
+                  {countWords(draft)} {countWords(draft) === 1 ? 'word' : 'words'}
+                </span>
+                <span className="settings__buttons">
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => setEditing(false)}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="button button--primary"
+                    type="button"
+                    onClick={() => void persist({ writingGuide: draft, theme: settings?.theme ?? 'system' })}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving…' : 'Save guide'}
+                  </button>
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="settings__guideview" tabIndex={0}>
+                {guide.trim() ? guide : 'No guide yet — the agent works from the invitation alone.'}
+              </div>
 
               <div className="settings__actions">
                 <span className="settings__meta">
@@ -137,12 +176,14 @@ export function SettingsPage() {
                   ) : null}
                 </span>
                 <button
-                  className="button button--primary"
+                  className="button"
                   type="button"
-                  onClick={() => void persist({ writingGuide: guide, theme: settings?.theme ?? 'system' })}
-                  disabled={saving}
+                  onClick={() => {
+                    setDraft(guide)
+                    setEditing(true)
+                  }}
                 >
-                  {saving ? 'Saving…' : 'Save guide'}
+                  Edit guide
                 </button>
               </div>
             </>
