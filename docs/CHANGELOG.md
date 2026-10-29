@@ -2,6 +2,24 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — The sidecar stops growing without bound
+
+**Fix** — `.paddo/the-quiet-interface.y` had reached 15.8 MB for a 282-word document: 74 copies of
+`@tiptap/y-tiptap`'s position-migration record, appended every time a client moved content, each
+carrying a `seen` state vector of thousands of `[clientId, clock]` pairs. The map is append-only by
+design, so nothing ever removed them.
+
+Compaction now runs on every store (`src/server/compaction.ts`), using the library's own rule for
+what is dead: a record is superseded when another record's `seen` covers its `(client, clock)`, so
+that later record already carries the final mapping. The newest four records are never touched, the
+map is left alone below eight records, and `seen` vectors are capped at 256 entries — a truncated
+vector can only fail to prove supersession, which costs a stale hunk a relocation, never a position
+moved to the wrong place. Dropping a *newer* record while an older one survives is the dangerous
+direction; the tests pin it.
+
+The 15.8 MB file was repaired in place: 74 records → 4, 15,848,961 → 1,428,958 bytes, with the prose
+and the pending suggestions byte-identical. The original is at `.cache/the-quiet-interface.y.before`.
+
 ## 2026-10-29 — A renamed document keeps its address, and a ghost address creates nothing
 
 **Fix** — a phone tab that slept through a rename came back to a name that no longer existed: the

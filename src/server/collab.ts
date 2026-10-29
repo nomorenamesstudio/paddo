@@ -7,6 +7,7 @@ import * as Y from 'yjs'
 
 import { CONTENT_FIELD, markdown, schema } from '../shared/editor'
 import { constantTimeEquals, readCookie, SESSION_COOKIE, verifySession } from './auth'
+import { compactPositionMigrations } from './compaction'
 import { allows, verifyToken } from './tokens'
 import type { Config } from './config'
 import {
@@ -98,6 +99,15 @@ export function createCollab(config: Config) {
     },
 
     async onStoreDocument({ document, documentName }) {
+      // TipTap's migration map is append-only and grows without bound; compact it on
+      // every save so the sidecar stays proportional to the document.
+      const compacted = compactPositionMigrations(document)
+      if (compacted.dropped > 0 || compacted.capped > 0) {
+        console.log(
+          `compacted position migrations for ${documentName}: -${compacted.dropped} records, ${compacted.capped} vectors capped`,
+        )
+      }
+
       const body = markdownFromYDoc(document)
       const hash = hashOf(body)
       const previous = lastWritten.get(documentName)
