@@ -2,6 +2,17 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — One test article's sidecar rebuilt from scratch
+
+**Fix** — after compaction the sidecar for `the-quiet-interface` was still 1.4 MB, all of it CRDT
+history from the replay era rather than migration records. With no client holding the room, the
+sidecar was deleted and the document reseeded from its markdown: **15.8 MB → 2.2 KB**, prose intact
+(272 words), markdown on disk byte-identical. The three pending hunks on that document went with it,
+which is the cost of a rebuild — their anchors only exist in the CRDT.
+
+**Tooling** — the repair script is `tools/compact-sidecar.mjs` now, documented in SETUP along with
+what a rebuild costs.
+
 ## 2026-10-29 — The sidecar stops growing without bound
 
 **Fix** — `.paddo/the-quiet-interface.y` had reached 15.8 MB for a 282-word document: 74 copies of

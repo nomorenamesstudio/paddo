@@ -1,5 +1,20 @@
 # Setup
 
+## Repairing a bloated sidecar
+
+Sidecars compact on every save now, so this is only for a file that grew before that
+existed. It verifies the prose and the suggestion count before writing, and refuses
+otherwise:
+
+```bash
+cp .paddo/<slug>.y /tmp/<slug>.y.bak
+node --import tsx tools/compact-sidecar.mjs <slug>
+```
+
+A sidecar that is *rebuilt* (deleted while no room is open) drops every pending
+suggestion — their anchors live in the CRDT — and is reseeded from the markdown on the
+next open.
+
 ## Where agent MCP configs live
 
 Only needed if you go the config-file route. The pairing panel's prompt needs none of
