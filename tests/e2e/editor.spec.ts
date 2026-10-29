@@ -694,6 +694,47 @@ test('an accepted change refuses the hunks whose range it overwrote', async ({ p
   expect(body).not.toContain('here in the sentence')
 })
 
+test('a renamed document still opens from its old address', async ({ page }) => {
+  await signIn(page)
+  const born = await createDocument(page, `Rename ${Date.now()}`)
+  await page.goto(`/d/${born}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // Renaming happens when the last client leaves: the file takes its title.
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' and its title')
+  await page.goto('/')
+  await expect(page.locator('.documents')).toBeVisible()
+
+  // The API follows the old name, so its answer is the name the document has now.
+  let current = born
+  for (let attempt = 0; attempt < 40 && current === born; attempt += 1) {
+    const response = await page.request.get(`/api/documents/${born}`)
+    if (response.ok()) current = ((await response.json()) as { slug: string }).slug
+    else await page.waitForTimeout(250)
+  }
+  expect(current).not.toBe(born)
+
+  // The address it was created under now redirects to the name it has.
+  await page.goto(`/d/${born}`)
+  await expect(page.locator('.prose h1')).toContainText('and its title')
+  expect(page.url().endsWith(`/d/${current}`)).toBe(true)
+})
+
+test('an address with no document says so, and creates nothing', async ({ page }) => {
+  await signIn(page)
+  const ghost = `ghost-${Date.now()}`
+  await page.goto(`/d/${ghost}`)
+  await expect(page.getByRole('heading', { name: 'This document is gone' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'All documents' })).toBeVisible()
+
+  // The connection is refused too, so nothing can write a file under that name.
+  await page.waitForTimeout(1500)
+  const response = await page.request.get(`/api/documents/${ghost}`)
+  expect(response.status()).toBe(404)
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

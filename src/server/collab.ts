@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 
 import { Server } from '@hocuspocus/server'
@@ -13,6 +14,7 @@ import {
   hashOf,
   isValidSlug,
   normalizeMarkdown,
+  pathFor,
   readDocument,
   renameDocument,
   sidecarPathFor,
@@ -62,6 +64,13 @@ export function createCollab(config: Config) {
     async onLoadDocument({ document, documentName }) {
       const fragment = document.getXmlFragment(CONTENT_FIELD)
       if (fragment.length > 0) return
+
+      // A document exists on disk or in a sidecar. Neither means the caller holds a
+      // name that is gone — renaming it as a fresh empty room is how a stale tab
+      // used to mint a second file with the same title.
+      if (!existsSync(pathFor(config, documentName)) && !existsSync(sidecarPathFor(config, documentName))) {
+        throw new Error('no such document')
+      }
 
       // The sidecar keeps CRDT identity (and therefore every stored anchor) across
       // restarts. The markdown is the canonical prose but cannot rebuild anchors.

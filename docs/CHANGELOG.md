@@ -2,6 +2,28 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — A renamed document keeps its address, and a ghost address creates nothing
+
+**Fix** — a phone tab that slept through a rename came back to a name that no longer existed: the
+API answered `404`, the editor ignored it and opened an empty room, and storing that room minted a
+second file with the same title. Three drafts of "Linkedin post ideas" came out of one session that
+way (5 / 129 / 198 words; the long one was a strict superset of the others).
+
+Three changes, all root cause:
+
+- **Aliases** — `renameDocument` records `old → new` in `.paddo/aliases.json`, chains re-point when a
+  document is renamed again, and `GET /api/documents/<old>` answers with the current slug and
+  `moved: true`. The editor takes that address instead of opening a room under a dead name.
+- **No phantom rooms** — a room whose markdown *and* sidecar are both missing now refuses to load
+  (`no such document`), so a stale address cannot write a new file.
+- **An honest screen** — a 404 shows "This document is gone" with a way back to the library, rather
+  than an empty editor that looks like lost work.
+
+**Fix** — `.paddo/the-quiet-interface.y` had grown to 15.8 MB for a 282-word document. It is not the
+prose: 28 copies of TipTap's collaboration position-migration record, each with a `seen` vector of
+thousands of `[clientId, clock]` pairs, accumulated over repeated CRDT replays. Harmless on disk,
+expensive on every open. Repair pending.
+
 ## 2026-10-27 — The writing guide is reachable with a token
 
 **Feature** — `GET /api/settings/guide` returns `{ writingGuide }` to a session or a token with

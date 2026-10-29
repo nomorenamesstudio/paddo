@@ -2,6 +2,7 @@ import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
 
+import { rememberAlias } from './aliases'
 import type { Config } from './config'
 
 export interface DocumentMeta {
@@ -211,6 +212,8 @@ export async function renameDocument(config: Config, from: string, to: string): 
     join(config.sidecarDir, `${to}.meta.json`),
   )
   await rename(pathFor(config, from), pathFor(config, to))
+  // The old address keeps working: a sleeping tab or a bookmark resolves to this one.
+  await rememberAlias(config, from, to)
 }
 
 async function renameIfPresent(from: string, to: string): Promise<void> {

@@ -11,6 +11,7 @@ import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify'
 
 import { SUGGESTIONS_MAP, type Suggestion } from '../shared/suggestions'
 import { constantTimeEquals, createSession, LoginThrottle, readCookie, SESSION_COOKIE, SESSION_TTL_MS, verifySession } from './auth'
+import { resolveAlias } from './aliases'
 import { createCollab, markdownFromYDoc } from './collab'
 import { loadConfig, type Config } from './config'
 import {
@@ -281,6 +282,22 @@ app.get('/api/documents/:slug', { preHandler: guard('read') }, async (request, r
       status: await readStatus(config, slug),
     }
   } catch {
+    // Renamed since this address was handed out: answer with the name it has now.
+    const current = await resolveAlias(config, slug)
+    if (current !== slug) {
+      try {
+        const markdown = await readDocument(config, current)
+        return {
+          slug: current,
+          moved: true,
+          title: titleOf(markdown, current),
+          markdown,
+          status: await readStatus(config, current),
+        }
+      } catch {
+        // The alias points at something that is gone as well: fall through.
+      }
+    }
     reply.code(404).send({ error: 'no such document' })
     return
   }

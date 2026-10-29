@@ -6,7 +6,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import { buildInvitePrompt } from '../../shared/invite'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
-import { api } from '../api'
+import { api, ApiError } from '../api'
 import { caretRenderer, deviceKind } from '../editor/caret'
 import { createCollab, type Collab } from '../editor/collab'
 import {
@@ -24,6 +24,7 @@ import { OpeningSkeleton, humanizeSlug } from '../components/OpeningSkeleton'
 import { TopBar } from '../components/TopBar'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
+import { navigate } from '../App'
 import { EditorMenu } from '../components/EditorMenu'
 import type { HeadlinePhase } from '../components/Headline'
 
@@ -87,6 +88,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     () => window.localStorage.getItem('paddo-invite-note') !== 'hidden',
   )
   const [notice, setNotice] = useState<string | null>(null)
+  const [missing, setMissing] = useState(false)
   const editorHost = useRef<HTMLElement | null>(null)
 
   const editor = useEditor(
@@ -182,9 +184,18 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       .document(slug)
       .then((document) => {
         if (cancelled) return
+        // Renamed while this address was in somebody's hands: take the address it
+        // has now rather than opening an empty room under a name that is gone.
+        if (document.slug !== slug || document.moved) {
+          navigate(`/d/${document.slug}`, { replace: true })
+          return
+        }
         setTitle(document.title)
       })
-      .catch(() => {})
+      .catch((problem: unknown) => {
+        if (cancelled) return
+        if (problem instanceof ApiError && problem.status === 404) setMissing(true)
+      })
     return () => {
       cancelled = true
     }
@@ -289,6 +300,26 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     if (!editor) return
     rejectAllSuggestions(editor)
   }, [editor])
+
+  if (missing) {
+    return (
+      <main className="page page--narrow">
+        <h1 className="documents__title">This document is gone</h1>
+        <p className="muted">
+          Its address no longer matches a file. It was probably renamed — open the library to find
+          it under its current title.
+        </p>
+        <p>
+          <a className="button" href="/" onClick={(event) => {
+            event.preventDefault()
+            navigate('/')
+          }}>
+            All documents
+          </a>
+        </p>
+      </main>
+    )
+  }
 
   return (
     <>

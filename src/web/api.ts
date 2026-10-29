@@ -76,7 +76,9 @@ export const api = {
   createDraft: () => request<DocumentMeta>('/api/documents', { method: 'POST' }),
 
   document: (slug: string) =>
-    request<{ slug: string; title: string; markdown: string; status: Status }>(`/api/documents/${slug}`),
+    request<{ slug: string; title: string; markdown: string; status: Status; moved?: boolean }>(
+      `/api/documents/${slug}`,
+    ),
 
   deleteDocument: (slug: string) =>
     request<{ slug: string; deleted: boolean }>(`/api/documents/${slug}`, { method: 'DELETE' }),
