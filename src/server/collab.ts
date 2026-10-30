@@ -36,6 +36,14 @@ export function createCollab(config: Config) {
    */
   const lastWritten = new Map<string, string>()
 
+  /**
+   * The hash of what the file held when we last looked at it. `lastWritten` answers
+   * "did the room change"; this answers "did someone else change the file" — two
+   * questions the same hash could not answer once serialization stopped being
+   * byte-identical to the imported markdown.
+   */
+  const lastDisk = new Map<string, string>()
+
   const server = new Server({
     debounce: 700,
     maxDebounce: 3000,
@@ -83,6 +91,10 @@ export function createCollab(config: Config) {
           // Remember what the file on disk holds for this state, so the first
           // store does not rewrite it and a foreign edit is still detectable.
           lastWritten.set(documentName, hashOf(markdownFromYDoc(document)))
+          lastDisk.set(
+            documentName,
+            hashOf(normalizeMarkdown(await readDocument(config, documentName).catch(() => ''))),
+          )
           return
         }
       } catch {
@@ -92,7 +104,10 @@ export function createCollab(config: Config) {
       try {
         const body = await readDocument(config, documentName)
         if (seedDocumentFromMarkdown(document, body)) {
+          // The file is the source of truth at this moment: a hunk quoted from it can
+          // be applied later even though serialization escapes raw HTML.
           lastWritten.set(documentName, hashOf(normalizeMarkdown(body)))
+          lastDisk.set(documentName, hashOf(normalizeMarkdown(body)))
         }
       } catch {
         // A room for a document that does not exist yet: it starts empty.
@@ -124,7 +139,8 @@ export function createCollab(config: Config) {
       // change into suggestions instead of it being silently overwritten here.
       try {
         const diskHash = hashOf(normalizeMarkdown(await readDocument(config, documentName)))
-        if (previous !== undefined && diskHash !== previous) {
+        const expected = lastDisk.get(documentName)
+        if (expected !== undefined && diskHash !== expected) {
           await writeSidecar(config, documentName, document)
           return
         }
@@ -134,6 +150,7 @@ export function createCollab(config: Config) {
 
       await writeDocument(config, documentName, body)
       lastWritten.set(documentName, hash)
+      lastDisk.set(documentName, hash)
       await writeSidecar(config, documentName, document)
     },
 

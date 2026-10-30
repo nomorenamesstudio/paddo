@@ -742,6 +742,43 @@ test('an address with no document says so, and creates nothing', async ({ page }
   expect(response.status()).toBe(404)
 })
 
+test('an imported document keeps its raw HTML through an edit', async ({ page }) => {
+  await signIn(page)
+
+  // An import straight from a page pipeline: an HTML comment Paddō's schema cannot
+  // hold as markup, and a bracket placeholder it would escape as a link.
+  const created = await page.request.post('/api/documents', {
+    data: {
+      markdown:
+        '<!-- page: keret.html\ntitle: Keret -->\n\nThe body starts here.\n\n[image: shot.jpg — a wall.]\n',
+    },
+  })
+  expect(created.ok()).toBe(true)
+  const { slug } = (await created.json()) as { slug: string }
+
+  await page.goto(`/d/${slug}`)
+  await page.locator('.prose h1, .prose p').first().waitFor()
+  await page.waitForTimeout(1500)
+
+  // A real edit, so the room stores and the file is written from the document.
+  await page.locator('.prose p').last().click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' Edited.')
+
+  await expect
+    .poll(async () => (await readFile(`tests/fixtures/content/${slug}.md`, 'utf8').catch(() => '')).includes('Edited.'))
+    .toBe(true)
+
+  const file = await readFile(`tests/fixtures/content/${slug}.md`, 'utf8')
+  // The comment stays a comment — it used to come back as `&lt;!-- … --&gt;`.
+  expect(file).toContain('<!-- page: keret.html')
+  expect(file).toContain('-->')
+  expect(file).not.toContain('&lt;')
+  // The bracket placeholder is still escaped in the file: markdown would read it as
+  // a link, and the bake step on the other side unescapes it.
+  expect(file).toContain('\\[image: shot.jpg')
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

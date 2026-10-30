@@ -2,6 +2,19 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — The store's two hashes, and the hunks that went stale with them
+
+**Fix** — restoring raw HTML made the file and the room disagree, and the "someone else edited the
+file" guard compared both against one hash: every store after that was refused, so accepting a hunk
+changed the document but never the file. `lastWritten` (did the room change) and `lastDisk` (did the
+file change) are tracked separately now, seeded from the file at load and updated on write.
+
+**Fix** — the three imported documents carried delete hunks the writer could not approve: the agent
+had quoted `&lt;!-- … --&gt;` from the escaped serialization, and the document's own text has
+`<!-- … -->`, so no anchor could ever match ("the text moved under every hunk"). The stale hunks were
+rejected and re-proposed against the live text, then accepted: the files now hold no comment block
+and no HTML entities, and the bracket placeholders keep their `\[` escapes for the bake step.
+
 ## 2026-10-29 — A document keeps the raw HTML it was written with
 
 **Fix** — three documents imported from a page pipeline opened with `&lt;!-- page: … --&gt;` where
