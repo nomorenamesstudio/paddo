@@ -69,6 +69,12 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
 
   useEffect(() => {
     if (!ready) return
+    const timer = window.setTimeout(() => setEntered(true), 780)
+    return () => window.clearTimeout(timer)
+  }, [ready])
+
+  useEffect(() => {
+    if (!ready) return
     setSkeletonFading(true)
     const timer = window.setTimeout(() => setShowSkeleton(false), 200)
     return () => window.clearTimeout(timer)
@@ -89,6 +95,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   )
   const [notice, setNotice] = useState<string | null>(null)
   const [missing, setMissing] = useState(false)
+  const [entered, setEntered] = useState(false)
   const editorHost = useRef<HTMLElement | null>(null)
 
   const editor = useEditor(
@@ -357,7 +364,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
 
       <main className="editor" ref={editorHost} onClick={() => editor?.commands.focus()}>
         {showSkeleton ? <OpeningSkeleton title={title} fading={skeletonFading} /> : null}
-        <div className={`editor__body${ready ? ' is-ready' : ''}`}>
+        <div className={`editor__body${ready ? ' is-ready' : ''}${entered ? ' has-entered' : ''}`}>
           <EditorContent editor={editor} />
         </div>
         <SelectionMenu editor={editor} />

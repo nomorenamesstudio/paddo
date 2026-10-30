@@ -1244,9 +1244,13 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   }
 }
 
-/* One entrance, not a reveal on every section: the text rises, the hint follows. */
+/* One entrance, not a reveal on every section: the text rises, the hint follows.
+   The animation is dropped once it has played: `fill-mode: both` left a
+   `transform` on the element for good, and a composited transform above the editor
+   is what makes iOS Safari's spellcheck underlines detach from the words while the
+   page scrolls. */
 @media (prefers-reduced-motion: no-preference) {
-  .editor__body.is-ready {
+  .editor__body.is-ready:not(.has-entered) {
     animation: rise 0.7s var(--ease) both;
   }
 

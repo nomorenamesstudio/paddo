@@ -2,6 +2,18 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — No transform left above the editor
+
+**Fix** — iOS Safari's grammar underlines drifted away from their words while the page scrolled. The
+cause was ours: the document's entrance animation ends with `transform: translateY(0)` and
+`animation-fill-mode: both` kept it on `.editor__body` for the rest of the session, so the editable
+area sat in a composited layer and WebKit's annotation overlay stopped following it.
+
+The animation is scoped to `.is-ready:not(.has-entered)` and a timer adds `has-entered` once it has
+played, so the computed transform returns to `none`. The e2e test walks the chain above `.prose` and
+requires no transform, filter or `will-change` on any ancestor — measured before the fix:
+`matrix(1, 0, 0, 1, 0, 0)` on `editor__body`.
+
 ## 2026-10-29 — A hunk is only dead when its text is gone
 
 **Fix** — accepting one change marked *every* other pending hunk conflicted, so the writer met

@@ -779,6 +779,31 @@ test('an imported document keeps its raw HTML through an edit', async ({ page })
   expect(file).toContain('\\[image: shot.jpg')
 })
 
+test('opening a document leaves no transform above the editor', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Transform ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // The entrance animation ends with a translate that fill-mode:both kept forever. A
+  // composited transform above the editable area is what detached iOS Safari's
+  // spellcheck underlines from the words while scrolling.
+  await page.waitForTimeout(1500)
+  const transforms = await page.evaluate(() => {
+    const found: string[] = []
+    let node = document.querySelector('.prose')
+    while (node && node !== document.documentElement) {
+      const style = getComputedStyle(node)
+      if (style.transform !== 'none' || style.filter !== 'none' || style.willChange !== 'auto') {
+        found.push(`${node.className || node.tagName}: ${style.transform}`)
+      }
+      node = node.parentElement
+    }
+    return found
+  })
+  expect(transforms).toEqual([])
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
