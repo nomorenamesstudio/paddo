@@ -2,6 +2,16 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — The list says how many edits are waiting
+
+**Feature** — a small pill after a document's title carries the number of suggested edits waiting on
+it, and only when there is at least one. The count is read from each document's CRDT sidecar
+(`src/server/pending.ts`) rather than by opening rooms, so the list still answers in one request —
+measured 78 ms for thirteen documents — and a sidecar's size plus mtime keys a short cache.
+
+The pill is inline rather than a flex item: a long title wraps around it instead of pushing it out.
+Accent ink on a 14% accent tint, tabular numerals, and it reads in both themes.
+
 ## 2026-10-29 — No transform left above the editor
 
 **Fix** — iOS Safari's grammar underlines drifted away from their words while the page scrolled. The

@@ -400,6 +400,22 @@ a {
   font-weight: 400;
 }
 
+/* Edits waiting, in the same shape as the archive count: inline, so a long title
+   still wraps around it. */
+.documents__pending {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.42rem;
+  vertical-align: 0.1em;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: var(--radius-pill);
+}
+
 .documents__meta {
   font-family: var(--font-sans);
   font-size: 0.72rem;

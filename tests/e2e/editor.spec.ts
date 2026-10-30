@@ -804,6 +804,42 @@ test('opening a document leaves no transform above the editor', async ({ page })
   expect(transforms).toEqual([])
 })
 
+test('the list shows how many edits are waiting on a document', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Waiting ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  const sentence = 'A sentence that will be edited twice over.'
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type(sentence)
+  await expect
+    .poll(async () => (await readFile(`tests/fixtures/content/${slug}.md`, 'utf8').catch(() => '')).includes(sentence))
+    .toBe(true)
+
+  const proposed = await page.request.post(`/api/documents/${slug}/suggestions`, {
+    data: {
+      author: 'agent',
+      edits: [
+        { original: 'edited twice over.', proposed: 'edited twice.', rationale: 'tighten' },
+        { original: 'A sentence that', proposed: 'One sentence that', rationale: 'start' },
+      ],
+    },
+  })
+  expect(proposed.ok()).toBe(true)
+
+  // The count comes from the sidecar, not from an open room: the list never opened this one.
+  await page.goto('/')
+  const row = page.locator('.documents__item', { has: page.locator(`a[href="/d/${slug}"]`) })
+  await expect(row.locator('.documents__pending')).toHaveText('2')
+
+  // A document with nothing waiting carries no pill at all.
+  const other = await createDocument(page, `Quiet ${Date.now()}`)
+  await page.goto('/')
+  const quiet = page.locator('.documents__item', { has: page.locator(`a[href="/d/${other}"]`) })
+  await expect(quiet.locator('.documents__pending')).toHaveCount(0)
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

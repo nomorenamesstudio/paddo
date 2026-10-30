@@ -8,6 +8,8 @@ export interface DocumentMeta {
   updatedAt: number
   bytes: number
   status: Status
+  /** Suggested edits waiting for a decision. */
+  pending: number
 }
 
 export class ApiError extends Error {

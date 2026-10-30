@@ -75,7 +75,17 @@ export function DocumentsPage() {
         href={`/d/${document.slug}`}
         onClick={(event) => intercept(event, document.slug)}
       >
-        <span className="documents__title">{document.title}</span>
+        <span className="documents__title">
+          {document.title}
+          {document.pending > 0 ? (
+            <span
+              className="documents__pending"
+              title={`${document.pending} suggested ${document.pending === 1 ? 'edit' : 'edits'} waiting`}
+            >
+              {document.pending}
+            </span>
+          ) : null}
+        </span>
         <span className="documents__meta">
           <span className="documents__status" title={statusLabel(document.status)}>
             <StatusIcon status={document.status} size={14} />

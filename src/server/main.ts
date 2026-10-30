@@ -32,6 +32,7 @@ import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
 import { createAgentServer } from './mcp'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isStatus, readAllStatuses, readStatus, removeStatus, writeStatus } from './meta'
+import { countPendingFor } from './pending'
 import { approvePairing, claimPairing, denyPairing, listPairings, startPairing } from './pairing'
 import { normalizeSettings, readSettings, writeSettings } from './settings'
 import {
@@ -193,14 +194,16 @@ app.get('/api/documents', { preHandler: guard('read') }, async (request) => {
     principal?.kind !== 'agent' || principal.token.documents === '*' || principal.token.documents.includes(slug)
 
   const documents = (await listDocuments(config)).filter((document) => visible(document.slug))
-  const statuses = await readAllStatuses(
-    config,
-    documents.map((document) => document.slug),
-  )
+  const slugs = documents.map((document) => document.slug)
+  const [statuses, pending] = await Promise.all([
+    readAllStatuses(config, slugs),
+    countPendingFor(config, slugs),
+  ])
   return {
     documents: documents.map((document) => ({
       ...document,
       status: statuses.get(document.slug) ?? 'draft',
+      pending: pending.get(document.slug) ?? 0,
     })),
   }
 })
