@@ -8,6 +8,7 @@ import * as Y from 'yjs'
 import { CONTENT_FIELD, markdown, schema } from '../shared/editor'
 import { constantTimeEquals, readCookie, SESSION_COOKIE, verifySession } from './auth'
 import { compactPositionMigrations } from './compaction'
+import { restoreRawHtml } from './fidelity'
 import { allows, verifyToken } from './tokens'
 import type { Config } from './config'
 import {
@@ -165,7 +166,8 @@ async function writeSidecar(config: Config, slug: string, document: Y.Doc): Prom
 
 export function markdownFromYDoc(doc: Y.Doc): string {
   const node = yXmlFragmentToProseMirrorRootNode(doc.getXmlFragment(CONTENT_FIELD), schema)
-  return normalizeMarkdown(markdown.serialize(node.toJSON()))
+  // The serializer escapes raw HTML in prose; the file keeps it as written.
+  return normalizeMarkdown(restoreRawHtml(markdown.serialize(node.toJSON())))
 }
 
 export function yDocFromMarkdown(body: string): Y.Doc {

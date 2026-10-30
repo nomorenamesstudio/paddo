@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — A document keeps the raw HTML it was written with
+
+**Fix** — three documents imported from a page pipeline opened with `&lt;!-- page: … --&gt;` where
+the source had `<!-- page: … -->`, and the file on disk was rewritten that way too. The editor's
+markdown serializer cannot hold raw HTML as markup, so it escapes it in the prose — and the store
+wrote the escaped form back over the imported file.
+
+`markdownFromYDoc` now restores `&lt;`/`&gt;` outside fenced code (`src/server/fidelity.ts`), which
+covers comments and any other block-level HTML, and leaves code samples alone because the serializer
+never touched them. A doubled `&amp;lt;` and a literal `&amp;` are left as written.
+
+Bracket escapes stay, deliberately: `[image: …]` is written as `\[image: …\]` because markdown
+would read it as a link, and the pipeline's bake step unescapes it on the way back. Undoing that
+here would make a real escaped bracket indistinguishable from prose.
+
 ## 2026-10-29 — The writing guide is read-only until you edit it
 
 **Feature** — the guide renders as prose in the card, with its word count and a single **Edit guide**
