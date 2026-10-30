@@ -2,6 +2,16 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — A hand edit stops looking foreign once it is in the room
+
+**Fix** — the watcher turns an outside edit of a `.md` into suggestions, but the store's disk hash
+kept pointing at the text from before that edit. Every later store then compared against a file that
+had moved on, refused to write, and the writing stayed in the sidecar. `ingestFile` now records the
+hash of the text it absorbed, so the next store is allowed to write again.
+
+Honest note: the e2e covering the whole path (hand edit → suggestions → accept → file) passes with
+and without the fix on today's code, so it guards the contract but does not pin this change.
+
 ## 2026-10-29 — The list says how many edits are waiting
 
 **Feature** — a small pill after a document's title carries the number of suggested edits waiting on

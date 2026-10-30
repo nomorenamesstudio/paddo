@@ -173,7 +173,7 @@ export function createCollab(config: Config) {
     },
   })
 
-  return { server, lastWritten }
+  return { server, lastWritten, lastDisk }
 }
 
 async function writeSidecar(config: Config, slug: string, document: Y.Doc): Promise<void> {

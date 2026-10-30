@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 import { expect, request, test, type Page } from '@playwright/test'
 
@@ -838,6 +838,37 @@ test('the list shows how many edits are waiting on a document', async ({ page })
   await page.goto('/')
   const quiet = page.locator('.documents__item', { has: page.locator(`a[href="/d/${other}"]`) })
   await expect(quiet.locator('.documents__pending')).toHaveCount(0)
+})
+
+test('a hand edit becomes suggestions, and accepting them reaches the file', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Hand edit ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type('The sentence that will be rewritten by hand.')
+  const path = `tests/fixtures/content/${slug}.md`
+  await expect.poll(async () => (await readFile(path, 'utf8').catch(() => '')).includes('rewritten by hand')).toBe(true)
+
+  // Someone edits the markdown with an editor. The watcher turns it into a suggestion.
+  const edited = (await readFile(path, 'utf8')).replace('rewritten by hand', 'rewritten in vim')
+  await writeFile(path, edited, 'utf8')
+
+  await expect
+    .poll(async () => {
+      const response = await page.request.get(`/api/documents/${slug}/suggestions`)
+      const body = (await response.json()) as { suggestions: Array<{ author: string }> }
+      return body.suggestions.filter((suggestion) => suggestion.author === 'file').length
+    })
+    .toBeGreaterThan(0)
+
+  // Accepting it has to reach the file: the store must not still think the hand edit
+  // is foreign and refuse every write from then on.
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.sug-hunk').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Accept all' }).click()
+
+  await expect.poll(async () => (await readFile(path, 'utf8')).includes('rewritten in vim')).toBe(true)
 })
 
 test('a websocket without a session is refused', async ({ browser }) => {

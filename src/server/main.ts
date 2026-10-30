@@ -634,6 +634,10 @@ async function ingestFile(slug: string, path: string, event: 'add' | 'change') {
   const connection = await openDocument(slug)
   try {
     const result = await proposeMarkdown(connection, body, 'file')
+    // The text is now in the room as suggestions, so the file is no longer a foreign
+    // edit: without this the store would refuse to write it back for good, and
+    // accepting those hunks would never reach the disk.
+    collab.lastDisk.set(slug, hashOf(body))
     app.log.info(
       { slug, hunks: result.created.length, errors: result.errors },
       'file change turned into suggestions',
