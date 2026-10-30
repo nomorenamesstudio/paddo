@@ -2,6 +2,21 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — A hunk is only dead when its text is gone
+
+**Fix** — accepting one change marked *every* other pending hunk conflicted, so the writer met
+"Overlaps a change you already accepted" on hunks whose text was still sitting in the document,
+unapprovable. The check compared each hunk's anchored range against its quote, and anchors drift
+after any edit for reasons that leave the quoted text perfectly intact.
+
+An accept now only judges the hunks whose text it may have taken: a hunk is marked conflicted when
+its quote is gone from the document (`The text under this change is gone`), or when the quote is found
+only inside the range the accept just wrote. Anything else keeps waiting, and the applier relocates it
+onto its text when it is accepted.
+
+**Fix** — `pruneDeadSuggestions` also clears a conflict flag whose text is still present, so hunks
+already marked wrongly become approvable again instead of needing a fresh proposal.
+
 ## 2026-10-29 — The store's two hashes, and the hunks that went stale with them
 
 **Fix** — restoring raw HTML made the file and the room disagree, and the "someone else edited the

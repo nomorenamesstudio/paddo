@@ -234,16 +234,31 @@ export function acceptSuggestion(
   editor.view.dispatch(tr)
   map.delete(id)
 
-  // Every hunk still waiting has to be re-checked against the document as it is now.
-  // Its anchors may have collapsed onto the change just made, and its quote may sit
-  // inside text the agent never saw: applying that splices stale offsets.
+  // What this accept can kill is the hunks whose quoted text it consumed — nothing
+  // else. Anchors drift after an edit for reasons that leave a neighbour's text
+  // perfectly intact, and calling those dead locked hunks nobody could approve.
+  const span = { from: range.from, to: range.from + suggestion.proposed.length }
   for (const other of pendingRanges(editor)) {
-    const text = editor.state.doc.textBetween(other.from, other.to, '', '')
-    if (text === other.suggestion.original) continue
-    map.set(other.suggestion.id, {
-      ...(other.suggestion as unknown as Record<string, unknown>),
-      conflict: 'Overlaps a change you already accepted — reject it and ask for a fresh one.',
-    })
+    if (editor.state.doc.textBetween(other.from, other.to, '', '') === other.suggestion.original) continue
+
+    const found = relocate(editor.state.doc, other.suggestion.original)
+    // Text gone from the document entirely: it can never be placed again.
+    if (!found) {
+      map.set(other.suggestion.id, {
+        ...(other.suggestion as unknown as Record<string, unknown>),
+        conflict: 'The text under this change is gone — reject it and ask for a fresh one.',
+      })
+      continue
+    }
+
+    // Still there, but only inside what this accept just wrote: applying it would
+    // splice a stale offset into the new sentence.
+    if (found.from >= span.from && found.to <= span.to) {
+      map.set(other.suggestion.id, {
+        ...(other.suggestion as unknown as Record<string, unknown>),
+        conflict: 'Overlaps a change you already accepted — reject it and ask for a fresh one.',
+      })
+    }
   }
 
   return 'applied'
@@ -262,15 +277,29 @@ export function pruneDeadSuggestions(editor: Editor): number {
   const map = sync.doc.getMap<Record<string, unknown>>(SUGGESTIONS_MAP)
   const dead: string[] = []
 
+  const cleared: string[] = []
+
   for (const value of map.values()) {
     const suggestion = value as unknown as Suggestion
     if (suggestion.status !== 'pending') continue
     const original = (suggestion.original ?? '').trim()
     if (original === '') continue
-    if (!text.includes(original)) dead.push(suggestion.id)
+
+    if (!text.includes(original)) {
+      dead.push(suggestion.id)
+      continue
+    }
+
+    // Its text is still here, so whatever marked it as conflicting no longer holds.
+    if (suggestion.conflict) cleared.push(suggestion.id)
   }
 
   for (const id of dead) map.delete(id)
+  for (const id of cleared) {
+    const suggestion = map.get(id) as unknown as Suggestion
+    const { conflict: _conflict, ...rest } = suggestion as unknown as Record<string, unknown>
+    map.set(id, rest)
+  }
   return dead.length
 }
 
