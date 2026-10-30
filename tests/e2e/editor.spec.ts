@@ -871,6 +871,80 @@ test('a hand edit becomes suggestions, and accepting them reaches the file', asy
   await expect.poll(async () => (await readFile(path, 'utf8')).includes('rewritten in vim')).toBe(true)
 })
 
+test('a hunk that spans a paragraph break can be accepted', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Span ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // Two paragraphs, then a hunk that joins them: the server flattens blocks with two
+  // newlines, so the client has to read the document the same way.
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type('First paragraph line.')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Second paragraph line.')
+  const path = `tests/fixtures/content/${slug}.md`
+  await expect.poll(async () => (await readFile(path, 'utf8')).includes('Second paragraph line')).toBe(true)
+
+  const proposed = await page.request.post(`/api/documents/${slug}/suggestions`, {
+    data: {
+      author: 'agent',
+      edits: [
+        {
+          original: 'First paragraph line.\n\nSecond paragraph line.',
+          proposed: 'One merged paragraph now.',
+          rationale: 'merge',
+        },
+      ],
+    },
+  })
+  expect(proposed.ok()).toBe(true)
+  await expect(page.locator('.sug-hunk')).toHaveCount(1)
+
+  await page.getByRole('button', { name: 'Accept all' }).click()
+  await expect.poll(async () => (await readFile(path, 'utf8')).includes('One merged paragraph now.')).toBe(true)
+})
+
+test('a token cannot decide on hunks, only the writer can', async ({ page, baseURL }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Decide ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type('A sentence to propose against.')
+  await expect
+    .poll(async () => (await readFile(`tests/fixtures/content/${slug}.md`, 'utf8')).includes('propose against'))
+    .toBe(true)
+
+  const proposed = await page.request.post(`/api/documents/${slug}/suggestions`, {
+    data: { author: 'agent', edits: [{ original: 'propose against.', proposed: 'propose on.' }] },
+  })
+  const created = (await proposed.json()) as { created: Array<{ id: string }> }
+  const id = created.created[0]?.id as string
+
+  const minted = await page.request.post('/api/tokens', {
+    data: { name: 'decider', verbs: ['read', 'propose'], documents: [slug] },
+  })
+  const { secret } = (await minted.json()) as { secret: string }
+  const agent = await request.newContext({
+    baseURL,
+    extraHTTPHeaders: { authorization: `Bearer ${secret}` },
+  })
+  try {
+    const refused = await agent.patch(`/api/documents/${slug}/suggestions/${id}`, {
+      data: { status: 'rejected' },
+    })
+    expect(refused.status()).toBe(401)
+    // Still there, waiting for the human.
+    const listed = (await (await agent.get(`/api/documents/${slug}/suggestions`)).json()) as {
+      suggestions: Array<{ id: string }>
+    }
+    expect(listed.suggestions.map((suggestion) => suggestion.id)).toContain(id)
+  } finally {
+    await agent.dispose()
+  }
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

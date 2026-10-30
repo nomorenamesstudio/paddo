@@ -19,6 +19,10 @@ describe('raw HTML survives the editor round-trip', () => {
     )
   })
 
+  it('leaves a bare less-than in prose alone, so an entity reference stays one', () => {
+    expect(restoreRawHtml('a &lt; b and c &gt; d')).toBe('a &lt; b and c &gt; d')
+  })
+
   it('does not touch a double-escaped entity or a literal ampersand', () => {
     expect(restoreRawHtml('Fish &amp; chips.')).toBe('Fish &amp; chips.')
     expect(restoreRawHtml('&amp;lt;div&amp;gt;')).toBe('&amp;lt;div&amp;gt;')

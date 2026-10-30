@@ -21,6 +21,7 @@ import {
   deleteSidecar,
   hashOf,
   isValidSlug,
+  pathFor,
   listDocuments,
   normalizeMarkdown,
   readDocument,
@@ -380,10 +381,25 @@ async function openDocument(slug: string) {
   return collab.server.hocuspocus.openDirectConnection(slug, {})
 }
 
+/** The slug a request should act on: the document's current name, or null if gone. */
+async function liveSlug(slug: string): Promise<string | null> {
+  if (!isValidSlug(slug)) return null
+  if (existsSync(pathFor(config, slug)) || existsSync(sidecarPathFor(config, slug))) return slug
+  const current = await resolveAlias(config, slug)
+  if (current === slug) return null
+  return existsSync(pathFor(config, current)) || existsSync(sidecarPathFor(config, current))
+    ? current
+    : null
+}
+
 app.get('/api/documents/:slug/suggestions', { preHandler: guard('read') }, async (request, reply) => {
   const { slug } = request.params as { slug: string }
   if (!isValidSlug(slug)) {
     reply.code(400).send({ error: 'invalid document name' })
+    return
+  }
+  if (!(await liveSlug(slug))) {
+    reply.code(404).send({ error: 'no such document' })
     return
   }
 
@@ -411,6 +427,10 @@ app.post('/api/documents/:slug/suggestions', { preHandler: guard('propose') }, a
     reply.code(400).send({ error: 'invalid document name' })
     return
   }
+  if (!(await liveSlug(slug))) {
+    reply.code(404).send({ error: 'no such document' })
+    return
+  }
 
   const body = request.body as
     | { edits?: ProposeEdit[]; markdown?: string; author?: 'agent' | 'file' }
@@ -434,7 +454,7 @@ app.post('/api/documents/:slug/suggestions', { preHandler: guard('propose') }, a
 
 app.patch(
   '/api/documents/:slug/suggestions/:id',
-  { preHandler: guard('propose') },
+  { preHandler: requireSession },
   async (request, reply) => {
     const { slug, id } = request.params as { slug: string; id: string }
     const body = request.body as { status?: unknown } | undefined
@@ -446,7 +466,9 @@ app.patch(
     }
 
     // Accepting happens in the editor (it owns the text transaction). This route
-    // drops or marks the record, for rejections made outside the UI.
+    // drops or marks the record for the writer's own UI calls — and only for them,
+    // because rejecting everything in a document is the human's lever, not the
+    // agent's.
     const connection = await openDocument(slug)
     const document = connection.document
     if (!document) {
@@ -489,6 +511,12 @@ app.post('/api/pair', { preHandler: requireSession }, async (request, reply) => 
 })
 
 app.post('/api/pair/claim', async (request, reply) => {
+  const key = `pair:${clientKey(request)}`
+  if (!throttle.allow(key)) {
+    reply.code(429).send({ error: 'too many attempts, wait a minute' })
+    return
+  }
+
   const body = request.body as { code?: unknown } | undefined
   const code = typeof body?.code === 'string' ? body.code : ''
   if (!code) {
@@ -503,6 +531,7 @@ app.post('/api/pair/claim', async (request, reply) => {
     return
   }
   if (claimed.state === 'approved') {
+    throttle.reset(key)
     return { state: 'approved', token: claimed.secret }
   }
   // Still waiting on the writer: the agent polls, it does not retry blindly.
@@ -634,10 +663,6 @@ async function ingestFile(slug: string, path: string, event: 'add' | 'change') {
   const connection = await openDocument(slug)
   try {
     const result = await proposeMarkdown(connection, body, 'file')
-    // The text is now in the room as suggestions, so the file is no longer a foreign
-    // edit: without this the store would refuse to write it back for good, and
-    // accepting those hunks would never reach the disk.
-    collab.lastDisk.set(slug, hashOf(body))
     app.log.info(
       { slug, hunks: result.created.length, errors: result.errors },
       'file change turned into suggestions',
@@ -678,11 +703,9 @@ app.server.on('upgrade', (request, socket, head) => {
   // never gets a connection to talk into.
   const cookie = readCookie(request.headers.cookie, SESSION_COOKIE)
   const url = new URL(request.url ?? '/', 'http://localhost')
-  const queryToken = url.searchParams.get('token')
   const headerToken = request.headers.authorization?.replace(/^Bearer /i, '')
-  const tokenOk =
-    (queryToken && constantTimeEquals(queryToken, config.token)) ||
-    (headerToken && constantTimeEquals(headerToken, config.token))
+  // Header only: `PADDO_TOKEN` in a query string lands in proxy and server logs.
+  const tokenOk = Boolean(headerToken && constantTimeEquals(headerToken, config.token))
 
   if (!verifySession(config.secret, cookie) && !tokenOk) {
     socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')

@@ -81,12 +81,40 @@ async function readStore(config: Config): Promise<AgentToken[]> {
   }
 }
 
+/**
+ * One writer at a time: every mutation is a read-modify-write of the same file, and a
+ * `lastUsedAt` write fired by a request can otherwise land on top of a revoke and put
+ * the revoked token back.
+ */
+let writing: Promise<unknown> = Promise.resolve()
+
+function serialise<T>(work: () => Promise<T>): Promise<T> {
+  const run = writing.then(work, work)
+  writing = run.catch(() => {
+    // A failed write must not wedge the queue.
+  })
+  return run
+}
+
 async function writeStore(config: Config, tokens: AgentToken[]): Promise<void> {
   await mkdir(config.sidecarDir, { recursive: true })
   const target = storePath(config)
-  const temp = `${target}.${process.pid}.tmp`
+  const temp = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
   await writeFile(temp, `${JSON.stringify({ tokens }, null, 2)}\n`, 'utf8')
   await rename(temp, target)
+}
+
+/** Reads, mutates and writes under the same lock, so a mutation cannot lose a race. */
+async function mutateStore<T>(
+  config: Config,
+  change: (tokens: AgentToken[]) => { tokens?: AgentToken[]; result: T },
+): Promise<T> {
+  return serialise(async () => {
+    const tokens = await readStore(config)
+    const { tokens: next, result } = change(tokens)
+    if (next) await writeStore(config, next)
+    return result
+  })
 }
 
 
@@ -141,18 +169,19 @@ export async function mintToken(
     documents: input.documents,
     createdAt: Date.now(),
   }
-  const tokens = await readStore(config)
-  tokens.push(token)
-  await writeStore(config, tokens)
+  await mutateStore(config, (tokens) => {
+    tokens.push(token)
+    return { tokens, result: null }
+  })
   return { token: publicToken(token), secret }
 }
 
 export async function revokeToken(config: Config, id: string): Promise<boolean> {
-  const tokens = await readStore(config)
-  const kept = tokens.filter((token) => token.id !== id)
-  if (kept.length === tokens.length) return false
-  await writeStore(config, kept)
-  return true
+  return mutateStore(config, (tokens) => {
+    const kept = tokens.filter((token) => token.id !== id)
+    if (kept.length === tokens.length) return { result: false }
+    return { tokens: kept, result: true }
+  })
 }
 
 /**
@@ -160,11 +189,12 @@ export async function revokeToken(config: Config, id: string): Promise<boolean> 
  * scoped agent would drop a file in and immediately lose the right to read it back.
  */
 export async function grantDocument(config: Config, id: string, slug: string): Promise<void> {
-  const tokens = await readStore(config)
-  const token = tokens.find((entry) => entry.id === id)
-  if (!token || token.documents === '*' || token.documents.includes(slug)) return
-  token.documents = [...token.documents, slug]
-  await writeStore(config, tokens)
+  await mutateStore(config, (tokens) => {
+    const token = tokens.find((entry) => entry.id === id)
+    if (!token || token.documents === '*' || token.documents.includes(slug)) return { result: null }
+    token.documents = [...token.documents, slug]
+    return { tokens, result: null }
+  })
 }
 
 /**
@@ -183,11 +213,13 @@ export async function verifyToken(config: Config, secret: string): Promise<Agent
   const now = Date.now()
   if (now - (touch.get(token.id) ?? 0) > 60_000) {
     touch.set(token.id, now)
-    token.lastUsedAt = now
-    void writeStore(
-      config,
-      tokens.map((entry) => (entry.id === token.id ? { ...entry, lastUsedAt: now } : entry)),
-    ).catch(() => {
+    void mutateStore(config, (current) => {
+      // Re-read under the lock: a revoke that happened meanwhile must win.
+      const found = current.find((entry) => entry.id === token.id)
+      if (!found) return { result: null }
+      found.lastUsedAt = now
+      return { tokens: current, result: null }
+    }).catch(() => {
       // A token that cannot record its use is still usable.
     })
   }

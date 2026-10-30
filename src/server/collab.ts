@@ -1,15 +1,15 @@
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 
 import { Server } from '@hocuspocus/server'
 import { prosemirrorJSONToYDoc, yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror'
 import * as Y from 'yjs'
 
 import { CONTENT_FIELD, markdown, schema } from '../shared/editor'
+import { SUGGESTIONS_MAP, type Suggestion } from '../shared/suggestions'
 import { constantTimeEquals, readCookie, SESSION_COOKIE, verifySession } from './auth'
 import { compactPositionMigrations } from './compaction'
 import { restoreRawHtml } from './fidelity'
-import { allows, verifyToken } from './tokens'
 import type { Config } from './config'
 import {
   freeSlug,
@@ -59,14 +59,9 @@ export function createCollab(config: Config) {
       const offered = token ?? queryToken ?? ''
       if (offered && constantTimeEquals(offered, config.token)) return { user: 'token' }
 
-      // A minted token with read access to this document may join the room; the
-      // scope is checked here, against the room it actually asks for.
-      if (offered) {
-        const minted = await verifyToken(config, offered)
-        if (minted && allows(minted, 'read', documentName)) {
-          return { user: 'token', token: minted.id }
-        }
-      }
+      // Minted tokens are deliberately not accepted here: a room is writable once
+      // joined, so a `read` token would bypass the propose-and-review path entirely.
+      // Agents reach documents over the HTTP API, and the upgrade gate refuses them.
 
       throw new Error('unauthorized')
     },
@@ -97,8 +92,12 @@ export function createCollab(config: Config) {
           )
           return
         }
-      } catch {
-        // No sidecar: fall back to the markdown.
+      } catch (problem) {
+        // No sidecar — or one we cannot read. Say which, because falling back loses
+        // every anchor and pending hunk in the room.
+        if ((problem as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.warn(`sidecar for ${documentName} could not be read: ${String(problem)}`)
+        }
       }
 
       try {
@@ -141,8 +140,15 @@ export function createCollab(config: Config) {
         const diskHash = hashOf(normalizeMarkdown(await readDocument(config, documentName)))
         const expected = lastDisk.get(documentName)
         if (expected !== undefined && diskHash !== expected) {
-          await writeSidecar(config, documentName, document)
-          return
+          // Their text is still waiting on a decision. Re-baselining here instead
+          // would let the very next keystroke write the room over their edit.
+          if (pendingFromFile(document)) {
+            await writeSidecar(config, documentName, document)
+            return
+          }
+          // Every hunk from that edit has been decided, so the room has caught up and
+          // the file can take its text again.
+          lastDisk.set(documentName, diskHash)
         }
       } catch {
         // No file yet: writing it is the right move.
@@ -176,9 +182,23 @@ export function createCollab(config: Config) {
   return { server, lastWritten, lastDisk }
 }
 
+/** Is any suggestion from a file edit still waiting for a decision? */
+function pendingFromFile(document: Y.Doc): boolean {
+  for (const value of document.getMap<Record<string, unknown>>(SUGGESTIONS_MAP).values()) {
+    const suggestion = value as unknown as Suggestion
+    if (suggestion.status === 'pending' && suggestion.author === 'file') return true
+  }
+  return false
+}
+
 async function writeSidecar(config: Config, slug: string, document: Y.Doc): Promise<void> {
   await mkdir(config.sidecarDir, { recursive: true })
-  await writeFile(sidecarPathFor(config, slug), Y.encodeStateAsUpdate(document))
+  const target = sidecarPathFor(config, slug)
+  // Temp and rename: a crash mid-write used to leave a truncated sidecar, and the next
+  // load silently reseeded from the markdown, losing every anchor and pending hunk.
+  const temp = `${target}.${process.pid}.tmp`
+  await writeFile(temp, Y.encodeStateAsUpdate(document))
+  await rename(temp, target)
 }
 
 export function markdownFromYDoc(doc: Y.Doc): string {

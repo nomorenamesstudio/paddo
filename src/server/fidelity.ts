@@ -16,9 +16,21 @@
 export function restoreRawHtml(markdown: string): string {
   return markdown
     .split(/(```[\s\S]*?```)/g)
-    .map((part, index) =>
+    .map((part, index) => {
       // Odd indexes are the fenced blocks between the split captures.
-      index % 2 === 1 ? part : part.replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
-    )
+      if (index % 2 === 1) return part
+      return (
+        part
+          // An HTML comment: the shape a pipeline leaves at the top of a document.
+          .replace(/&lt;!--/g, '<!--')
+          .replace(/--&gt;/g, '-->')
+          // Any other tag: an escaped opener followed by a name, a slash or `!`.
+          .replace(/&lt;(?=[/!a-zA-Z])/g, '<')
+          .replace(
+            /(?<=<\/?[a-zA-Z][^<>\n]{0,200})&gt;/g,
+            '>',
+          )
+      )
+    })
     .join('')
 }

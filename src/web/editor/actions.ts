@@ -126,6 +126,13 @@ export function pendingRanges(editor: Editor): SuggestionRange[] {
 }
 
 /** The document's text with the position of every character, for re-anchoring. */
+/**
+ * How blocks are joined when text is flattened. The server's `flatten()` in
+ * `anchors.ts` uses the same two newlines, so a quote that spans a paragraph break
+ * matches on both sides; `textBetween` is always called with it too.
+ */
+export const BLOCK_SEPARATOR = '\n\n'
+
 export function textIndex(doc: PMNode): { text: string; positions: number[] } {
   const chars: string[] = []
   const positions: number[] = []
@@ -143,8 +150,10 @@ export function textIndex(doc: PMNode): { text: string; positions: number[] } {
 
     if (node.isBlock) {
       if (seenBlock) {
-        chars.push('\n')
-        positions.push(pos)
+        for (const character of BLOCK_SEPARATOR) {
+          chars.push(character)
+          positions.push(pos)
+        }
       }
       seenBlock = true
     }
@@ -215,7 +224,9 @@ export function acceptSuggestion(
   let range = resolved ? { from: resolved.from, to: resolved.to } : null
 
   // The text may have moved or changed since the agent proposed it.
-  const currentText = range ? editor.state.doc.textBetween(range.from, range.to, '', '') : null
+  const currentText = range
+    ? editor.state.doc.textBetween(range.from, range.to, BLOCK_SEPARATOR, '')
+    : null
   if (!range || currentText !== suggestion.original) {
     const relocated = relocate(editor.state.doc, suggestion.original)
     if (!relocated) return 'stale'
@@ -239,7 +250,12 @@ export function acceptSuggestion(
   // perfectly intact, and calling those dead locked hunks nobody could approve.
   const span = { from: range.from, to: range.from + suggestion.proposed.length }
   for (const other of pendingRanges(editor)) {
-    if (editor.state.doc.textBetween(other.from, other.to, '', '') === other.suggestion.original) continue
+    if (
+      editor.state.doc.textBetween(other.from, other.to, BLOCK_SEPARATOR, '') ===
+      other.suggestion.original
+    ) {
+      continue
+    }
 
     const found = relocate(editor.state.doc, other.suggestion.original)
     // Text gone from the document entirely: it can never be placed again.
@@ -290,8 +306,16 @@ export function pruneDeadSuggestions(editor: Editor): number {
       continue
     }
 
-    // Its text is still here, so whatever marked it as conflicting no longer holds.
-    if (suggestion.conflict) cleared.push(suggestion.id)
+    // Cleared only when the hunk's own range still holds its quote: a conflict from
+    // an overlapping accept leaves the range pointing into the new text, and offering
+    // that hunk again would splice it there.
+    if (suggestion.conflict) {
+      const range = pendingRanges(editor).find((entry) => entry.suggestion.id === suggestion.id)
+      const atRange = range
+        ? editor.state.doc.textBetween(range.from, range.to, BLOCK_SEPARATOR, '')
+        : null
+      if (atRange === suggestion.original) cleared.push(suggestion.id)
+    }
   }
 
   for (const id of dead) map.delete(id)

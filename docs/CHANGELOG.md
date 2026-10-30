@@ -2,6 +2,59 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — Batch one from the GLM and DeepSeek V4 Pro reviews
+
+Both models reviewed the recent surface independently. Where they agreed, I fixed; where they
+disagreed with my own reasoning, I say so below.
+
+**Fix (data loss, both)** — `bc754e1` traded a refusal for a clobber: re-baselining the disk hash at
+ingest let the next keystroke write the room's text over a hand-edited file. Reverted. The store now
+re-baselines only once no `author: 'file'` hunk is still pending, so the writer's text stays on disk
+until they have decided on it.
+
+**Fix (both)** — a hunk whose quote spans a paragraph break could never be accepted: the server
+flattens blocks with `\n\n`, the client joined them with `\n` and compared with no separator at
+all. One shared `BLOCK_SEPARATOR` in `actions.ts` now matches `anchors.ts`, used by `textIndex` and
+every `textBetween` call.
+
+**Fix (GLM, latent)** — the websocket's `onAuthenticate` accepted a minted token with only `read`,
+which would have been a full writable room (a room is writable once joined). The upgrade gate never
+lets a minted token through, so it was dead code that contradicted the gate; removed. Agents reach
+documents over HTTP.
+
+**Fix (DeepSeek)** — a `propose` token could `PATCH` any hunk in its scope, clearing the writer's
+review queue and marking its own hunk `accepted` (a state that applies no text and leaves the queue).
+That route is session-only now.
+
+**Fix (both)** — the token store was lock-free read-modify-write with one shared temp filename: a
+`lastUsedAt` write could resurrect a revoked token, and interleaved writes could corrupt the file,
+after which a read returns `[]` and the next mint wipes every token. All mutations go through one
+serialised mutator with a unique temp name, and the `lastUsedAt` write re-reads under the lock.
+
+**Fix (both)** — the sidecar was the last non-atomic write; a truncated `.y` was swallowed and the
+room reseeded from markdown, losing every anchor and pending hunk. Now temp-and-rename, and a failed
+read is logged instead of ignored.
+
+**Fix (both)** — `?token=` on the websocket upgrade accepted `PADDO_TOKEN` in a URL, which lands in
+proxy logs. Header or cookie only. `/api/pair/claim` also takes the login throttle now.
+
+**Fix (DeepSeek)** — a suggestions or raw request for a slug that had been renamed answered `500`
+out of `openDirectConnection`; those routes check the document exists first and answer `404`.
+
+**Fix (both)** — `restoreRawHtml` unescaped every `&lt;`/`&gt;` in prose, so a file that legitimately
+contains the text `&lt;` was rewritten. Narrowed to HTML comments and tag-shaped sequences; a bare
+less-than in prose is left alone.
+
+**Disagreed** — DeepSeek's claim that the conflict flag gets cleared on reload and hands a refused
+hunk back: `pruneDeadSuggestions` only clears a flag when the hunk's own anchored range still holds
+its quote, which a stale anchor never does. The fixture that would have shown it instead proved that
+an un-flagged overlapping hunk is genuinely applicable, so no test was kept for it.
+
+**Outstanding, named** — `renameDocument` still uses a non-exclusive rename (two same-titled unloads
+can collide); `DELETE` leaves direct connections whose room can recreate the file; any
+suggestions/raw request stores and unloads the room, which can trigger the rename-on-unload;
+`compaction.ts`'s protection floor sorts incomparable per-client clocks.
+
 ## 2026-10-29 — A hand edit stops looking foreign once it is in the room
 
 **Fix** — the watcher turns an outside edit of a `.md` into suggestions, but the store's disk hash
