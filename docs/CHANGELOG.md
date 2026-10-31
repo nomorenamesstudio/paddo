@@ -2,6 +2,26 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — Two more things iOS underlines hate
+
+The grammar-underline drift survived removing the lingering transform, so two other known culprits
+went next.
+
+**Fix** — `body` no longer carries `user-select: none`. A contenteditable inside a subtree the
+browser treats as unselectable is where Safari places its spelling and grammar annotations out of
+step with the text; the interface opts out of selection instead (header, top bar, bottom bar, sheet,
+rows, buttons), which keeps the drag-to-scroll behaviour and leaves the page itself selectable.
+
+**Fix** — the pending-suggestions bar is opaque. It was `position: fixed` with `backdrop-filter:
+blur(10px)`, and a fixed blurred bar is the other classic trigger for iOS repainting the page behind
+it while the annotation layer stays put. It only appears when hunks are pending, which matches the
+"not always" in the report.
+
+**Not verified** — neither can be reproduced in Chromium: both are iOS-specific paint and selection
+behaviours. If the drift is still there, the next step is disabling native grammar checking inside
+the editor (`spellcheck="false"`), which costs the writer those suggestions — a trade to make with
+their eyes on it, not mine.
+
 ## 2026-10-29 — Batch two: the four the reviews left open
 
 **Fix (data loss)** — `renameDocument` used `fs.rename`, which overwrites silently, so two

@@ -82,9 +82,6 @@ body {
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
   overscroll-behavior-x: none;
-  /* A long drag on a phone should scroll, never select the interface or pan it. */
-  -webkit-user-select: none;
-  user-select: none;
   -webkit-touch-callout: none;
 }
 
@@ -100,11 +97,33 @@ body {
   overflow-x: clip;
 }
 
+/* A long drag on a phone should scroll, never select the interface — but the page
+   itself stays selectable, because a `user-select: none` ancestor is one of the things
+   that makes iOS Safari misplace its grammar underlines inside the editor. */
+.masthead,
+.masthead *,
+.topbar,
+.topbar *,
+.bottombar,
+.bottombar *,
+.sheet,
+.sheet *,
+.documents__item,
+.row-menu,
+.pill,
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .prose,
 .prose *,
 .sheet__prompt,
 input,
-textarea {
+textarea,
+.tokens__code,
+.tokens__config,
+.tokens__brief {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -1748,8 +1767,7 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   gap: 0.5rem 0.75rem;
   padding: 0.6rem 1rem;
   padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--bg);
   border-top: 1px solid var(--line);
 }
 
