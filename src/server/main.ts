@@ -222,6 +222,7 @@ app.post('/api/documents', { preHandler: guard('create') }, async (request, repl
         ? await createDocument(config, name)
         : await createDraft(config)
 
+    collab.revive(created.slug)
     const principal = await principalOf(request)
     if (principal?.kind === 'agent') {
       // Dropped in by an agent: it goes on the token's list, so the file is not
@@ -342,8 +343,10 @@ app.delete('/api/documents/:slug', { preHandler: requireSession }, async (reques
     return
   }
 
-  // Drop the live room first: a store from a connected editor would otherwise
-  // write the markdown straight back after the unlink.
+  // Drop the live room first, and refuse its writes from here on: a store from a room
+  // that outlives the unlink (a direct connection does) would otherwise write the
+  // markdown straight back.
+  collab.tombstone(slug)
   collab.server.hocuspocus.closeConnections(slug)
   await removeDocument(config, slug)
   await deleteSidecar(config, slug)

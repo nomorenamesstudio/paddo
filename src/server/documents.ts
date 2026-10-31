@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
+import { link, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
 
@@ -206,22 +206,44 @@ export async function renameDocument(config: Config, from: string, to: string): 
   if (from === to) return
   // Sidecar and status first: the watcher must never see the markdown under its new
   // name before the CRDT state has moved with it, or the file looks like a new one.
-  await renameIfPresent(sidecarPathFor(config, from), sidecarPathFor(config, to))
-  await renameIfPresent(
+  await moveExclusive(sidecarPathFor(config, from), sidecarPathFor(config, to))
+  await moveExclusive(
     join(config.sidecarDir, `${from}.meta.json`),
     join(config.sidecarDir, `${to}.meta.json`),
   )
-  await rename(pathFor(config, from), pathFor(config, to))
+  // The markdown last, and never over an existing file: `rename` would destroy the
+  // document that is already there.
+  await moveExclusive(pathFor(config, from), pathFor(config, to))
   // The old address keeps working: a sleeping tab or a bookmark resolves to this one.
   await rememberAlias(config, from, to)
 }
 
-async function renameIfPresent(from: string, to: string): Promise<void> {
+/**
+ * Moves a file only onto a free name. `link` fails with EEXIST if the target exists,
+ * which is the whole point: two documents that share a title can pick the same free
+ * slug within milliseconds, and the loser must fail loudly instead of overwriting.
+ */
+async function moveExclusive(from: string, to: string): Promise<void> {
   try {
+    await link(from, to)
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') return // nothing to move
+    if (code === 'EEXIST') throw new Error(`rename target already exists: ${to}`)
+    // A filesystem without hard links: fall back to rename, still refusing an
+    // existing target by checking first.
+    try {
+      await stat(to)
+      throw new Error(`rename target already exists: ${to}`)
+    } catch (statError) {
+      if ((statError as NodeJS.ErrnoException).code !== 'ENOENT') throw statError
+    }
     await rename(from, to)
-  } catch {
-    // No sidecar or no status file: nothing to move.
+    return
   }
+  await unlink(from).catch(() => {
+    // The copy exists; a failed unlink leaves a stale name, not a lost document.
+  })
 }
 
 /** Removes the markdown file itself. Missing files are not an error. */

@@ -2,6 +2,31 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-10-29 — Batch two: the four the reviews left open
+
+**Fix (data loss)** — `renameDocument` used `fs.rename`, which overwrites silently, so two
+documents that shared a title could pick the same free slug and one would destroy the other. Moves
+now go through `link`+`unlink`, which fails with `EEXIST`; the unload-rename retries with a fresh
+slug. Unit test: renaming onto an existing document throws and leaves both files intact.
+
+**Fix (resurrection)** — deleting a document whose room was still open could see that room write the
+markdown straight back, because the delete route only closes websockets. The delete route tombstones
+the slug first and the store refuses writes for it; creating a document under that name revives it.
+E2E: delete from outside while a tab holds the document, keep typing in the tab, the file stays gone.
+
+**Fix (side effect)** — a rename now requires a room that a *socket* authenticated into. An agent's
+read opens a direct connection, which Hocuspocus unloads too, and that unload used to rename the
+writer's file because an agent asked a question.
+
+**Fix (lost protection)** — `compaction.ts`'s "keep the newest four" floor sorted records by `clock`,
+a per-client counter, so it protected whichever client wrote most. Removed: the causal `covers` rule
+is the whole rule, and the tests now pin it with a fixture whose surviving record has the *lowest*
+clock.
+
+**Not verified** — I could not build a reliable test for the rename-on-read case: the direct
+connection does not fire `onConnect` or `afterUnloadDocument` in a way a test can observe, so the
+change is reasoned from the hooks that do fire, not pinned.
+
 ## 2026-10-29 — Batch one from the GLM and DeepSeek V4 Pro reviews
 
 Both models reviewed the recent surface independently. Where they agreed, I fixed; where they

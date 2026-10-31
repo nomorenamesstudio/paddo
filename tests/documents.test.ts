@@ -1,6 +1,10 @@
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
-import { plainTitle, titleOf } from '../src/server/documents'
+import { plainTitle, renameDocument, titleOf } from '../src/server/documents'
 
 describe('titleOf', () => {
   it('gives the reader the words, not the markup', () => {
@@ -19,5 +23,30 @@ describe('titleOf', () => {
   it('leaves an ordinary title alone', () => {
     expect(plainTitle('The quiet interface')).toBe('The quiet interface')
     expect(plainTitle('Two *words* and a `term`')).toBe('Two words and a term')
+  })
+})
+
+describe('renaming never destroys the document already there', () => {
+  it('refuses a target that exists, and leaves both documents intact', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'paddo-rename-'))
+    const config = {
+      host: '127.0.0.1',
+      port: 0,
+      contentDir: join(root, 'content'),
+      sidecarDir: join(root, '.paddo'),
+      password: 'password',
+      secret: 'secret-that-is-long-enough-for-the-config-loader',
+      token: 'token-that-is-long-enough-for-the-config-loader',
+    }
+    await mkdir(config.contentDir, { recursive: true })
+    await writeFile(join(config.contentDir, 'one.md'), '# One\n\nfirst\n', 'utf8')
+    await writeFile(join(config.contentDir, 'two.md'), '# Two\n\nsecond\n', 'utf8')
+
+    // Two documents that share a title pick the same free slug within milliseconds;
+    // the loser must fail, not overwrite.
+    await expect(renameDocument(config, 'one', 'two')).rejects.toThrow(/already exists/)
+
+    expect(await readFile(join(config.contentDir, 'one.md'), 'utf8')).toContain('first')
+    expect(await readFile(join(config.contentDir, 'two.md'), 'utf8')).toContain('second')
   })
 })

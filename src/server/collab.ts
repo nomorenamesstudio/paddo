@@ -44,12 +44,23 @@ export function createCollab(config: Config) {
    */
   const lastDisk = new Map<string, string>()
 
+  /** Slugs deleted while a room was open: their room must not write the file back. */
+  const tombstones = new Set<string>()
+
+  /**
+   * Rooms a browser opened. `onAuthenticate` runs for a socket and never for a direct
+   * connection, which is what makes it the honest signal here: a rename on unload
+   * belongs to the writer's own visit, not to an agent reading a document.
+   */
+  const browserRooms = new Set<string>()
+
   const server = new Server({
     debounce: 700,
     maxDebounce: 3000,
 
     async onAuthenticate({ request, token, documentName, requestParameters }) {
       if (!isValidSlug(documentName)) throw new Error('unauthorized')
+      browserRooms.add(documentName)
       const cookie = readCookie(request.headers.get('cookie') ?? undefined, SESSION_COOKIE)
       if (verifySession(config.secret, cookie)) return { user: 'owner' }
 
@@ -114,6 +125,12 @@ export function createCollab(config: Config) {
     },
 
     async onStoreDocument({ document, documentName }) {
+      if (tombstones.has(documentName)) {
+        // Deleted while this room was open. Writing here is how a deleted document
+        // came back from the dead.
+        return
+      }
+
       // TipTap's migration map is append-only and grows without bound; compact it on
       // every save so the sidecar stays proportional to the document.
       const compacted = compactPositionMigrations(document)
@@ -165,21 +182,46 @@ export function createCollab(config: Config) {
      * is attached to the old name any more, so the file can simply become the title.
      */
     async afterUnloadDocument({ documentName }) {
-      if (!isValidSlug(documentName)) return
+      // Only a browser's visit earns the rename: otherwise a plain agent read (which
+      // opens and closes a direct connection) could rename the writer's file.
+      const fromBrowser = browserRooms.delete(documentName)
+      if (!fromBrowser || !isValidSlug(documentName)) return
       try {
         const body = await readDocument(config, documentName)
-        const wanted = await freeSlug(config, titleOf(body, documentName), documentName)
-        if (wanted === documentName || !isValidSlug(wanted)) return
-        await renameDocument(config, documentName, wanted)
-        lastWritten.delete(documentName)
-        console.log(`renamed ${documentName} → ${wanted}`)
+        const title = titleOf(body, documentName)
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const wanted = await freeSlug(config, title, documentName)
+          if (wanted === documentName || !isValidSlug(wanted)) return
+          try {
+            await renameDocument(config, documentName, wanted)
+            lastWritten.delete(documentName)
+            console.log(`renamed ${documentName} → ${wanted}`)
+            return
+          } catch (error) {
+            // Someone took that name between the check and the move: pick again.
+            if (!/already exists/.test(String(error))) throw error
+          }
+        }
       } catch {
         // No file (deleted while open) or an unusable title: leave the name alone.
       }
     },
   })
 
-  return { server, lastWritten, lastDisk }
+  return {
+    server,
+    lastWritten,
+    lastDisk,
+    /** The route that deletes a document calls this first, so its room cannot restore it. */
+    tombstone(slug: string) {
+      tombstones.add(slug)
+    },
+    /** A fresh document took the name: the tombstone is no longer meaningful. */
+    revive(slug: string) {
+      tombstones.delete(slug)
+      browserRooms.delete(slug)
+    },
+  }
 }
 
 /** Is any suggestion from a file edit still waiting for a decision? */

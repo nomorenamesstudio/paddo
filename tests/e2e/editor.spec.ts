@@ -945,6 +945,26 @@ test('a token cannot decide on hunks, only the writer can', async ({ page, baseU
   }
 })
 
+test('deleting a document its editor tab still holds does not bring it back', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Doomed ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+  await page.locator('.prose p').last().click()
+  await page.keyboard.type('This text must not survive the delete.')
+  const path = `tests/fixtures/content/${slug}.md`
+  await expect.poll(async () => (await readFile(path, 'utf8')).includes('must not survive')).toBe(true)
+
+  // Delete from outside the tab, while the room is still open in it.
+  const deleted = await page.request.delete(`/api/documents/${slug}`)
+  expect(deleted.ok()).toBe(true)
+
+  // A store from that room used to write the markdown straight back.
+  await page.keyboard.type(' more typing')
+  await page.waitForTimeout(2500)
+  await expect(readFile(path, 'utf8')).rejects.toThrow()
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()

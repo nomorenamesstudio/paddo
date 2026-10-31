@@ -13,8 +13,11 @@ import type * as Y from 'yjs'
  * `getPositionMigrationCandidates`): a record is superseded when another record's
  * `seen` covers its `(client, clock)`, because that later record carries the final
  * mapping for the same content. Dropping a *superseded* record therefore changes
- * nothing; dropping a *newer* one while an older survives would apply a stale
- * relocation, so this never does that.
+ * nothing; dropping a record nothing has seen would lose a relocation.
+ *
+ * There is no "keep the newest N" floor: `clock` is a per-client counter, so records
+ * from different clients cannot be ordered by it, and a floor built on that ordering
+ * protects whichever client has written the most rather than the recent work.
  *
  * The `seen` vectors are capped too. A truncated vector can only fail to prove
  * supersession, which costs a relocation (a stale hunk gets pruned) and never moves a
@@ -23,8 +26,6 @@ import type * as Y from 'yjs'
 
 export const MIGRATION_PREFIX = '__tiptap_position_migrations:'
 
-/** Records kept regardless: the last few structural changes are the plausible ones. */
-const KEEP_ALWAYS = 4
 
 /** Nothing happens below this many records: small maps are not worth touching. */
 const COMPACT_ABOVE = 8
@@ -90,15 +91,10 @@ export function compactPositionMigrations(doc: Y.Doc): CompactionResult {
     records += entries.length
     if (entries.length === 0) continue
 
-    // Newest first by clock, so the floor protects the records that still describe the
-    // current shape of the document.
-    const byRecency = [...entries].sort((a, b) => b[1].clock - a[1].clock)
-    const protectedKeys = new Set(byRecency.slice(0, KEEP_ALWAYS).map(([key]) => key))
-
     const removals: string[] = []
     if (entries.length > COMPACT_ABOVE) {
       for (const [key, record] of entries) {
-        if (protectedKeys.has(key)) continue
+        // Only a record another one has causally seen may go.
         if (entries.some(([otherKey, other]) => otherKey !== key && covers(other, record))) {
           removals.push(key)
         }
