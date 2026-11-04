@@ -207,6 +207,12 @@ An `.env` change needs a restart; nothing reads the file after boot.
 - **HTTPS is what makes it installable.** Over plain `http://<lan-ip>:4319` the app
   works and the service worker deliberately does not register, so there is no offline
   shell and no home-screen install.
+- **BuildKit cannot always fetch the Dockerfile frontend.** `# syntax=docker/dockerfile:1`
+  makes BuildKit pull that image before the build starts, and on a host whose egress is
+  filtered or intercepted it fails with `x509: certificate signed by unknown authority`
+  before step 1. Measured on jedha (2026-11-04): `DOCKER_BUILDKIT=0 docker compose build`
+  builds with the classic builder instead and needs no registry round trip for the
+  frontend. The image is identical; only the builder differs.
 
 ## 7. Giving an agent access
 
