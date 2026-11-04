@@ -210,7 +210,7 @@ export function SettingsPage() {
             versions, and there is no migration path yet.
           </p>
           <p className="muted settings__note">
-            Hand-written and AI-enhanced by{' '}
+            Made with ♥ by{' '}
             <a href="https://nomorenames.studio" target="_blank" rel="noreferrer noopener">
               No More Names Studio
             </a>{' '}

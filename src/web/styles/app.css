@@ -2129,6 +2129,10 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   display: grid;
   gap: 1rem;
   align-content: start;
+  /* The editor's measure, not the narrower reading width the other pages use: a sheet
+     of settings that stops short of the prose column reads as a dialog floating in the
+     page rather than as part of it. */
+  max-width: var(--measure);
 }
 
 .settings__intro {

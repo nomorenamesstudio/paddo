@@ -137,8 +137,7 @@ password, one owner, no per-user identity, so every device edits as the same per
 **What is missing?** Rename and delete exist; search does not. Tables, code blocks and
 footnotes are out of scope, and their markdown round-trip is unverified.
 
-**Who built this?** One person, [No More Names Studio](https://nomorenames.studio). See
-*Built with AI* below.
+**Who built this?** One person, [No More Names Studio](https://nomorenames.studio).
 
 ## Tests
 
@@ -173,16 +172,8 @@ tests/            unit tests and the Playwright suite
 3. Run `pnpm typecheck && pnpm test` before opening the PR, and say what you tried by
    hand, not just that it compiles.
 
-## Built with AI
-
-Paddō is hand-written and AI-enhanced. The specification, the decisions and the review
-are mine: the brief, the protocol choices, the refusal to ship a default-open service.
-The code is drafted with **DeepSeek V4.1 Flash in DeepSeek Harness** and reviewed line
-by line before it lands. The commit history and
-[docs/CHANGELOG.md](docs/CHANGELOG.md) show which parts came from where.
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
 
-Built by [K](https://github.com/nomorenamesstudio) | [nomorenames.studio](https://nomorenames.studio)
+Made with ♥ by [No More Names Studio](https://nomorenames.studio)
