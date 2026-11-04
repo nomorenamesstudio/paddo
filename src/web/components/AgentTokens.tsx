@@ -278,21 +278,27 @@ export function AgentTokens() {
       </p>
 
       <div className="agents__grid">
-        <label className="agents__field">
-          <span className="agents__label">Agent name</span>
+        <div className="agents__field">
+          <label className="agents__label" htmlFor="agent-name">
+            Agent name
+          </label>
           <input
+            id="agent-name"
             className="agents__input"
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="the agent in my laptop"
             maxLength={60}
           />
-        </label>
+        </div>
 
-        <label className="agents__field">
-          <span className="agents__label">Access</span>
+        <div className="agents__field">
+          <label className="agents__label" htmlFor="agent-access">
+            Access
+          </label>
           <span className="agents__selectwrap">
             <select
+              id="agent-access"
               className="agents__input agents__select"
               value={access}
               onChange={(event) => setAccess(event.target.value as Access)}
@@ -305,12 +311,17 @@ export function AgentTokens() {
             </select>
             <ChevronDown size={15} aria-hidden="true" />
           </span>
-        </label>
+        </div>
 
-        <label className="agents__field">
-          <span className="agents__label">Documents</span>
+        <p className="tokens__hint agents__hint">{ACCESS_DESCRIPTIONS[access]}</p>
+
+        <div className="agents__field">
+          <label className="agents__label" htmlFor="agent-documents">
+            Documents
+          </label>
           <span className="agents__selectwrap">
             <select
+              id="agent-documents"
               className="agents__input agents__select"
               value={allDocuments ? '*' : 'some'}
               onChange={(event) => setAllDocuments(event.target.value === '*')}
@@ -320,10 +331,8 @@ export function AgentTokens() {
             </select>
             <ChevronDown size={15} aria-hidden="true" />
           </span>
-        </label>
+        </div>
       </div>
-
-      <p className="tokens__hint">{ACCESS_DESCRIPTIONS[access]}</p>
 
       {!allDocuments ? (
         <div className="agents__documents">

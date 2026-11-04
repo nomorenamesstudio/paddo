@@ -1906,6 +1906,13 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   outline: none;
 }
 
+.agents__hint {
+  /* The explanation of the access choice, not of the documents field: it spans the row
+     so the checklist keeps sitting directly under the select that reveals it. */
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
 .agents__selectwrap {
   position: relative;
   display: block;
