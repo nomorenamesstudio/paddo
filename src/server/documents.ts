@@ -1,5 +1,5 @@
 import { link, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { dirname, join } from 'node:path'
 
 import { rememberAlias } from './aliases'
@@ -112,9 +112,28 @@ export async function readDocument(config: Config, slug: string): Promise<string
 export async function writeDocument(config: Config, slug: string, body: string): Promise<void> {
   const target = pathFor(config, slug)
   await mkdir(dirname(target), { recursive: true })
-  const temp = `${target}.${process.pid}.tmp`
+  // A random suffix, not just the pid: two saves of the same document in one process
+  // would otherwise share a temp file and one of them would rename nothing.
+  const temp = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
   await writeFile(temp, normalizeMarkdown(body), 'utf8')
   await rename(temp, target)
+}
+
+/**
+ * Creates a file only if the name is free. `wx` fails with EEXIST instead of writing,
+ * which is what stops two creates picking the same slug and one destroying the other.
+ */
+async function writeNewDocument(config: Config, slug: string, body: string): Promise<void> {
+  const target = pathFor(config, slug)
+  await mkdir(dirname(target), { recursive: true })
+  try {
+    await writeFile(target, normalizeMarkdown(body), { encoding: 'utf8', flag: 'wx' })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error(`document already exists: ${slug}`)
+    }
+    throw error
+  }
 }
 
 /**
@@ -124,14 +143,19 @@ export async function writeDocument(config: Config, slug: string, body: string):
 export async function createDraft(config: Config): Promise<DocumentMeta> {
   const base = 'new-draft'
   let slug = base
+  let free = false
   for (let attempt = 2; attempt < 100; attempt += 1) {
     try {
       await stat(pathFor(config, slug))
       slug = `${base}-${attempt}`
     } catch {
+      free = true
       break
     }
   }
+  // Ninety-nine drafts that all share a name: stop guessing and take a name that
+  // cannot be there yet, rather than writing over the last one it tried.
+  if (!free) slug = `${base}-${Date.now()}`
 
   await writeDocument(config, slug, '# New draft\n\n')
   const info = await stat(pathFor(config, slug))
@@ -141,17 +165,10 @@ export async function createDraft(config: Config): Promise<DocumentMeta> {
 export async function createDocument(config: Config, name: string): Promise<DocumentMeta> {
   const slug = slugify(name)
   if (!slug) throw new Error('a document needs a name')
-  const target = pathFor(config, slug)
-  try {
-    await stat(target)
-    throw new Error(`document already exists: ${slug}`)
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-  }
 
   const title = name.trim()
-  await writeDocument(config, slug, `# ${title}\n\n`)
-  const info = await stat(target)
+  await writeNewDocument(config, slug, `# ${title}\n\n`)
+  const info = await stat(pathFor(config, slug))
   return { slug, title, words: 0, updatedAt: info.mtimeMs, bytes: info.size }
 }
 
@@ -169,14 +186,7 @@ export async function createDocumentWithMarkdown(
   const slug = slugify(title) || slugify(name)
   if (!slug) throw new Error('a document needs a name or a heading')
 
-  try {
-    await stat(pathFor(config, slug))
-    throw new Error(`document already exists: ${slug}`)
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-  }
-
-  await writeDocument(config, slug, body)
+  await writeNewDocument(config, slug, body)
   const info = await stat(pathFor(config, slug))
   return { slug, title, words: wordCount(body), updatedAt: info.mtimeMs, bytes: info.size }
 }

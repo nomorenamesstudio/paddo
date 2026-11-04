@@ -1,4 +1,5 @@
-import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
+import { randomBytes } from 'node:crypto'
+import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import type { Config } from './config'
@@ -36,7 +37,10 @@ export async function readStatus(config: Config, slug: string): Promise<Status> 
 
 export async function writeStatus(config: Config, slug: string, status: Status): Promise<void> {
   await mkdir(config.sidecarDir, { recursive: true })
-  await writeFile(metaPath(config, slug), `${JSON.stringify({ status }, null, 2)}\n`, 'utf8')
+  const target = metaPath(config, slug)
+  const temp = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
+  await writeFile(temp, `${JSON.stringify({ status }, null, 2)}\n`, 'utf8')
+  await rename(temp, target)
 }
 
 export async function removeStatus(config: Config, slug: string): Promise<void> {

@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { watch as watchDirectory } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 
@@ -58,7 +59,14 @@ const config = loadConfig()
 const collab = createCollab(config)
 const throttle = new LoginThrottle()
 
-const app = Fastify({ logger: { level: process.env.NODE_ENV === 'production' ? 'warn' : 'info' } })
+const app = Fastify({
+  // Production stays quiet unless asked: a homelab box does not need a line per
+  // request, but "did the watcher start" is exactly what you want when it misbehaves.
+  logger: {
+    level: process.env.PADDO_LOG_LEVEL?.trim() || (process.env.NODE_ENV === 'production' ? 'warn' : 'info'),
+  },
+  trustProxy: config.trustProxy,
+})
 
 await app.register(cookie)
 
@@ -143,6 +151,11 @@ function guard(verb: Verb | 'any') {
 
 function clientKey(request: FastifyRequest): string {
   return request.ip || 'unknown'
+}
+
+/** Where the process answers when it calls itself. A wildcard bind still has loopback. */
+function loopbackHost(config: Config): string {
+  return config.host === '0.0.0.0' || config.host === '::' ? '127.0.0.1' : config.host
 }
 
 // Content-hashed bundles never change under the same name; everything else (the
@@ -401,12 +414,15 @@ app.get('/api/documents/:slug/suggestions', { preHandler: guard('read') }, async
     reply.code(400).send({ error: 'invalid document name' })
     return
   }
-  if (!(await liveSlug(slug))) {
+  // A renamed document answers to its old name: the room is opened under the name it
+  // has now, not under the one this request asked for.
+  const current = await liveSlug(slug)
+  if (!current) {
     reply.code(404).send({ error: 'no such document' })
     return
   }
 
-  const connection = await openDocument(slug)
+  const connection = await openDocument(current)
   const document = connection.document
   if (!document) {
     reply.code(404).send({ error: 'no such document' })
@@ -430,7 +446,8 @@ app.post('/api/documents/:slug/suggestions', { preHandler: guard('propose') }, a
     reply.code(400).send({ error: 'invalid document name' })
     return
   }
-  if (!(await liveSlug(slug))) {
+  const current = await liveSlug(slug)
+  if (!current) {
     reply.code(404).send({ error: 'no such document' })
     return
   }
@@ -440,7 +457,7 @@ app.post('/api/documents/:slug/suggestions', { preHandler: guard('propose') }, a
     | undefined
 
   const author = body?.author === 'file' ? 'file' : 'agent'
-  const connection = await openDocument(slug)
+  const connection = await openDocument(current)
   try {
     if (typeof body?.markdown === 'string') {
       return await proposeMarkdown(connection, body.markdown, author)
@@ -460,6 +477,10 @@ app.patch(
   { preHandler: requireSession },
   async (request, reply) => {
     const { slug, id } = request.params as { slug: string; id: string }
+    if (!isValidSlug(slug)) {
+      reply.code(400).send({ error: 'invalid document name' })
+      return
+    }
     const body = request.body as { status?: unknown } | undefined
     const status = body?.status
 
@@ -472,7 +493,12 @@ app.patch(
     // drops or marks the record for the writer's own UI calls — and only for them,
     // because rejecting everything in a document is the human's lever, not the
     // agent's.
-    const connection = await openDocument(slug)
+    const current = await liveSlug(slug)
+    if (!current) {
+      reply.code(404).send({ error: 'no such document' })
+      return
+    }
+    const connection = await openDocument(current)
     const document = connection.document
     if (!document) {
       reply.code(404).send({ error: 'no such document' })
@@ -576,7 +602,10 @@ app.post('/mcp', async (request, reply) => {
     return
   }
 
-  const origin = `${request.protocol}://${request.host}`
+  // The MCP tools call the API back over loopback, not over the public origin: a
+  // `Host` header is the caller's to choose, and behind a TLS terminator the request
+  // scheme is not the one the socket has.
+  const origin = `http://${loopbackHost(config)}:${config.port}`
   const server = createAgentServer({ baseUrl: origin, token: secret })
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -630,16 +659,37 @@ app.delete('/api/tokens/:id', { preHandler: requireSession }, async (request, re
 })
 
 // --- file watch: an agent that just edits the .md still proposes -------------
+//
+// chokidar throws from inside its own native callback when the directory cannot be
+// watched, and that throw kills the process — an unlabelled SELinux bind mount is
+// enough (measured 2026-11-04: EACCES on /data/content, server dead on boot). So the
+// watch is probed first, synchronously, and skipped when it fails: every document
+// still loads and saves, and only "edit the .md by hand and get suggestions" is lost.
 
-const watcher = chokidar.watch(config.contentDir, {
-  ignoreInitial: true,
-  depth: 0,
-  awaitWriteFinish: { stabilityThreshold: 250, pollInterval: 60 },
+const watchable = canWatchDirectory(config.contentDir)
+
+const watcher = watchable
+  ? chokidar.watch(config.contentDir, {
+      ignoreInitial: true,
+      depth: 0,
+      awaitWriteFinish: { stabilityThreshold: 250, pollInterval: 60 },
+    })
+  : null
+
+if (!watcher) {
+  app.log.warn(
+    { dir: config.contentDir },
+    'content directory cannot be watched — hand edits will not become suggestions',
+  )
+}
+
+watcher?.on('ready', () => app.log.info(`watching ${config.contentDir} for edits`))
+
+watcher?.on('error', (error) => {
+  app.log.error({ err: error, dir: config.contentDir }, 'file watcher stopped')
 })
 
-watcher.on('ready', () => app.log.info(`watching ${config.contentDir} for edits`))
-
-watcher.on('all', (event, path) => {
+watcher?.on('all', (event, path) => {
   if (event !== 'add' && event !== 'change') return
   const slug = basename(path, '.md')
   if (!isValidSlug(slug)) return
@@ -648,6 +698,17 @@ watcher.on('all', (event, path) => {
     app.log.error({ err: error, slug }, 'file ingest failed')
   })
 })
+
+/** Whether this process may watch the content directory at all. */
+function canWatchDirectory(dir: string): boolean {
+  try {
+    const probe = watchDirectory(dir, () => {})
+    probe.close()
+    return true
+  } catch {
+    return false
+  }
+}
 
 /**
  * The server is the only thing that writes a document from the editor; any other

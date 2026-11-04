@@ -58,17 +58,16 @@ export function createCollab(config: Config) {
     debounce: 700,
     maxDebounce: 3000,
 
-    async onAuthenticate({ request, token, documentName, requestParameters }) {
+    async onAuthenticate({ request, token, documentName }) {
       if (!isValidSlug(documentName)) throw new Error('unauthorized')
       browserRooms.add(documentName)
       const cookie = readCookie(request.headers.get('cookie') ?? undefined, SESSION_COOKIE)
       if (verifySession(config.secret, cookie)) return { user: 'owner' }
 
-      // A machine client cannot send a cookie, and its token may ride either the
-      // upgrade query string or the protocol's auth message.
-      const queryToken = requestParameters.get('token')
-      const offered = token ?? queryToken ?? ''
-      if (offered && constantTimeEquals(offered, config.token)) return { user: 'token' }
+      // A machine client cannot send a cookie, so its token arrives as the protocol's
+      // auth message. Not from the query string: the upgrade gate above refuses a
+      // caller without a cookie or a header, and a token in a URL ends up in proxy logs.
+      if (token && constantTimeEquals(token, config.token)) return { user: 'token' }
 
       // Minted tokens are deliberately not accepted here: a room is writable once
       // joined, so a `read` token would bypass the propose-and-review path entirely.
@@ -87,6 +86,10 @@ export function createCollab(config: Config) {
       if (!existsSync(pathFor(config, documentName)) && !existsSync(sidecarPathFor(config, documentName))) {
         throw new Error('no such document')
       }
+
+      // A document that is here — recreated by hand after a delete — clears the
+      // tombstone, or its room would refuse every store for the rest of the process.
+      tombstones.delete(documentName)
 
       // The sidecar keeps CRDT identity (and therefore every stored anchor) across
       // restarts. The markdown is the canonical prose but cannot rebuild anchors.

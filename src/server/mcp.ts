@@ -8,6 +8,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 
+// The version comes from package.json so the MCP handshake cannot drift from the
+// release the image was built from (it said 0.2.0 while package.json said 0.0.0).
+import packageJson from '../../package.json' with { type: 'json' }
+
 /** How the tools reach the API: the server's own origin, and the caller's token. */
 export interface AgentClient {
   baseUrl: string
@@ -37,7 +41,7 @@ function text(value: unknown): { content: Array<{ type: 'text'; text: string }> 
 
 export function createAgentServer(client: AgentClient): McpServer {
   const call = <T,>(path: string, init: RequestInit = {}) => callAgent<T>(client, path, init)
-  const server = new McpServer({ name: 'paddo', version: '0.2.0' })
+  const server = new McpServer({ name: 'paddo', version: packageJson.version })
 
 server.registerTool(
   'list_documents',

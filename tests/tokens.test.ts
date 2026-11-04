@@ -25,6 +25,7 @@ async function testConfig(): Promise<Config> {
     password: 'password',
     secret: 'secret-that-is-long-enough-for-the-config-loader',
     token: 'token-that-is-long-enough-for-the-config-loader',
+    trustProxy: false,
   }
 }
 

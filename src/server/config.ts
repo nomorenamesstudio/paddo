@@ -8,6 +8,13 @@ export interface Config {
   password: string
   secret: string
   token: string
+  /**
+   * Behind a reverse proxy, `request.ip` is the proxy unless this is on — which
+   * turns the login throttle into one bucket shared by every client. Off by
+   * default: trusted blindly, it lets anyone spoof `X-Forwarded-For` and dodge
+   * that throttle instead.
+   */
+  trustProxy: boolean
 }
 
 /**
@@ -29,6 +36,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     password: read('PADDO_PASSWORD'),
     secret: read('PADDO_SECRET'),
     token: read('PADDO_TOKEN'),
+    trustProxy: env.PADDO_TRUST_PROXY?.trim() === 'true',
   }
 
   if (missing.length > 0) {

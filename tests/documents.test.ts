@@ -37,6 +37,7 @@ describe('renaming never destroys the document already there', () => {
       password: 'password',
       secret: 'secret-that-is-long-enough-for-the-config-loader',
       token: 'token-that-is-long-enough-for-the-config-loader',
+      trustProxy: false,
     }
     await mkdir(config.contentDir, { recursive: true })
     await writeFile(join(config.contentDir, 'one.md'), '# One\n\nfirst\n', 'utf8')

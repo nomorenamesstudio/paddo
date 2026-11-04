@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { randomBytes } from 'node:crypto'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import type { Config } from './config'
@@ -45,5 +46,10 @@ export async function readSettings(config: Config): Promise<Settings> {
 
 export async function writeSettings(config: Config, settings: Settings): Promise<void> {
   await mkdir(config.sidecarDir, { recursive: true })
-  await writeFile(settingsPath(config), `${JSON.stringify(settings, null, 2)}\n`, 'utf8')
+  const target = settingsPath(config)
+  // Temp and rename: written in place, a crash mid-write truncated the file, and the
+  // reader treats unreadable settings as empty — which silently lost the guide.
+  const temp = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
+  await writeFile(temp, `${JSON.stringify(settings, null, 2)}\n`, 'utf8')
+  await rename(temp, target)
 }
