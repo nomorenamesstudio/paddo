@@ -2,6 +2,32 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.1: it can live at /paddo/
+
+The homelab deploy found the one assumption 0.1.0 made about where it runs: a tailnet
+node has one name and one certificate, so a second app on it gets a path, not a
+hostname — and every URL in the bundle was written from the origin root.
+
+**Feature** — `PADDO_BASE_PATH`, so the app can live at `https://host/paddo/` instead of
+needing a hostname or a port of its own. Vite writes every asset URL, the manifest
+(`start_url` and `scope` are relative now), the service worker scope and its navigation
+fallback from it, and one helper in `src/web/base.ts` does the same for the API fetches,
+the Yjs websocket, the router and the in-app links — the server keeps its root-absolute
+routes because a proxy that serves a subpath (`tailscale serve --set-path`, Caddy's
+`handle_path`) strips the prefix before forwarding. The bare prefix redirects to the
+trailing slash, since that is where relative URLs start resolving. Unset, the build is
+the root-path build it always was.
+
+**Fix** — compose passed no build arguments at all, so `PADDO_BASE_PATH=/paddo/ docker
+compose up -d --build` — the command the deployment guide gives — built the root-path
+bundle and the app arrived unstyled under a subpath. The value is a `build.args` entry
+now, defaulting to `/`, and `.env.example` says it needs a rebuild rather than a restart.
+
+**Not verified** — the subpath shape was checked in the built output (asset URLs, the
+manifest, the service worker's navigation fallback, the redirect) and the root-path shape
+by the e2e suite. No proxy was stood in front of it here, so the real
+`tailscale serve --set-path` path was exercised on the homelab, not in this checkout.
+
 ## 2026-11-04 — 0.1.0: it installs somewhere now
 
 First version number, and the shape it runs in: one container, two directories, no

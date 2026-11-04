@@ -10,6 +10,7 @@ import wordmarkSource from '../assets/wordmark.svg?raw'
 // which pushes the drawing off the row's centre line.
 const wordmark = wordmarkSource.replace(/>\s+</g, '><').trim()
 import { navigate } from '../App'
+import { url } from '../base'
 
 function when(ms: number): string {
   const date = new Date(ms)
@@ -72,7 +73,7 @@ export function DocumentsPage() {
     <li key={document.slug} className="documents__item">
       <a
         className="documents__row"
-        href={`/d/${document.slug}`}
+        href={url(`d/${document.slug}`)}
         onClick={(event) => intercept(event, document.slug)}
       >
         <span className="documents__title">
@@ -130,7 +131,7 @@ export function DocumentsPage() {
         <div className="masthead__actions">
           <a
             className="button button--icon"
-            href="/settings"
+            href={url('settings')}
             aria-label="Settings"
             title="Settings"
             onClick={(event) => {

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { App } from './App'
+import { url } from './base'
 import './styles/app.css'
 
 // No service worker on localhost or the LAN over plain HTTP: it cannot register
@@ -10,7 +11,7 @@ import './styles/app.css'
 const pwaHost = !/(^localhost$|^127\.|^10\.|^192\.168\.)/.test(window.location.hostname)
 if (import.meta.env.PROD && window.isSecureContext && pwaHost) {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch(() => {})
+    void navigator.serviceWorker.register(url('sw.js')).catch(() => {})
   })
 }
 

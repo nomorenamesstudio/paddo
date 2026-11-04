@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 
 import { api, ApiError } from './api'
+import { BASE, url } from './base'
 import { OpeningSkeleton, humanizeSlug } from './components/OpeningSkeleton'
 import { TopBar } from './components/TopBar'
 import { DocumentsPage } from './pages/DocumentsPage'
@@ -14,15 +15,19 @@ const EditorPage = lazy(() => import('./pages/EditorPage').then((module) => ({ d
 type Route = { name: 'documents' } | { name: 'editor'; slug: string } | { name: 'settings' }
 
 function parseRoute(): Route {
-  if (/^\/settings\/?$/.test(window.location.pathname)) return { name: 'settings' }
-  const match = window.location.pathname.match(/^\/d\/([a-z0-9-]+)\/?$/)
+  const { pathname } = window.location
+  // Strip the mount prefix: everything below here thinks in app-relative paths.
+  const path = pathname.startsWith(BASE) ? `/${pathname.slice(BASE.length)}` : pathname
+  if (/^\/settings\/?$/.test(path)) return { name: 'settings' }
+  const match = path.match(/^\/d\/([a-z0-9-]+)\/?$/)
   if (match?.[1]) return { name: 'editor', slug: match[1] }
   return { name: 'documents' }
 }
 
 export function navigate(to: string, options: { replace?: boolean } = {}) {
-  if (options.replace) window.history.replaceState({}, '', to)
-  else window.history.pushState({}, '', to)
+  const target = url(to)
+  if (options.replace) window.history.replaceState({}, '', target)
+  else window.history.pushState({}, '', target)
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 

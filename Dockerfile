@@ -22,6 +22,11 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Where the app is mounted. '/' for a container you open on its own port; '/paddo/'
+# when a proxy serves it under a subpath (tailscale serve --set-path, most reverse
+# proxies). Baked in at build time, because every asset URL in the bundle carries it.
+ARG PADDO_BASE_PATH=/
+ENV PADDO_BASE_PATH=$PADDO_BASE_PATH
 # Two bundles: the web app into dist/web, and the server into one file in
 # dist/server. Both tools are called directly instead of through a pnpm script:
 # pnpm's verify-deps-before-run would otherwise fire an implicit `pnpm install`

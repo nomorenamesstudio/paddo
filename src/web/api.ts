@@ -1,3 +1,5 @@
+import { mountPath, url } from './base'
+
 export const STATUSES = ['draft', 'editing', 'published', 'archived'] as const
 export type Status = (typeof STATUSES)[number]
 
@@ -19,7 +21,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(url(path), {
     credentials: 'same-origin',
     headers: init.body ? { 'content-type': 'application/json' } : undefined,
     ...init,
@@ -94,7 +96,7 @@ export const api = {
     }),
 
   /** The file as it stands, live edits included: what a download should contain. */
-  rawUrl: (slug: string) => `/api/documents/${slug}/raw`,
+  rawUrl: (slug: string) => url(`/api/documents/${slug}/raw`),
 
   tokens: () => request<{ tokens: AgentToken[] }>('/api/tokens'),
 
@@ -134,5 +136,7 @@ export const api = {
 
 export function websocketUrl(): string {
   const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  return `${scheme}://${window.location.host}`
+  // The path travels with the prefix so a proxy sees it; the CRDT server answers on
+  // every path, so nothing else changes.
+  return `${scheme}://${window.location.host}${mountPath()}`
 }

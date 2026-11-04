@@ -121,13 +121,38 @@ cannot reach another container's published host port through `localhost`.
 
 ### Tailscale instead
 
+Two shapes, and the choice is about the URL you want:
+
 ```bash
-tailscale serve --bg https / http://127.0.0.1:4319
+# its own address: https://<node>.ts.net:4319/   (root path, no rebuild)
+tailscale serve --bg --https=4319 http://127.0.0.1:4319
+
+# one path beside the other apps: https://<node>.ts.net/paddo/   (needs the build below)
+tailscale serve --bg --set-path /paddo http://127.0.0.1:4319
 ```
 
-`tailscale serve` sets `X-Forwarded-For` and terminates TLS with a real certificate,
-so the PWA installs and the cookie is `Secure`. Bind the published port to
-`127.0.0.1` in that shape too.
+A tailnet node has one name and one certificate, so several apps are separated by path
+or by port. `serve` **strips the path prefix** before it forwards — which is why the
+server needs no subpath routing — but the browser still resolves every URL against the
+full path, so the bundle has to be built with the prefix baked in:
+
+```bash
+PADDO_BASE_PATH=/paddo/ docker compose up -d --build   # compose passes it as a build arg
+```
+
+That value is baked in at build time, not read at boot: the asset URLs, the web app
+manifest's `start_url`/`scope`, the service worker scope and its navigation fallback
+all carry it. Nothing else changes — `.env`, the volumes and the API stay as they are.
+Leave it unset and the build is the root-path build.
+
+`/paddo` without the trailing slash redirects to `/paddo/`; without that, relative URLs
+would resolve against the origin root and the app would arrive unstyled.
+
+Both shapes terminate TLS with a real certificate, so the PWA installs and the cookie
+is `Secure`. Bind the published port to `127.0.0.1` in either shape.
+
+The same trick works with Caddy (`handle_path /paddo/*`) and nginx
+(`proxy_pass http://127.0.0.1:4319/;` — the trailing slash is what rewrites the path).
 
 ## 5. Versioning and upgrades
 

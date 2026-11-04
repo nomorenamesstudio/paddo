@@ -10,7 +10,19 @@
     <meta name="theme-color" content="#1b1917" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- No manifest link here: vite-plugin-pwa injects it, with the mount prefix on it. -->
+    <script>
+      // A subpath proxy answers /paddo and /paddo/ alike, but at /paddo (no trailing
+      // slash) the browser resolves relative URLs against the origin root and the app
+      // arrives unstyled. Normalise that before anything else runs.
+      (function () {
+        var base = '%BASE_URL%'
+        if (base === '/') return
+        if (window.location.pathname + '/' === base) {
+          window.location.replace(base + window.location.search + window.location.hash)
+        }
+      })()
+    </script>
     <script>
       // Resolve the theme before the first paint, so a dark reader never sees a
       // flash of paper. Settings is the source of truth; this is just the cache.

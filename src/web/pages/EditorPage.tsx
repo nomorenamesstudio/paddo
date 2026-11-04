@@ -25,6 +25,7 @@ import { TopBar } from '../components/TopBar'
 import { SelectionMenu } from '../components/SelectionMenu'
 import { InviteSheet } from './InviteSheet'
 import { navigate } from '../App'
+import { appUrl, url } from '../base'
 import { EditorMenu } from '../components/EditorMenu'
 import type { HeadlinePhase } from '../components/Headline'
 
@@ -280,7 +281,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   // Rebuilt when the title or the guide changes: the sheet names the document the
   // writer sees, the tool calls keep the slug, and the guide carries their voice.
   const invitePrompt = useMemo(
-    () => buildInvitePrompt(slug, title, window.location.origin, includeGuide ? writingGuide : ''),
+    () => buildInvitePrompt(slug, title, appUrl(), includeGuide ? writingGuide : ''),
     [slug, title, writingGuide, includeGuide],
   )
 
@@ -317,7 +318,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           it under its current title.
         </p>
         <p>
-          <a className="button" href="/" onClick={(event) => {
+          <a className="button" href={url()} onClick={(event) => {
             event.preventDefault()
             navigate('/')
           }}>

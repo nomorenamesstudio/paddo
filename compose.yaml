@@ -11,7 +11,14 @@ name: paddo
 # and the host port is published below. Everything else comes from .env.
 services:
   paddo:
-    build: .
+    build:
+      context: .
+      # Where the app is mounted: '/' unless a proxy serves it under a subpath
+      # (tailscale serve --set-path, Caddy handle_path), then '/paddo/'. A *build*
+      # argument, not an environment variable: every asset URL, the manifest and the
+      # service worker scope are written from it at build time.
+      args:
+        PADDO_BASE_PATH: ${PADDO_BASE_PATH:-/}
     image: paddo:${PADDO_VERSION:-local}
     container_name: paddo
     restart: unless-stopped

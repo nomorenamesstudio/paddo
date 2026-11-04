@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import { Headline, type HeadlinePhase } from './Headline'
 
 import { navigate } from '../App'
+import { url } from '../base'
 
 export type SyncState = 'connecting' | 'connected' | 'disconnected'
 
@@ -37,7 +38,7 @@ export function TopBar({
     <header className="topbar">
       <a
         className="topbar__back"
-        href="/"
+        href={url()}
         aria-label="All documents"
         title="All documents"
         onClick={(event: MouseEvent<HTMLAnchorElement>) => {

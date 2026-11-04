@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { Check, Copy, KeyRound, Trash2 } from 'lucide-react'
 
 import { api, ApiError, VERBS, type AgentToken, type DocumentMeta, type Verb } from '../api'
+import { appUrl } from '../base'
 import { copyText, selectElementText } from '../clipboard'
 
 /** The tools live on this origin, so the block never needs a hostname typed by hand. */
 function mcpUrl(): string {
-  return `${window.location.origin}/mcp`
+  return `${appUrl()}/mcp`
 }
 
 /**
@@ -14,7 +15,7 @@ function mcpUrl(): string {
  * Paddō is an HTTP API with this token on it. Says what to do, not where to put it.
  */
 function agentBrief(secret: string): string {
-  const base = window.location.origin
+  const base = appUrl()
   return `You can edit my writing in Paddō, a markdown editor I run at ${base}.
 
 Connect with this bearer token: ${secret}
@@ -53,7 +54,7 @@ function configBlock(secret: string): string {
 
 /** The code is all the agent needs; the token never appears in the conversation. */
 function pairBrief(code: string): string {
-  const base = window.location.origin
+  const base = appUrl()
   return `I want you to help me edit my writing in Paddō, a markdown editor at ${base}.
 
 It needs pairing first. POST this to ${base}/api/pair/claim with:
