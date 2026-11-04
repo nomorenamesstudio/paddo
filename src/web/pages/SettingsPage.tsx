@@ -82,10 +82,6 @@ export function SettingsPage() {
       <TopBar title="Settings" sync="connected" actions={<span className="topbar__actions" />} />
 
       <main className="page page--narrow settings">
-        <p className="muted settings__intro">
-          How Paddō looks, how the agent should write, and which agents can reach your work.
-        </p>
-
         <section className="settings__card">
           <h2 className="settings__heading">Appearance</h2>
           <p className="muted settings__note">

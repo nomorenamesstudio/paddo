@@ -2135,15 +2135,8 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   max-width: var(--measure);
 }
 
-.settings__intro {
-  margin: 0.4rem 0 0.1rem 1.35rem;
-  max-width: 34rem;
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-
-/* Each group is a sheet, the same material as the bars: paper, a soft shadow, a
-   generous radius. Settings stop reading as one long column of text. */
+/* Each group is a sheet, the same material as the bars: paper, a soft shadow,
+   a generous radius. Settings stop reading as one long column of text. */
 .settings__card {
   padding: 1.25rem 1.35rem 1.2rem;
   background: var(--header-bg);
