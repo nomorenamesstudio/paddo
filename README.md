@@ -11,6 +11,14 @@ you review inline and never applies on its own.
 
 Name: Paddō — from パッド, "pad", the notepad it is. ASCII: `paddo`.
 
+> [!WARNING]
+> **Very early. Version 0.1.0, work in progress.** It signs in, writes, syncs between
+> devices and reviews an agent's edits today — it is the editor I write in. It is not
+> finished: the API, the data model and the on-disk sidecars will move between minor
+> versions without a migration path, there is one password and no accounts, and tables,
+> code blocks and footnotes are out of scope. Back up `data/` before you trust it with
+> anything you cannot retype.
+
 ## Why this exists
 
 A thousand words needs the opposite of a feature list: one column of text, no toolbar
