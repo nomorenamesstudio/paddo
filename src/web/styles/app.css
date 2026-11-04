@@ -1906,9 +1906,26 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   outline: none;
 }
 
+.agents__selectwrap {
+  position: relative;
+  display: block;
+}
+
+.agents__selectwrap svg {
+  position: absolute;
+  top: 50%;
+  right: 0.6rem;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* The platform's own caret looks different on every OS and sits against the frame;
+   this one is the same chevron the rest of the interface uses. */
 .agents__select {
-  /* Native arrow kept: a custom one is a caret to maintain for no gain. */
-  padding-right: 0.4rem;
+  appearance: none;
+  padding-right: 1.9rem;
+  width: 100%;
 }
 
 .agents__buttons {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bot, Check, Copy, Plug, Trash2 } from 'lucide-react'
+import { Bot, Check, ChevronDown, Copy, Plug, Trash2 } from 'lucide-react'
 
 import { api, ApiError, type AgentToken, type DocumentMeta, type Verb } from '../api'
 import { appUrl } from '../base'
@@ -279,7 +279,7 @@ export function AgentTokens() {
 
       <div className="agents__grid">
         <label className="agents__field">
-          <span className="agents__label">Agent</span>
+          <span className="agents__label">Agent name</span>
           <input
             className="agents__input"
             value={name}
@@ -291,29 +291,35 @@ export function AgentTokens() {
 
         <label className="agents__field">
           <span className="agents__label">Access</span>
-          <select
-            className="agents__input agents__select"
-            value={access}
-            onChange={(event) => setAccess(event.target.value as Access)}
-          >
-            {ACCESS.map((option) => (
-              <option key={option} value={option}>
-                {ACCESS_LABELS[option]}
-              </option>
-            ))}
-          </select>
+          <span className="agents__selectwrap">
+            <select
+              className="agents__input agents__select"
+              value={access}
+              onChange={(event) => setAccess(event.target.value as Access)}
+            >
+              {ACCESS.map((option) => (
+                <option key={option} value={option}>
+                  {ACCESS_LABELS[option]}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={15} aria-hidden="true" />
+          </span>
         </label>
 
         <label className="agents__field">
           <span className="agents__label">Documents</span>
-          <select
-            className="agents__input agents__select"
-            value={allDocuments ? '*' : 'some'}
-            onChange={(event) => setAllDocuments(event.target.value === '*')}
-          >
-            <option value="*">All documents</option>
-            <option value="some">Only these…</option>
-          </select>
+          <span className="agents__selectwrap">
+            <select
+              className="agents__input agents__select"
+              value={allDocuments ? '*' : 'some'}
+              onChange={(event) => setAllDocuments(event.target.value === '*')}
+            >
+              <option value="*">All documents</option>
+              <option value="some">Select documents</option>
+            </select>
+            <ChevronDown size={15} aria-hidden="true" />
+          </span>
         </label>
       </div>
 
