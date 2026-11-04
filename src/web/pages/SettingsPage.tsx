@@ -193,6 +193,45 @@ export function SettingsPage() {
         </section>
 
         <AgentTokens />
+
+        <section className="settings__card">
+          <h2 className="settings__heading">About</h2>
+          <p className="settings__fact">
+            <span className="settings__factname">Paddō</span>
+            <span className="settings__factvalue">v{__APP_VERSION__}</span>
+          </p>
+          <p className="muted settings__note">
+            A markdown editor for prose, with an agent that proposes edits you review inline. Paddō
+            never runs a model of its own — it answers the agent you pointed at it, and the file is
+            only ever written when you accept a hunk.
+          </p>
+          <p className="muted settings__note">
+            Early and unfinished: the API, the on-disk sidecars and the UI move between minor
+            versions, and there is no migration path yet.
+          </p>
+          <p className="muted settings__note">
+            Hand-written and AI-enhanced by{' '}
+            <a href="https://nomorenames.studio" target="_blank" rel="noreferrer noopener">
+              No More Names Studio
+            </a>{' '}
+            ·{' '}
+            <a
+              href="https://github.com/nomorenamesstudio/paddo"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              GitHub
+            </a>{' '}
+            ·{' '}
+            <a
+              href={`https://github.com/nomorenamesstudio/paddo/blob/main/docs/CHANGELOG.md`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              Changelog
+            </a>
+          </p>
+        </section>
       </main>
     </>
   )

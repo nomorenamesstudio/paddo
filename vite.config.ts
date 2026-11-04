@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+import pkg from './package.json'
 import { basePath } from './tools/base-path'
 
 /**
@@ -14,6 +15,9 @@ const base = basePath(process.env.PADDO_BASE_PATH)
 
 export default defineConfig({
   base,
+  // Settings → About reads this, so the number in the UI and the number in the release
+  // are the same number: one source, package.json.
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
     VitePWA({

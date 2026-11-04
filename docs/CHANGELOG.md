@@ -18,6 +18,11 @@ routes because a proxy that serves a subpath (`tailscale serve --set-path`, Cadd
 trailing slash, since that is where relative URLs start resolving. Unset, the build is
 the root-path build it always was.
 
+**Feature** — Settings → About. The version, read from `package.json` at build time
+(`__APP_VERSION__`), what Paddō does and does not do with your text, and links to the
+repo and this changelog. Before it, the only way to answer "what am I running?" was
+`docker compose images` or the checkout.
+
 **Fix** — compose passed no build arguments at all, so `PADDO_BASE_PATH=/paddo/ docker
 compose up -d --build` — the command the deployment guide gives — built the root-path
 bundle and the app arrived unstyled under a subpath. The value is a `build.args` entry
