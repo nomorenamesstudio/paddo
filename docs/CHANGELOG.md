@@ -2,6 +2,51 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.2: settings stops arguing with itself
+
+The afternoon after 0.1.1 went on the homelab: the settings page was the part that had
+never been designed, only assembled. No behaviour changed outside it, apart from the PWA
+label.
+
+**Feature** — Settings → Agent access, rebuilt on the shape Ghosted uses. An icon on the
+title, one paragraph, three labelled fields, a line saying what the chosen access means,
+two buttons, then the connected agents as two-line rows. Access is one choice now — read
+only, read and edit, full access — because the three permission checkboxes were not
+independent (nothing can propose an edit without reading) and the reader had to assemble
+them mentally. The document scope is a select that reveals the checklist only when it is
+not "all documents". The form is a two-column grid above 32rem and a stack below it.
+
+**Feature** — Settings → About, from 0.1.1's tail: the version, read from `package.json`
+at build time, what Paddō does and does not do with your text, and links to the repo and
+this changelog.
+
+**Fix** — the PWA short name was `Paddo`. The manifest `name` and the page title always
+had the macron; the label under the home-screen icon did not. Both spell Paddō now.
+
+**Fix** — the settings sheets were 527px wide against the editor's 629, because they
+inherited the narrow reading measure the login screen and the document list use. They
+take `--measure` like the prose column, and the page's own one-line introduction —
+"how Paddō looks, how the agent should write…" — is gone, since four sheets with headings
+already say what is in the page.
+
+**Fix** — the credit line is "Made with ♥ by No More Names Studio", the house one, in the
+README and in About. The README's "Built with AI" section went with it.
+
+**Fix** — the selects draw the interface's own `ChevronDown` instead of the platform
+caret, the access description sits above the documents field rather than between that
+select and the checklist it reveals, and two labels say what the field holds: "Agent
+name", "Select documents".
+
+**Fix** — the pairing prompt did not wrap (a full-height `<pre>` squeezed beside its copy
+button), and the "this browser will not let the page copy" hint rendered before anything
+had been attempted.
+
+**Docs** — `docs/DEPLOYMENT.md` records the trap that stopped the 0.1.1 deploy on jedha:
+BuildKit cannot fetch `docker/dockerfile:1` through that host's egress
+(`x509: certificate signed by unknown authority`), and `DOCKER_BUILDKIT=0` builds the same
+image with the classic builder. That deploy also settles the arm64 question left open in
+0.1.0: the image is built and running on the Pi.
+
 ## 2026-11-04 — 0.1.1: it can live at /paddo/
 
 The homelab deploy found the one assumption 0.1.0 made about where it runs: a tailnet

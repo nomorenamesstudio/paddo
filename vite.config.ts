@@ -28,7 +28,8 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'Paddō',
-        short_name: 'Paddo',
+        // The label under the home-screen icon: the name, not an ASCII fallback.
+        short_name: 'Paddō',
         description: 'A quiet markdown editor for prose, with an agent that proposes edits you review inline.',
         // Relative, so an installed app reopens inside the mount prefix instead of
         // at the origin root.
