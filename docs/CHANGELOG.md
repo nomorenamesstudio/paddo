@@ -2,6 +2,86 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.0: it installs somewhere now
+
+First version number, and the shape it runs in: one container, two directories, no
+database. A second review (GLM) went over the server before the image was built; its
+findings are in the Fixes below, along with the ones from my own read.
+
+**Feature** — `Dockerfile` and `compose.yaml`. Multi-stage: pnpm installs, `vite build`
+and `node tools/build-server.mjs` produce the two bundles, a second production-only
+install keeps the toolchain out of the runtime image, and the container runs `node
+dist/server/main.js` as the unprivileged `node` user with a `/healthz` healthcheck and
+one published port. Both data directories are bind mounts so the markdown stays
+readable and back-up-able from the host.
+
+**Feature** — `docs/DEPLOYMENT.md`. Reverse proxy (Caddy and Tailscale), the two
+volumes and what is in each, backups, upgrades, version pinning, and the traps that
+cost time: SELinux labels on bind mounts, inotify on network mounts, hard links,
+one password and no second factor.
+
+**Feature** — version numbering. `package.json` is `0.1.0` (was `0.0.0`), compose tags
+the image `paddo:${PADDO_VERSION}` (falling back to `paddo:local`), and the MCP
+handshake reports the version from `package.json` — it had been hardcoded to `0.2.0`,
+which is a lie the protocol repeats to every client. `LICENSE` (MIT) added, README
+rewritten for a first-time reader.
+
+**Feature** — `PADDO_LOG_LEVEL`. Production logs at `warn`; `info` is one environment
+variable away when the question is "did the file watcher actually start".
+
+**Fix** — a production install could not start. `zod` (imported by the MCP tools) and
+`tsx` (what `pnpm start` runs) were devDependencies, so `pnpm install --prod` produced
+a tree that crashed on import. Both are dependencies now.
+
+**Fix** — behind a reverse proxy, every client shared one login-throttle bucket,
+because `request.ip` was the proxy. `PADDO_TRUST_PROXY` turns Fastify's trust of
+`X-Forwarded-For` on, and compose sets it; it is off by default because an instance
+reachable directly must not believe that header.
+
+**Fix** — the MCP server built its API base URL from `request.protocol` and the `Host`
+header, so behind a TLS terminator it called back over `http` at whatever host the
+caller named. It uses the loopback address and the configured port now.
+
+**Fix** — the suggestion routes resolved a renamed document with `liveSlug()` and then
+opened the room under the stale slug, so a renamed document answered 404 (or worse) to
+every suggestion call. All three routes open the resolved name.
+
+**Fix** — creating a document checked for the file and then wrote it, so two creates of
+the same title could leave one file. Creation is a `wx` open now: the loser throws.
+
+**Fix** — `writeSettings` and `writeStatus` wrote JSON in place. A crash mid-write left
+a truncated file, and the reader treats unreadable settings as empty — which silently
+lost the writing guide. Both write a temp file and rename, like every other store.
+
+**Fix** — `writeDocument`'s temp name carried only the pid, so two saves of one
+document shared it. Random suffix, as `tokens.ts` already did.
+
+**Fix** — a deleted document's room stayed tombstoned for the process lifetime, so a
+document recreated under the same name — by hand, not through the API — refused to
+persist any edit. Loading a document that exists clears the tombstone.
+
+**Fix** — `createDraft` fell through its 99-name loop and wrote over the last draft it
+tried. It takes a timestamped name instead.
+
+**Fix** — the file watcher was created unguarded, and chokidar throws from inside its
+own native callback when a directory cannot be watched. Measured: an unlabelled SELinux
+bind mount killed the server on boot. The watch is probed synchronously first and
+skipped, with a warning, so the editor still serves documents.
+
+**Fix** — `onAuthenticate` accepted `PADDO_TOKEN` from the upgrade query string, which
+the gate that refuses socket upgrades never lets through. Dead path, and a token in a
+URL is a token in a proxy log. Removed.
+
+**Fix** — `pnpm-workspace.yaml` had `allowBuilds: esbuild: set this to true or false`
+as a placeholder string, so the allowlist did nothing and `pnpm install` failed the
+build with `ERR_PNPM_IGNORED_BUILDS`. Now `esbuild: true`.
+
+**Not verified** — the image was built and run on x86_64 only (amd64): login, document
+create, the file watcher and the MCP handshake were exercised inside the container. The
+arm64 build is expected to work — `node:22-alpine`, pnpm and esbuild all fetch platform
+binaries — but it has not been built on the Pi. The e2e suite is the regression gate;
+unit tests and typecheck pass.
+
 ## 2026-10-29 — Two more things iOS underlines hate
 
 The grammar-underline drift survived removing the lingering transform, so two other known culprits

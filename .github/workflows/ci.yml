@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  # Every branch, not just main: a change is at its most dangerous before it is merged.
+  push:
+
+jobs:
+  checks:
+    name: Typecheck & tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No `version` here on purpose: package.json's `packageManager` is the single
+      # pin, and naming one in both places fails with "Multiple versions of pnpm
+      # specified" before anything is installed.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  image:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The build is the deployment: if the image does not build, nothing else about
+      # this commit matters. It runs on a machine with no .env, which is also the test
+      # that the image never needs one — both bundles are baked in, secrets are not.
+      - run: docker build --tag paddo:ci .
+      - name: The container starts and answers its own healthcheck
+        run: |
+          docker run --detach --name paddo-ci \
+            --env PADDO_PASSWORD=ci-password \
+            --env PADDO_SECRET=ci-secret-that-is-long-enough-to-pass-the-loader \
+            --env PADDO_TOKEN=ci-token-that-is-long-enough-to-pass-the-loader \
+            --publish 127.0.0.1:4399:4319 \
+            paddo:ci
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4399/healthz; then exit 0; fi
+            sleep 1
+          done
+          docker logs paddo-ci
+          exit 1

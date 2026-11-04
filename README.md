@@ -1,124 +1,180 @@
-# Paddō
+# Paddō — A Free, FOSS Markdown Editor for Prose
 
-A self-hosted, PWA Markdown editor for prose, with a local AI agent that joins on
-demand and proposes edits you review inline.
+![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)
+![Self-hosted](https://img.shields.io/badge/self--hosted-docker-2496ed?style=for-the-badge&logo=docker&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?style=for-the-badge)
+
+A free, open-source markdown editor for people who write prose — one calm surface,
+real-time sync between your phone and your laptop, and an AI agent that proposes edits
+you review inline and never applies on its own.
 
 Name: Paddō — from パッド, "pad", the notepad it is. ASCII: `paddo`.
 
-## Status
+## Why this exists
 
-Working prototype. You can sign in, write, sync between devices, and review an
-agent's proposals as inline suggestions. See what is not done, below.
+A thousand words needs the opposite of a feature list: one column of text, no toolbar
+of forty-seven buttons, and no sync problem to think about when you pick up the phone.
+The agent part came from the same place — a model that rewrites your paragraph and
+hands back a wall of new text is useless, because none of the decisions were yours.
 
-## What it does
+## Features
 
-- Long-form prose editing in Markdown, one calm surface, no toolbar of forty-seven buttons.
-- Real-time editing between phone and desktop over Yjs — no save button, no sync layer.
-- An agent proposes changes; they land as inline hunks with accept / reject / edit,
-  reviewable one-handed on a phone.
-- Block moving without dragging: pick the ⠿ grip, then tap where the paragraph goes.
-- Documents stay plain `.md` files on your disk.
-
-Not a knowledge base, not a team tool, no tables or code blocks.
-
-## Stack
-
-| Piece | Choice |
+| | |
 | --- | --- |
-| Editor | Tiptap 3 (ProseMirror) with the markdown extension |
-| Sync | Yjs + Hocuspocus, sharing one HTTP port with the app |
-| Server | Fastify 5, one Node 22 process |
-| Persistence | `content/*.md` plus a `.paddo/*.y` CRDT sidecar |
-| Agent | an external MCP client calling Paddō's own stdio MCP server |
-| PWA | Vite + `vite-plugin-pwa` |
+| **Prose first** | Markdown in a single column. No tables, no code blocks, no plugin sidebar. |
+| **No save button** | Yjs over a websocket, both devices in the same document, no conflict dialog. |
+| **Reviewable AI edits** | The agent sends hunks, not rewrites. Accept, reject or edit each one, one-handed. |
+| **Moving without dragging** | Pick the ⠿ grip, tap where the paragraph goes. Same transaction on every input. |
+| **Your files, plainly** | Every document is a `<name>.md` file you can read, grep and edit by hand. |
+| **Runs itself** | One container, no database. Settings, tokens and CRDT state live beside it. |
 
-## Quick start
+Not a knowledge base, not a team tool, not a note-taking system with a graph view.
+
+## Quick start (Docker)
+
+```bash
+git clone https://github.com/nomorenamesstudio/paddo && cd paddo
+mkdir -p data/content data/state
+cp .env.example .env        # set PADDO_PASSWORD, PADDO_SECRET, PADDO_TOKEN
+docker compose up -d --build
+```
+
+Open <http://localhost:4319> and sign in. The full walkthrough — reverse proxy,
+volumes, backups, upgrades, the ARM and Tailscale shapes — is in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+## Quick start (from source)
 
 ```bash
 pnpm install
-cp .env.example .env        # fill in PADDO_PASSWORD, PADDO_SECRET, PADDO_TOKEN
-pnpm build                  # build the web app into dist/web
+cp .env.example .env        # fill in the same three secrets
+pnpm build                  # web app into dist/web, server bundle into dist/server
 pnpm start                  # http://127.0.0.1:4319
 ```
 
-For the phone on the same network, `pnpm start` already binds `0.0.0.0`; open
-`http://<lan-ip>:4319` and sign in with the same password. No HTTPS means no PWA
-install for now (see [docs/SETUP.md](docs/SETUP.md)).
+`pnpm start` binds `0.0.0.0`, so a phone on the same network can use
+`http://<lan-ip>:4319`. No HTTPS means no PWA install — see
+[docs/SETUP.md](docs/SETUP.md).
+
+## How it works
+
+One Node process, one port, one socket. The agent is the only thing outside it.
+
+```
+phone ──┐                        ┌─ Fastify ─── static PWA, JSON API, cookies, /mcp
+        ├── HTTP  ── one port ───┤
+desktop ┘                        └─ Hocuspocus ─ Yjs rooms (WebSocket upgrade)
+
+per document room:  Y.Doc ──┬── Y.XmlFragment  "content"      the prose
+                            └── Y.Map          "suggestions"  pending hunks
+
+disk:               content/<slug>.md    canonical prose, plain markdown
+                    .paddo/<slug>.y      CRDT update log (anchors need it)
+
+agent session ── MCP ── Paddō ── inline suggestions you accept or reject
+```
+
+The markdown file is the prose; the CRDT sidecar keeps the identity that a pending
+suggestion is anchored to, because a Yjs anchor is an id into CRDT history and dies
+with it. Delete the sidecar and pending suggestions are dropped rather than silently
+re-attached to text that has moved. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has
+the decisions that are not obvious from the code.
 
 ## Working with the agent
 
-Two ways to work with it:
+Paddō never runs a model. It serves MCP tools — `list_documents`, `read_document`,
+`propose_edits`, `create_document`, `export_document`, `submit_markdown`,
+`pending_suggestions` — to whatever agent you already use.
 
-**A one-time check** — in the editor, open the document menu (⋮) and press
-**Invite the agent**. Type what you want changed and copy the prompt.
-2. Paste it into your own agent session. It needs Paddō's MCP server:
-
-   ```bash
-   PADDO_URL=http://<host>:4319 PADDO_TOKEN=<minted in Settings> pnpm mcp
-   ```
-
-The agent reads the document, sends hunks, and they appear inline. Review them on
-whichever device is at hand; accepting writes the `.md` file.
-
-**A connected agent** — Settings → *Agent tokens*, name it, pick the verbs (`read`,
-`propose edits`, `create documents`) and either every document or a list of them, then
-**Pair an agent**. Paddō prints a short code and a prompt; paste the prompt into your
-agent's chat. The agent claims the code, Paddō shows it waiting, you press **Approve**,
-and the agent collects its token over its own connection — the secret never goes through
-the conversation.
-
-If your client takes a config file instead, **Create a token** hands you the block:
+1. Open **Settings → Agent tokens**, name the agent, pick its verbs (`read`,
+   `propose`, `create`) and its document scope.
+2. **Pair an agent**: Paddō prints a short code and a prompt. The agent claims the
+   code, you press **Approve**, and the token is collected over the agent's own
+   connection — the secret never goes through the chat.
+3. Or **Create a token** and paste the block into your client's config:
 
 ```json
-{ "mcpServers": { "paddo": { "type": "http", "url": "http://<host>:4319/mcp",
+{ "mcpServers": { "paddo": { "type": "http", "url": "https://your-host/mcp",
   "headers": { "Authorization": "Bearer paddo_…" } } } }
 ```
 
-Paddō serves the agent's tools itself, so there is nothing to install next to the
-agent and no version to keep in step. From then on any "edit my case study" in that
-session can list, read and propose against the documents the token covers — no
-invitation sheet. It can also drop a new markdown file in (`create_document`) and take
-one out (`export_document`, or **Download markdown** in the document menu).
+The agent quotes your text (`original`, `proposed`, `rationale`); the server locates
+the quote, anchors it in the CRDT, and the hunk appears in the editor on every open
+device. An ambiguous quote is refused with the match count rather than guessed at. The
+agent never touches the file.
 
-Paddō never runs a model. It never writes text the agent asked for without your
-accept, and the agent never touches the file.
+A client that cannot do HTTP runs Paddō's stdio server instead —
+`PADDO_URL=http://<host>:4319 PADDO_TOKEN=<token> pnpm mcp`. The tool contract is in
+[docs/API.md](docs/API.md).
+
+## FAQ
+
+**Is it really free?** Yes. MIT, no account, no hosted tier, no telemetry. You run it.
+
+**Does my writing go to a model provider?** Not through Paddō. Paddō has no API key and
+no model client — it answers the agent you pointed at it, and only what that agent asks
+for.
+
+**Can I self-host it?** That is the only way to run it: one container, two directories,
+no database. [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+**Do I need HTTPS?** For a phone on your LAN, no. For the PWA install and the `Secure`
+session cookie, yes — any reverse proxy with a certificate does it, and
+`tailscale serve` counts.
+
+**Can two people edit one document?** The sync is real; the accounts are not. One
+password, one owner, no per-user identity, so every device edits as the same person.
+
+**What is missing?** Rename and delete exist; search does not. Tables, code blocks and
+footnotes are out of scope, and their markdown round-trip is unverified.
+
+**Who built this?** One person, [No More Names Studio](https://nomorenames.studio). See
+*Built with AI* below.
 
 ## Tests
 
 ```bash
 pnpm typecheck
-pnpm test        # round-trip, anchoring, diff hunks
+pnpm test        # markdown round-trip, anchoring, diff hunks, tokens, aliases
 pnpm test:e2e    # builds the app, starts a server on :4320, drives a browser
 ```
+
+The e2e suite runs against `tests/fixtures/content` and its own sidecar directory, and
+never touches your own documents.
 
 ## Layout
 
 ```
-content/          the .md files themselves
-src/server/       Fastify app, Hocuspocus hooks, anchors, diff, MCP ingest
+src/server/       Fastify app, Hocuspocus hooks, anchors, diff, ingest, MCP tools
 src/shared/       editor schema, markdown serializer, suggestion record
 src/web/          editor UI, suggestion decorations, block moving
-src/server/mcp.ts the agent's MCP tools, served at /mcp and over stdio
-spike/            phase 0 probes, kept as evidence
+src/mcp/          stdio entry for clients that cannot speak HTTP
+tools/            server bundle, sidecar compaction, font and wordmark generation
+content/          your .md files (docker: data/content)
+docs/             INDEX, API, ARCHITECTURE, SETUP, DEPLOYMENT, CHANGELOG
 tests/            unit tests and the Playwright suite
-docs/             INDEX, API, ARCHITECTURE, SETUP, CHANGELOG
 ```
 
-## Not done yet
+## Contributing
 
-- **PWA install on iOS** needs an HTTPS origin; deferred deliberately, no Tailscale
-  or reverse proxy yet. The manifest, icons and service worker are in place.
-- **Desktop drag with a ghost** — moving is two-tap/pick-and-place on every input
-  instead, which is the same single transaction and works on a phone.
-- **Suggestion staleness UI**: if the text under a hunk changes, accept re-finds the
-  quote or refuses; there is no "keep mine / take theirs" diff dialog.
-- No delete or rename of documents, no search.
-- Tables, code blocks and footnotes are out of scope; their round-trip is unverified.
+1. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the last few
+   [CHANGELOG](docs/CHANGELOG.md) entries — the decisions carry their reasons.
+2. Keep it one process, one port, plain files. A PR that adds a database, a second
+   service or a model client gets refused on purpose.
+3. Run `pnpm typecheck && pnpm test` before opening the PR, and say what you tried by
+   hand, not just that it compiles.
 
 ## Built with AI
 
-Paddō is hand-written and AI-enhanced. The specification, the decisions and the
-review are mine: the brief, the protocol choices, the refusal to ship a
-default-open service. The code is drafted with **DeepSeek V4.1 Flash in DeepSeek
-Harness** and reviewed line by line before it lands. The commit history and
+Paddō is hand-written and AI-enhanced. The specification, the decisions and the review
+are mine: the brief, the protocol choices, the refusal to ship a default-open service.
+The code is drafted with **DeepSeek V4.1 Flash in DeepSeek Harness** and reviewed line
+by line before it lands. The commit history and
 [docs/CHANGELOG.md](docs/CHANGELOG.md) show which parts came from where.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+Built by [K](https://github.com/nomorenamesstudio) | [nomorenames.studio](https://nomorenames.studio)
