@@ -15,3 +15,8 @@ playwright-report/
 tests/fixtures/content/*
 !tests/fixtures/content/essay.md
 test-results/
+# docker compose data: your prose and the CRDT/token state
+data/
+# local GitHub access token, never committed
+/.git-token
+.paddo-test*/

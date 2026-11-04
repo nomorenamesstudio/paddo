@@ -1,0 +1,27 @@
+# Build-context hygiene. Without this, `COPY . .` ships the host's node_modules,
+# its dist, its git history, and the one that matters — its .env, secrets and all —
+# straight into an image layer.
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+data
+content
+.paddo
+.paddo-test
+.paddo-test2
+.cache
+.pnpm-store
+screenshots
+spike
+tests
+docs
+*.log
+.server.log
+.DS_Store
+playwright-report
+test-results
+AGENTS.md

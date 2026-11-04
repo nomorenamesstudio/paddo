@@ -90,17 +90,24 @@ are set — a default-open service reachable from a phone is not acceptable.
 | `PADDO_SIDECAR_DIR` | where the CRDT sidecars live, default `.paddo` |
 | `PADDO_HOST` | `0.0.0.0` when the phone needs to reach it over the LAN |
 | `PADDO_PORT` | default `4319` — `3100`, the usual dev port on this machine, is taken |
+| `PADDO_TRUST_PROXY` | `true` when a reverse proxy is in front, so the login throttle keys on `X-Forwarded-For` instead of treating the proxy as one client. Off by default: trusted blindly, anyone can spoof the header and dodge the throttle |
 
 `.env` is gitignored; `.env.example` carries placeholders only.
 
 ## Running
 
 ```bash
-pnpm build        # web app into dist/web (the server serves it)
-pnpm start        # one process, one port
+pnpm build        # web app into dist/web, server bundle into dist/server
+pnpm start        # one process, one port, straight from src through tsx
 pnpm dev          # server with tsx watch
 pnpm dev:web      # rebuild dist/web on change, in a second terminal
 ```
+
+`pnpm build` runs `vite build` and then `node tools/build-server.mjs`, which bundles
+the server into `dist/server/main.js`. That file is what the container runs
+(`node dist/server/main.js`) — a plain-node runtime with no tsx, no TypeScript and no
+package manager. Locally, `pnpm start` keeps using tsx so nothing has to be rebuilt on
+every restart.
 
 `pnpm start` binds `0.0.0.0:4319`, so the phone can use `http://<lan-ip>:4319`.
 
@@ -141,7 +148,9 @@ pnpm test:e2e
 `PADDO_CONTENT_DIR=tests/fixtures/content` and `PADDO_SIDECAR_DIR=.paddo-test`, and
 creates a fresh document per test. It never touches `content/` or a running instance.
 
-## Not yet decided
+## Deployment
 
-Deployment: a systemd unit plus either `tailscale serve` or a reverse proxy. It is
-deliberately out of scope until the app is worth installing.
+Docker, one container, two directories. `docker compose up -d --build`, a reverse
+proxy for HTTPS, volumes and backups, upgrades and the homelab traps are in
+[DEPLOYMENT.md](DEPLOYMENT.md). The image builds on amd64 and arm64; nothing in it
+needs a database.

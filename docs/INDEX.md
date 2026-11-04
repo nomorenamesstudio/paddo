@@ -7,6 +7,7 @@ Start here.
 | [ARCHITECTURE.md](ARCHITECTURE.md) | how the pieces fit, the decisions that are not obvious from the code, and the phase 0 findings |
 | [API.md](API.md) | the MCP tool contract and the HTTP surface |
 | [SETUP.md](SETUP.md) | environment, ports, the pnpm store quirk, running it |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | the container: volumes, reverse proxy, backups, upgrades, version pinning, homelab traps |
 | [CHANGELOG.md](CHANGELOG.md) | reverse-chronological, dated, tagged Feature / Fix / Break |
 
 When context is lost, read these before re-deriving anything.

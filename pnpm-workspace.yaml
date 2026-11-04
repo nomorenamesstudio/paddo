@@ -1,4 +1,9 @@
+# esbuild ships a platform binary and runs an install script; pnpm blocks build
+# scripts by default and then fails the install (strictDepBuilds). Allowing it here is
+# what lets `vite build` and the server bundle step run from a fresh install —
+# locally and inside the docker build. Keep this list short: every entry is a package
+# allowed to execute code at install time.
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
 onlyBuiltDependencies:
   - esbuild

@@ -1,0 +1,60 @@
+name: paddo
+
+# Paddō, self-hosted — one container, no database, no external service.
+#
+#     mkdir -p data/content data/state
+#     cp .env.example .env      # then set PADDO_PASSWORD, PADDO_SECRET, PADDO_TOKEN
+#     docker compose up -d --build
+#
+# PADDO_HOST and PADDO_PORT are set here and override .env: inside the container
+# the process must bind every interface of the container's own network namespace,
+# and the host port is published below. Everything else comes from .env.
+services:
+  paddo:
+    build: .
+    image: paddo:${PADDO_VERSION:-local}
+    container_name: paddo
+    restart: unless-stopped
+    # Run as the host user that owns ./data, so the markdown files stay yours and
+    # no chown is needed. Set PUID/PGID in the environment or in .env if that user
+    # is not 1000. The directories must exist before the first `up`: docker creates
+    # a missing bind-mount target as root, which this user then cannot write.
+    user: "${PUID:-1000}:${PGID:-1000}"
+    env_file:
+      - .env
+    environment:
+      PADDO_HOST: 0.0.0.0
+      PADDO_PORT: "4319"
+      PADDO_CONTENT_DIR: /data/content
+      PADDO_SIDECAR_DIR: /data/state
+      # The login throttle keys on the client address, which behind a reverse proxy
+      # is the proxy unless this is on. Turn it off only when nothing is in front of
+      # the container: an instance reachable directly would trust a caller-supplied
+      # X-Forwarded-For and let anyone sidestep the throttle.
+      PADDO_TRUST_PROXY: ${PADDO_TRUST_PROXY:-true}
+    ports:
+      # Caddy on the same host proxies to this. Once it does, bind the port to
+      # loopback (`127.0.0.1:4319:4319`), or drop it entirely and put this service on
+      # Caddy's docker network, so the only way in is through the proxy.
+      - "4319:4319"
+    volumes:
+      # Your prose: plain .md files, readable and greppable from the host.
+      # The trailing `:z` is an SELinux label, not a permission change to the files:
+      # on a Fedora-family host without it the container cannot read the directory at
+      # all (EACCES), and the file watcher cannot start. Harmless where SELinux is off.
+      - ./data/content:/data/content:z
+      # CRDT sidecars, agent tokens, settings and document status. Losing this loses
+      # every pending suggestion and every minted token, so it is the one to back up.
+      - ./data/state:/data/state:z
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4319/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
