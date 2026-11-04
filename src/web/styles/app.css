@@ -1867,33 +1867,33 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   margin-top: 1rem;
 }
 
-/* --- agent tokens --------------------------------------------------------- */
+/* --- agent access --------------------------------------------------------- */
 
-.tokens__form {
+.agents__grid {
   display: grid;
-  gap: 0.9rem;
-  margin-top: 1rem;
-  justify-items: start;
+  grid-template-columns: minmax(0, 1fr) 12rem;
+  gap: 0.85rem 0.9rem;
+  margin: 1rem 0 0.5rem;
 }
 
-.tokens__field {
+.agents__field {
   display: grid;
   gap: 0.3rem;
-  width: min(24rem, 100%);
+  min-width: 0;
 }
 
-.tokens__label {
+.agents__label {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--fg);
 }
 
-.tokens__input {
+.agents__input {
   min-height: 2.4rem;
   padding: 0 0.65rem;
   font-family: var(--font-sans);
+  /* 16px: anything smaller makes iOS zoom the page on focus. */
   font-size: 16px;
   color: var(--fg);
   background: var(--well);
@@ -1901,37 +1901,127 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   border-radius: var(--radius-inner);
 }
 
-.tokens__group {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.4rem;
+.agents__input:focus-visible {
+  border-color: var(--accent);
+  outline: none;
 }
 
-.tokens__choices {
+.agents__select {
+  /* Native arrow kept: a custom one is a caret to maintain for no gain. */
+  padding-right: 0.4rem;
+}
+
+.agents__buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 1rem;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
-.tokens__choice {
-  display: inline-flex;
+/* On a phone the two columns become a stack: 12rem of select next to a name field
+   leaves neither readable. */
+@media (max-width: 32rem) {
+  .agents__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agents__buttons .button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+.agents__documents {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.7rem;
+  background: var(--well);
+  border-radius: var(--radius-inner);
+}
+
+.agents__check {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--fg);
 }
 
-.tokens__documents {
-  display: grid;
-  gap: 0.3rem;
-  margin-top: 0.2rem;
-  padding-left: 0.2rem;
-  max-height: 11rem;
-  overflow-y: auto;
+.agents__list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
 }
+
+.agents__item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.agents__item:last-child {
+  border-bottom: 0;
+}
+
+.agents__badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+  background: var(--well);
+  color: var(--muted);
+}
+
+.agents__body {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-sans);
+}
+
+.agents__name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agents__meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.agents__revoke {
+  color: var(--muted);
+}
+
+.agents__revoke:hover {
+  color: var(--danger);
+}
+
+/* A heading that carries its own icon, for the sheets that are about one thing. */
+.settings__heading--icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings__heading--icon svg {
+  color: var(--muted);
+}
+
+/* --- agent tokens --------------------------------------------------------- */
 
 .tokens__secret {
   margin-top: 1rem;
@@ -1948,14 +2038,16 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 
 .tokens__secretrow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .tokens__config {
-  flex: 1;
-  min-width: 14rem;
+  /* A full row, so the copy button lands under the block instead of floating beside a
+     tall pre. */
+  flex: 1 1 100%;
+  min-width: 0;
   margin: 0;
   padding: 0.5rem 0.6rem;
   background: var(--bg);
@@ -1970,9 +2062,9 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
 }
 
 .tokens__brief {
-  flex: 1;
+  flex: 1 1 100%;
   /* Scrolls, so it takes focus: axe flags a scroll region nobody can reach. */
-  min-width: 14rem;
+  min-width: 0;
   max-height: 13rem;
   margin: 0;
   padding: 0.5rem 0.6rem;
@@ -1984,13 +2076,6 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   white-space: pre-wrap;
   overflow-y: auto;
   user-select: text;
-}
-
-.tokens__buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
 }
 
 .tokens__pairline {
@@ -2032,47 +2117,6 @@ body.is-moving-mode .prose .ProseMirror-yjs-selection {
   margin: 0.6rem 0 0;
   color: var(--muted);
   font-size: 0.76rem;
-}
-
-.tokens__list {
-  list-style: none;
-  margin: 0.2rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.1rem;
-}
-
-.tokens__item {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--line);
-  font-family: var(--font-sans);
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
-.tokens__item:last-child {
-  border-bottom: 0;
-}
-
-.tokens__name {
-  color: var(--fg);
-  font-weight: 600;
-}
-
-.tokens__scope {
-  flex: 1;
-  min-width: 0;
-}
-
-.tokens__revoke {
-  color: var(--muted);
-}
-
-.tokens__revoke:hover {
-  color: var(--danger);
 }
 
 /* --- settings ------------------------------------------------------------- */

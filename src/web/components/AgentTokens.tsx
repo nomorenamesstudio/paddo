@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Check, Copy, KeyRound, Trash2 } from 'lucide-react'
+import { Bot, Check, Copy, Plug, Trash2 } from 'lucide-react'
 
-import { api, ApiError, VERBS, type AgentToken, type DocumentMeta, type Verb } from '../api'
+import { api, ApiError, type AgentToken, type DocumentMeta, type Verb } from '../api'
 import { appUrl } from '../base'
 import { copyText, selectElementText } from '../clipboard'
 
@@ -71,10 +71,35 @@ POST /api/documents/<slug>/suggestions with {"edits": [{"original": "…", "prop
 Quote "original" verbatim from the document; a human approves each hunk in the editor.`
 }
 
-const VERB_LABELS: Record<Verb, string> = {
-  read: 'read',
-  propose: 'propose edits',
-  create: 'create documents',
+/** The permission model in one choice, because three checkboxes asked the reader to
+ *  assemble it. Reading is implied at every level: an agent that cannot read cannot
+ *  quote anything, and every edit still arrives as a hunk the writer decides on. */
+const ACCESS = ['read', 'propose', 'create'] as const
+type Access = (typeof ACCESS)[number]
+
+const ACCESS_VERBS: Record<Access, Verb[]> = {
+  read: ['read'],
+  propose: ['read', 'propose'],
+  create: ['read', 'propose', 'create'],
+}
+
+const ACCESS_LABELS: Record<Access, string> = {
+  read: 'Read only',
+  propose: 'Read and edit',
+  create: 'Full access',
+}
+
+const ACCESS_DESCRIPTIONS: Record<Access, string> = {
+  read: 'List and read documents. Nothing changes.',
+  propose: 'Read, plus edits that arrive as hunks you accept or reject in the editor.',
+  create: 'Read and edit, plus dropping a new markdown document in.',
+}
+
+/** A minted token, said as the one choice that would have produced it. */
+function accessOf(verbs: Verb[]): string {
+  if (verbs.includes('create')) return ACCESS_LABELS.create
+  if (verbs.includes('propose')) return ACCESS_LABELS.propose
+  return ACCESS_LABELS.read
 }
 
 function scopeLabel(token: AgentToken): string {
@@ -97,7 +122,7 @@ export function AgentTokens() {
   const [tokens, setTokens] = useState<AgentToken[]>([])
   const [documents, setDocuments] = useState<DocumentMeta[]>([])
   const [name, setName] = useState('')
-  const [verbs, setVerbs] = useState<Verb[]>(['read', 'propose'])
+  const [access, setAccess] = useState<Access>('propose')
   const [allDocuments, setAllDocuments] = useState(true)
   const [chosen, setChosen] = useState<string[]>([])
   const [secret, setSecret] = useState<string | null>(null)
@@ -105,8 +130,10 @@ export function AgentTokens() {
   const [waiting, setWaiting] = useState<
     Array<{ code: string; name: string; state: string; createdAt: number }>
   >([])
-  const [copied, setCopied] = useState(false)
-  const [briefCopied, setBriefCopied] = useState(false)
+  // null until a copy is attempted: the "this browser will not copy" hint is only
+  // true after a failure, not before the first click.
+  const [copied, setCopied] = useState<boolean | null>(null)
+  const [briefCopied, setBriefCopied] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -160,7 +187,13 @@ export function AgentTokens() {
     setBusy(true)
     setError(null)
     try {
-      setPairing(await api.startPairing({ name: name.trim(), verbs, documents: allDocuments ? '*' : chosen }))
+      setPairing(
+        await api.startPairing({
+          name: name.trim(),
+          verbs: ACCESS_VERBS[access],
+          documents: allDocuments ? '*' : chosen,
+        }),
+      )
       setSecret(null)
     } catch (problem) {
       setError(problem instanceof ApiError ? problem.message : 'could not start the pairing')
@@ -192,12 +225,6 @@ export function AgentTokens() {
     }
   }
 
-  function toggleVerb(verb: Verb) {
-    setVerbs((current) =>
-      current.includes(verb) ? current.filter((entry) => entry !== verb) : [...current, verb],
-    )
-  }
-
   function toggleDocument(slug: string) {
     setChosen((current) =>
       current.includes(slug) ? current.filter((entry) => entry !== slug) : [...current, slug],
@@ -212,7 +239,7 @@ export function AgentTokens() {
     try {
       const minted = await api.mintToken({
         name: name.trim(),
-        verbs,
+        verbs: ACCESS_VERBS[access],
         documents: allDocuments ? '*' : chosen,
       })
       setTokens((current) => [minted.token, ...current])
@@ -235,104 +262,97 @@ export function AgentTokens() {
     }
   }
 
-  const canMint = name.trim().length > 0 && verbs.length > 0 && (allDocuments || chosen.length > 0)
+  const canMint = name.trim().length > 0 && (allDocuments || chosen.length > 0)
 
   return (
     <>
     <section className="settings__card">
-      <h2 className="settings__heading">Connect an agent</h2>
+      <h2 className="settings__heading settings__heading--icon">
+        <Plug size={17} aria-hidden="true" />
+        Agent access
+      </h2>
       <p className="muted settings__note">
-        An agent with a token can read and propose against the documents you give it, whenever you
-        tell it to — no invitation sheet needed. Pairing hands the token over without it ever
-        passing through a chat log.
+        Let an agent you already use read and change your writing over MCP. Pairing hands the
+        token over without it ever passing through a chat log, and the access you pick is what the
+        agent can reach — never your files directly.
       </p>
 
-      <div className="tokens__form">
-        <label className="tokens__field">
-          <span className="tokens__label">Name</span>
+      <div className="agents__grid">
+        <label className="agents__field">
+          <span className="agents__label">Agent</span>
           <input
-            className="tokens__input"
+            className="agents__input"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="case studies agent"
+            placeholder="the agent in my laptop"
             maxLength={60}
           />
         </label>
 
-        <fieldset className="tokens__group">
-          <legend className="tokens__label">Permissions</legend>
-          <div className="tokens__choices">
-            {VERBS.map((verb) => (
-              <label key={verb} className="tokens__choice">
-                <input
-                  type="checkbox"
-                  checked={verbs.includes(verb)}
-                  onChange={() => toggleVerb(verb)}
-                />
-                <span>{VERB_LABELS[verb]}</span>
-              </label>
+        <label className="agents__field">
+          <span className="agents__label">Access</span>
+          <select
+            className="agents__input agents__select"
+            value={access}
+            onChange={(event) => setAccess(event.target.value as Access)}
+          >
+            {ACCESS.map((option) => (
+              <option key={option} value={option}>
+                {ACCESS_LABELS[option]}
+              </option>
             ))}
-          </div>
-        </fieldset>
+          </select>
+        </label>
 
-        <fieldset className="tokens__group">
-          <legend className="tokens__label">Documents</legend>
-          <div className="tokens__choices">
-            <label className="tokens__choice">
-              <input
-                type="radio"
-                name="token-scope"
-                checked={allDocuments}
-                onChange={() => setAllDocuments(true)}
-              />
-              <span>all documents</span>
-            </label>
-            <label className="tokens__choice">
-              <input
-                type="radio"
-                name="token-scope"
-                checked={!allDocuments}
-                onChange={() => setAllDocuments(false)}
-              />
-              <span>only these</span>
-            </label>
-          </div>
-
-          {!allDocuments ? (
-            <div className="tokens__documents">
-              {documents.length === 0 ? <p className="muted">no documents yet</p> : null}
-              {documents.map((document) => (
-                <label key={document.slug} className="tokens__choice">
-                  <input
-                    type="checkbox"
-                    checked={chosen.includes(document.slug)}
-                    onChange={() => toggleDocument(document.slug)}
-                  />
-                  <span>{document.title}</span>
-                </label>
-              ))}
-            </div>
-          ) : null}
-        </fieldset>
-
-        <div className="tokens__buttons">
-          <button
-            className="button button--primary"
-            type="button"
-            onClick={() => void pair()}
-            disabled={!canMint || busy}
+        <label className="agents__field">
+          <span className="agents__label">Documents</span>
+          <select
+            className="agents__input agents__select"
+            value={allDocuments ? '*' : 'some'}
+            onChange={(event) => setAllDocuments(event.target.value === '*')}
           >
-            {busy ? 'Preparing…' : 'Pair an agent'}
-          </button>
-          <button
-            className="button"
-            type="button"
-            onClick={() => void mint()}
-            disabled={!canMint || busy}
-          >
-            Create a token instead
-          </button>
+            <option value="*">All documents</option>
+            <option value="some">Only these…</option>
+          </select>
+        </label>
+      </div>
+
+      <p className="tokens__hint">{ACCESS_DESCRIPTIONS[access]}</p>
+
+      {!allDocuments ? (
+        <div className="agents__documents">
+          {documents.length === 0 ? <p className="muted">No documents yet.</p> : null}
+          {documents.map((document) => (
+            <label key={document.slug} className="agents__check">
+              <input
+                type="checkbox"
+                checked={chosen.includes(document.slug)}
+                onChange={() => toggleDocument(document.slug)}
+              />
+              <span>{document.title}</span>
+            </label>
+          ))}
         </div>
+      ) : null}
+
+      <div className="agents__buttons">
+        <button
+          className="button button--primary"
+          type="button"
+          onClick={() => void pair()}
+          disabled={!canMint || busy}
+        >
+          <Plug size={15} aria-hidden="true" />
+          {busy ? 'Working…' : 'Pair an agent'}
+        </button>
+        <button
+          className="button"
+          type="button"
+          onClick={() => void mint()}
+          disabled={!canMint || busy}
+        >
+          Create a token instead
+        </button>
       </div>
 
       {pairing ? (
@@ -471,24 +491,24 @@ export function AgentTokens() {
 
     <section className="settings__card">
       <h2 className="settings__heading">Connected agents</h2>
-      <p className="muted settings__note">
-        Revoking a token cuts that agent off on its next request — nothing else changes.
-      </p>
 
       {tokens.length === 0 ? (
         <p className="muted settings__note tokens__empty">Nothing connected yet.</p>
       ) : (
-        <ul className="tokens__list">
+        <ul className="agents__list">
           {tokens.map((token) => (
-            <li key={token.id} className="tokens__item">
-              <KeyRound size={15} aria-hidden="true" />
-              <span className="tokens__name">{token.name}</span>
-              <span className="tokens__scope">
-                {token.verbs.map((verb) => VERB_LABELS[verb]).join(', ')} · {scopeLabel(token)} ·{' '}
-                {usedLabel(token)}
+            <li key={token.id} className="agents__item">
+              <span className="agents__badge" aria-hidden="true">
+                <Bot size={16} />
+              </span>
+              <span className="agents__body">
+                <span className="agents__name">{token.name}</span>
+                <span className="agents__meta">
+                  {accessOf(token.verbs)} · {scopeLabel(token)} · {usedLabel(token)}
+                </span>
               </span>
               <button
-                className="button button--ghost button--icon tokens__revoke"
+                className="button button--ghost button--icon agents__revoke"
                 type="button"
                 onClick={() => void revoke(token.id)}
                 aria-label={`Revoke ${token.name}`}
@@ -500,6 +520,11 @@ export function AgentTokens() {
           ))}
         </ul>
       )}
+
+      <p className="tokens__hint">
+        Revoking cuts that agent off on its next request. Everything else — your documents, your
+        login — stays exactly as it is.
+      </p>
     </section>
     </>
   )
