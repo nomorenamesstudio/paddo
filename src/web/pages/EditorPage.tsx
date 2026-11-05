@@ -227,17 +227,63 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   }, [editor, sync])
 
   // Provider status.
+  const recoveries = useRef(0)
+
+  /**
+   * A socket that closes says nothing about why. Hocuspocus reports a room it could not
+   * load as `permission-denied`, which is not necessarily a session problem: the
+   * document was renamed or deleted while this tab was asleep, and the room is asked
+   * for a name that no longer exists. Asking the library over HTTP is what tells the
+   * three cases apart — session gone, document moved, document deleted — and it is the
+   * difference between a tab that recovers on its own and one that sits on "your
+   * session expired" until the writer navigates home and back.
+   */
+  const recover = useCallback(async () => {
+    const session = await api.session().catch(() => null)
+    if (session && !session.authenticated) {
+      setNotice('Your session expired. Reload to sign in again.')
+      return
+    }
+
+    let found: Awaited<ReturnType<typeof api.document>>
+    try {
+      found = await api.document(slug)
+    } catch (problem) {
+      // Gone for good: the room has nothing to show, and the page says so instead.
+      if (problem instanceof ApiError && problem.status === 404) setMissing(true)
+      return
+    }
+    if (found.slug !== slug || found.moved) {
+      // Renamed while this tab held the old address: the same recovery the writer gets
+      // by going home and reopening the document.
+      navigate(`/d/${found.slug}`, { replace: true })
+      return
+    }
+
+    // The document is there and the session is fine, so the refusal was about this
+    // connection: try the socket again, spaced out, and give up quietly after a few.
+    if (recoveries.current >= 3) return
+    recoveries.current += 1
+    window.setTimeout(() => {
+      collab.provider.disconnect()
+      collab.provider.connect()
+    }, 1000 * recoveries.current)
+  }, [collab, slug])
+
   useEffect(() => {
     const provider = collab.provider
-    const onSynced = () => setSync('connected')
+    const onSynced = () => {
+      recoveries.current = 0
+      setSync('connected')
+    }
     const onStatus = ({ status }: { status: string }) => {
       if (status === 'connected') setSync(provider.isSynced ? 'connected' : 'connecting')
       else if (status === 'disconnected') setSync('disconnected')
       else setSync('connecting')
     }
     const onAuthFailed = () => {
-      setNotice('Your session expired. Reload to sign in again.')
       setSync('disconnected')
+      void recover()
     }
 
     provider.on('synced', onSynced)
@@ -248,7 +294,7 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
       provider.off('status', onStatus)
       provider.off('authenticationFailed', onAuthFailed)
     }
-  }, [collab])
+  }, [collab, recover])
 
   // Pending count: the suggestions live in the Y.Doc, shared with every device.
   useEffect(() => {
