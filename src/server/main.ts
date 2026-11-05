@@ -28,6 +28,7 @@ import {
   readDocument,
   removeDocument,
   sidecarPathFor,
+  slugify,
   titleOf,
 } from './documents'
 import { proposeEdits, proposeMarkdown, type ProposeEdit } from './ingest'
@@ -281,7 +282,10 @@ app.get('/api/documents/:slug/raw', { preHandler: guard('read') }, async (reques
   }
 
   reply.header('content-type', 'text/markdown; charset=utf-8')
-  reply.header('content-disposition', `attachment; filename="${slug}.md"`)
+  // The file on disk is named after the slug, which only follows the title when a room
+  // unloads. A download is named after the document, because that is what the writer
+  // called it — "new-draft.md" for an article with a title is a bug, not a detail.
+  reply.header('content-disposition', `attachment; filename="${slugify(titleOf(markdown, slug)) || slug}.md"`)
   return markdown
 })
 

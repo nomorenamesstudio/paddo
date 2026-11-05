@@ -46,7 +46,7 @@ so a plain edit on the `.md` file behaves exactly like `submit_markdown`.
 | `/api/documents` | GET | cookie or bearer | list `.md` files (a scoped token sees only its own) |
 | `/api/documents` | POST | cookie, or token with `create` | create: `{ name }`, `{ markdown, name? }`, or no body for an untitled draft |
 | `/api/documents/:slug` | GET | cookie or bearer | title, markdown source and status |
-| `/api/documents/:slug/raw` | GET | cookie or bearer | the markdown as `text/markdown`, `attachment; filename="<slug>.md"`, live edits included |
+| `/api/documents/:slug/raw` | GET | cookie or bearer | the markdown as `text/markdown`, `attachment; filename="<title>.md"` — the document's own title, not the slug it was born with — live edits included |
 | `/api/tokens` | GET | cookie | minted agent tokens, without their hashes |
 | `/api/tokens` | POST | cookie | mint: `{ name, verbs, documents }` → `{ token, secret }`, the secret shown once |
 | `/api/tokens/:id` | DELETE | cookie | revoke |

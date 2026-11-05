@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCaret from '@tiptap/extension-collaboration-caret'
+import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { buildInvitePrompt } from '../../shared/invite'
+import { looksLikeMarkdown } from '../../shared/markdown-paste'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
-import { CONTENT_FIELD, baseExtensions } from '../../shared/editor'
+import { CONTENT_FIELD, baseExtensions, markdown } from '../../shared/editor'
 import { api, ApiError } from '../api'
 import { caretRenderer, deviceKind } from '../editor/caret'
 import { createCollab, type Collab } from '../editor/collab'
@@ -98,6 +100,9 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
   const [missing, setMissing] = useState(false)
   const [entered, setEntered] = useState(false)
   const editorHost = useRef<HTMLElement | null>(null)
+  // `handlePaste` is a view-level hook and runs before the editor instance exists, so it
+  // reaches the instance through a ref rather than closing over it.
+  const editorHandle = useRef<Editor | null>(null)
 
   const editor = useEditor(
     {
@@ -119,6 +124,22 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           autocapitalize: 'sentences',
           'aria-label': 'Document',
         },
+        handlePaste: (_view, event) => {
+          // Rich pastes are ProseMirror's business: it knows where the HTML came from.
+          // Plain text is the gap — an article from a notes app, an agent's answer — and
+          // markdown source should become prose rather than a wall of asterisks.
+          const data = event.clipboardData
+          if (!data) return false
+          if (data.getData('text/html')) return false
+          const text = data.getData('text/plain')
+          if (!looksLikeMarkdown(text)) return false
+          event.preventDefault()
+          // Parse with the same manager the server serializes from, so a pasted
+          // document and its file agree. `insertContent` takes the resulting JSON;
+          // the editor carries no markdown extension of its own.
+          editorHandle.current?.commands.insertContent(markdown.parse(text))
+          return true
+        },
         handleKeyDown: (_view, event) => {
           if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
             event.preventDefault()
@@ -131,6 +152,10 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
     },
     [collab],
   )
+
+  useEffect(() => {
+    editorHandle.current = editor
+  }, [editor])
 
   // Reopen where you stopped typing, not at the top of the file.
   const restoredCursor = useRef(false)

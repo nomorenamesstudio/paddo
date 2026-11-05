@@ -2,6 +2,27 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.4: the download knows its name, and a paste knows its markdown
+
+Both from the phone, both about something arriving with the wrong shape.
+
+**Fix** — the download was named after the slug, so an article begun as a draft saved as
+`new-draft.md` however its heading read. The file on disk follows the slug until a room
+unloads; a download follows the document's title, which is what the writer called it.
+
+**Feature** — pasting markdown source into the editor turns it into prose. The clipboard's
+plain-text flavour is parsed with the same `MarkdownManager` the server serializes from, so
+a pasted document and its file agree, and the parse is inserted as one transaction. A rich
+paste is left to ProseMirror — it knows where the HTML came from — and the detection is
+deliberately narrow: a block marker (`#`, `>`, a list, a fence), a fence or a pipe table
+counts on its own; inline markup (`**`, a link, backticks) counts only for a single-line
+paste, so "the *one* caveat" in a pasted paragraph stays a sentence instead of losing its
+emphasis.
+
+**Tests** — `tests/markdownPaste.test.ts` for the detection itself, and two e2e cases: the
+download's `content-disposition` carries the title, and a pasted heading/bold/list arrives
+formatted. Both e2e cases were run against the pre-fix code and failed there.
+
 ## 2026-11-04 — 0.1.3: a refused room is not an expired session
 
 Reported from the phone: with the app asleep for a minute and another app in front, coming

@@ -965,6 +965,47 @@ test('deleting a document its editor tab still holds does not bring it back', as
   await expect(readFile(path, 'utf8')).rejects.toThrow()
 })
 
+test('a download is named after the document, not the name it was born with', async ({
+  page,
+}) => {
+  await signIn(page)
+  // A draft: the file is `new-draft.md`, and its title arrives from the heading.
+  await page.getByRole('button', { name: 'New document' }).click()
+  await expect(page.locator('.prose h1')).toHaveText('New draft')
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' about tides')
+  const slug = page.url().split('/d/')[1] ?? ''
+
+  // The room is ahead of the file, so this is the live text the writer sees.
+  const response = await page.request.get(`/api/documents/${slug}/raw`)
+  expect(response.ok()).toBe(true)
+  expect(response.headers()['content-disposition']).toContain('filename="new-draft-about-tides.md"')
+})
+
+test('pasting markdown source into the editor formats it', async ({ page, context }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Pasted ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // What a paste of an agent's answer looks like: plain text, no HTML flavour.
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.evaluate(() =>
+    navigator.clipboard.writeText('## A pasted heading\n\nsome **bold** words\n\n- one\n- two\n'),
+  )
+  // Paste into the body, not into the title: a heading cannot hold a heading.
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('ControlOrMeta+V')
+
+  await expect(page.locator('.prose h2')).toHaveText('A pasted heading')
+  await expect(page.locator('.prose strong')).toHaveText('bold')
+  await expect(page.locator('.prose ul li')).toHaveCount(2)
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
