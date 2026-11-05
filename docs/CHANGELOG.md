@@ -2,6 +2,33 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.3: a refused room is not an expired session
+
+Reported from the phone: with the app asleep for a minute and another app in front, coming
+back showed "Your session expired. Reload to sign in again." over an empty editor — and
+going home and reopening the document fixed it without any sign-in. Also a blank screen on
+reopening the app.
+
+**Fix** — the room is named by the slug in the URL, and the file takes the document's
+title as its name whenever a room unloads. A tab that slept through that rename reconnects
+under the old name; `onLoadDocument` refuses it, and Hocuspocus reports any refusal from
+that hook as `permission-denied`. The client mapped that to "session expired", which was
+never true, and the provider treats a protocol denial as final — so the editor stayed
+empty until the writer navigated away. Reopening from the library worked because the REST
+path resolves the old name through the alias table. The tab now asks the library instead
+of guessing: session gone → the notice; document renamed → it moves to the new address and
+loads it; document deleted → the "This document is gone" panel; same document → reconnect,
+spaced out, three tries.
+
+**Not verified** — the fix was proved by hand against real room refusals (a renamed and a
+deleted document, both reproduced with the server's own logging before the change was
+written): the renamed case lands on the new URL with the text intact, the deleted case
+shows the gone panel with no notice. There is no automated test: the refusal only arrives
+when the socket notices the close, which the suite cannot control — the assertion I wrote
+passed and then failed on the same build. The separate blank-screen report is not
+reproduced; if it recurs it is most likely the service worker serving a stale shell after a
+deploy, and the browser console would name the missing chunk.
+
 ## 2026-11-04 — 0.1.2: settings stops arguing with itself
 
 The afternoon after 0.1.1 went on the homelab: the settings page was the part that had

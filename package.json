@@ -1,6 +1,6 @@
 {
   "name": "paddo",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "A self-hosted, PWA Markdown editor for prose, with a local AI agent that proposes edits you review inline.",
