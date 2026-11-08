@@ -781,6 +781,35 @@ a {
   padding-left: 1.3rem;
 }
 
+/* A table is prose in a grid. The borders are the interface's hairline, the header takes
+   the well's tint, and a wide table scrolls inside its own wrapper rather than pushing
+   the column or the phone layout wider. */
+.prose .tableWrapper {
+  margin: 1.6em 0;
+  overflow-x: auto;
+}
+
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95em;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--line);
+  padding: 0.42rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  min-width: 3.5rem;
+}
+
+.prose th {
+  font-weight: 600;
+  background: var(--well);
+}
+
 /* --- suggestions ---------------------------------------------------------- */
 
 .sug-strike {

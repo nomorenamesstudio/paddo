@@ -2,21 +2,42 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
-## 2026-11-04 — 0.1.6: one table no longer costs the whole paste its markdown
+## 2026-11-04 — 0.1.6: tables are prose too
 
-Reported twenty minutes after 0.1.5 went up: pasted articles showed `##` and `###` instead of
-headings. My own regression — in 0.1.5 a paste carrying a table line was refused as markdown
-*entirely*, so the table arrived as text and everything around it arrived as text too.
+"Shouldn't we support tables?" Yes. They were out of scope when Paddō was prose-only, and
+the answer stopped being true the moment a comparison table was pasted into it: the schema
+had no node, so the parser dropped the table without a word, and the first fix for that —
+refusing any paste containing a table — cost the whole article its markdown. This is the
+real one.
 
-**Fix** — a paste is split into what the schema can hold and what it cannot. The prose is
-parsed with the shared `MarkdownManager` (headings, bold, lists convert again), and a pipe
-table — which has no node and is dropped by the parser without a word — goes in as text. One
-paste can be both, in order.
+**Feature** — GFM tables. `@tiptap/extension-table`'s nodes are in the shared schema, so the
+browser and the server agree, a table parses from markdown, lives in the CRDT and serializes
+back. Round-trip is byte-identical both ways — through the parser and through the Y.Doc,
+which is what a save actually writes from — and both are tested, because a table that
+reformats on every save would churn the file and feed the watcher its own output.
 
-**Tests** — `splitTables` has its own cases (mixed, prose with a stray pipe, a lone table), and
-the e2e case now pastes a heading, bold prose and a table together and asserts the heading and
-bold converted *and* the table's rows are present. That test fails on the 0.1.5 code, which is
-the regression it exists for.
+**Feature** — the table renderer is ours. The packaged one pads every cell to its column
+width and leads with a blank line; fine on a screen, wrong in a `.md` file a human reads and
+greps. Same reasoning as `UnderscoreItalic`: the file's shape is the writer's, not the
+serializer's.
+
+**Feature** — pasted tables arrive as tables. The split-into-text path from the first attempt
+is gone with the schema gap it worked around, and the "nothing survived the parse" net stays
+for constructs that still have no node (footnotes).
+
+**Fix** — a long title in the header was cropped instead of ellipsised, and the sync spinner
+sat off-centre while it showed: the headline is a one-cell grid, and a grid item's min-content
+is its longest unbroken line, so the title widened the column. `minmax(0, 1fr)` stops it.
+
+**Fix** — `slugify` could return a slug its own validator rejects (a 64-character slice landing
+on a hyphen), so a long title could not be created at all: 409 "invalid document slug".
+
+**Not done** — no row/column UI. A table is editable cell by cell, which is usable and not
+pleasant; adding and removing rows on a phone is its own screen of work.
+
+**Tests** — a table pasted with prose converts both halves; the round-trip contracts above;
+`slugify` always passes `isValidSlug`; a long title at 390px is truncated with the spinner
+centred. Each was run against the code before its fix and failed there.
 
 ## 2026-11-04 — 0.1.5: a table stops disappearing, and a long title stops pushing the spinner
 

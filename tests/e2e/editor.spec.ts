@@ -1006,18 +1006,19 @@ test('pasting markdown source into the editor formats it', async ({ page, contex
   await expect(page.locator('.prose ul li')).toHaveCount(2)
 })
 
-test('a table pasted with prose keeps the prose and delivers the table as text', async ({ page, context }) => {
+test('a pasted table becomes a table, and the prose around it keeps its markdown', async ({
+  page,
+  context,
+}) => {
   await signIn(page)
   const slug = await createDocument(page, `Tabled ${Date.now()}`)
   await page.goto(`/d/${slug}`)
   await expect(page.locator('.prose h1')).toBeVisible()
 
-  // The schema has no table node: parsing this markdown returns an empty document, so
-  // it used to disappear entirely. It has to arrive as text.
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.evaluate(() =>
     navigator.clipboard.writeText(
-      '## Pasted heading\n\nSome **bold** prose.\n\n| rank | name |\n| --- | --- |\n| 1 | apple |\n| 2 | pear |\n',
+      '## Comparison\n\nSome **bold** prose.\n\n| plan | price |\n| --- | --- |\n| free | 0 |\n| team | 12 |\n',
     ),
   )
   await page.locator('.prose h1').click()
@@ -1025,11 +1026,11 @@ test('a table pasted with prose keeps the prose and delivers the table as text',
   await page.keyboard.press('Enter')
   await page.keyboard.press('ControlOrMeta+V')
 
-  // The prose keeps its markdown, and the table arrives as text instead of vanishing.
-  await expect(page.locator('.prose h2')).toHaveText('Pasted heading')
+  await expect(page.locator('.prose h2')).toHaveText('Comparison')
   await expect(page.locator('.prose strong')).toHaveText('bold')
-  await expect(page.locator('.prose')).toContainText('| 1 | apple |')
-  await expect(page.locator('.prose')).toContainText('| 2 | pear |')
+  await expect(page.locator('.prose table tr')).toHaveCount(3)
+  await expect(page.locator('.prose th').first()).toHaveText('plan')
+  await expect(page.locator('.prose td').first()).toHaveText('free')
 })
 
 test('a long title ellipsises, and the sync spinner stays centred on a phone', async ({

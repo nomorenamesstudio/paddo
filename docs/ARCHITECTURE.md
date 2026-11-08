@@ -140,7 +140,10 @@ accept-all, and an unauthenticated WebSocket being refused.
 - Two devices accepting overlapping hunks at the same instant: last writer wins on
   the text; the losing hunk is re-checked on the next render and refused as stale
   rather than applied twice.
-- Markdown fidelity is verified against prose. Tables and code blocks are out of
-  scope for v1 and their round-trip is not covered.
+- Markdown fidelity is verified against prose and GFM tables (`tests/markdown.test.ts`
+  round-trips a table twice: through the parser and through the Y.Doc, which is what a
+  save writes from). The table renderer is ours, not the packaged one, because that one
+  pads every cell to its column width — a save would reformat a hand-typed table. Code
+  blocks and footnotes are still out of scope for v1 and their round-trip is not covered.
 - iOS backgrounding: the socket is re-opened on `visibilitychange`, but resync
   behaviour after a long background on a real device has not been verified.

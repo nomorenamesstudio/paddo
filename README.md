@@ -15,9 +15,9 @@ Name: Paddō — from パッド, "pad", the notepad it is. ASCII: `paddo`.
 > **Very early. Version 0.1.0, work in progress.** It signs in, writes, syncs between
 > devices and reviews an agent's edits today — it is the editor I write in. It is not
 > finished: the API, the data model and the on-disk sidecars will move between minor
-> versions without a migration path, there is one password and no accounts, and tables,
-> code blocks and footnotes are out of scope. Back up `data/` before you trust it with
-> anything you cannot retype.
+> versions without a migration path, there is one password and no accounts, and code blocks
+> and footnotes are out of scope. Back up `data/` before you trust it with anything you
+> cannot retype.
 
 ## Why this exists
 
@@ -30,7 +30,7 @@ hands back a wall of new text is useless, because none of the decisions were you
 
 | | |
 | --- | --- |
-| **Prose first** | Markdown in a single column. No tables, no code blocks, no plugin sidebar. |
+| **Prose first** | Markdown in a single column, tables included. No code blocks, no plugin sidebar. |
 | **No save button** | Yjs over a websocket, both devices in the same document, no conflict dialog. |
 | **Reviewable AI edits** | The agent sends hunks, not rewrites. Accept, reject or edit each one, one-handed. |
 | **Moving without dragging** | Pick the ⠿ grip, tap where the paragraph goes. Same transaction on every input. |
@@ -134,8 +134,9 @@ session cookie, yes — any reverse proxy with a certificate does it, and
 **Can two people edit one document?** The sync is real; the accounts are not. One
 password, one owner, no per-user identity, so every device edits as the same person.
 
-**What is missing?** Rename and delete exist; search does not. Tables, code blocks and
-footnotes are out of scope, and their markdown round-trip is unverified.
+**What is missing?** Rename and delete exist; search does not. Code blocks and footnotes are
+out of scope. Tables are supported and round-trip byte-identically through a save; there is no
+row/column UI yet, so a table is edited cell by cell.
 
 **Who built this?** One person, [No More Names Studio](https://nomorenames.studio).
 
