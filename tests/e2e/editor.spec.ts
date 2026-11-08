@@ -1006,7 +1006,7 @@ test('pasting markdown source into the editor formats it', async ({ page, contex
   await expect(page.locator('.prose ul li')).toHaveCount(2)
 })
 
-test('a pasted table arrives as text instead of vanishing', async ({ page, context }) => {
+test('a table pasted with prose keeps the prose and delivers the table as text', async ({ page, context }) => {
   await signIn(page)
   const slug = await createDocument(page, `Tabled ${Date.now()}`)
   await page.goto(`/d/${slug}`)
@@ -1016,13 +1016,18 @@ test('a pasted table arrives as text instead of vanishing', async ({ page, conte
   // it used to disappear entirely. It has to arrive as text.
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.evaluate(() =>
-    navigator.clipboard.writeText('| rank | name |\n| --- | --- |\n| 1 | apple |\n| 2 | pear |\n'),
+    navigator.clipboard.writeText(
+      '## Pasted heading\n\nSome **bold** prose.\n\n| rank | name |\n| --- | --- |\n| 1 | apple |\n| 2 | pear |\n',
+    ),
   )
   await page.locator('.prose h1').click()
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
   await page.keyboard.press('ControlOrMeta+V')
 
+  // The prose keeps its markdown, and the table arrives as text instead of vanishing.
+  await expect(page.locator('.prose h2')).toHaveText('Pasted heading')
+  await expect(page.locator('.prose strong')).toHaveText('bold')
   await expect(page.locator('.prose')).toContainText('| 1 | apple |')
   await expect(page.locator('.prose')).toContainText('| 2 | pear |')
 })

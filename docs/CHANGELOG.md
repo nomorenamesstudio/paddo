@@ -2,6 +2,22 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.6: one table no longer costs the whole paste its markdown
+
+Reported twenty minutes after 0.1.5 went up: pasted articles showed `##` and `###` instead of
+headings. My own regression — in 0.1.5 a paste carrying a table line was refused as markdown
+*entirely*, so the table arrived as text and everything around it arrived as text too.
+
+**Fix** — a paste is split into what the schema can hold and what it cannot. The prose is
+parsed with the shared `MarkdownManager` (headings, bold, lists convert again), and a pipe
+table — which has no node and is dropped by the parser without a word — goes in as text. One
+paste can be both, in order.
+
+**Tests** — `splitTables` has its own cases (mixed, prose with a stray pipe, a lone table), and
+the e2e case now pastes a heading, bold prose and a table together and asserts the heading and
+bold converted *and* the table's rows are present. That test fails on the 0.1.5 code, which is
+the regression it exists for.
+
 ## 2026-11-04 — 0.1.5: a table stops disappearing, and a long title stops pushing the spinner
 
 Both reported from the phone, both about something being silently wrong rather than

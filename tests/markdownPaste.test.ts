@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { looksLikeMarkdown } from '../src/shared/markdown-paste'
+import { looksLikeMarkdown, splitTables } from '../src/shared/markdown-paste'
 
 describe('looksLikeMarkdown', () => {
   it('recognises the block syntax a writer would expect to become formatting', () => {
@@ -20,10 +20,11 @@ describe('looksLikeMarkdown', () => {
     expect(looksLikeMarkdown('one line with *emphasis*\nand a second line')).toBe(false)
   })
 
-  it('refuses a table, because the schema has no node for one and the parse drops it', () => {
-    // Measured before this rule: a pasted table parsed to an empty document and vanished.
+  it('is not fooled by a table into refusing the prose around it', () => {
+    // One table in a long article used to cost every heading its formatting, because the
+    // whole paste was refused as soon as a pipe line appeared.
     expect(looksLikeMarkdown('| a | b |\n| --- | --- |\n| 1 | 2 |')).toBe(false)
-    expect(looksLikeMarkdown('Intro.\n\n| a | b |\n| --- | --- |\n| 1 | 2 |')).toBe(false)
+    expect(looksLikeMarkdown('# Heading\n\n| a | b |\n| --- | --- |\n| 1 | 2 |')).toBe(true)
   })
 
   it('leaves ordinary prose alone', () => {
@@ -31,5 +32,26 @@ describe('looksLikeMarkdown', () => {
     expect(looksLikeMarkdown('5 * 3 = 15')).toBe(false)
     expect(looksLikeMarkdown('')).toBe(false)
     expect(looksLikeMarkdown('   \n  ')).toBe(false)
+  })
+})
+
+describe('splitTables', () => {
+  it('separates a table from the prose around it', () => {
+    const segments = splitTables('## Heading\n\ntext\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\nafter')
+    expect(segments.map((segment) => segment.kind)).toEqual(['markdown', 'table', 'markdown'])
+    expect(segments[0]?.text).toContain('## Heading')
+    expect(segments[1]?.text).toContain('| 1 | 2 |')
+    expect(segments[2]?.text).toContain('after')
+  })
+
+  it('keeps prose that happens to use a pipe', () => {
+    const segments = splitTables('a | b means or\nstill prose')
+    expect(segments).toEqual([{ kind: 'markdown', text: 'a | b means or\nstill prose' }])
+  })
+
+  it('returns a lone table as one table segment', () => {
+    expect(splitTables('| a | b |\n| --- | --- |\n| 1 | 2 |')).toEqual([
+      { kind: 'table', text: '| a | b |\n| --- | --- |\n| 1 | 2 |' },
+    ])
   })
 })

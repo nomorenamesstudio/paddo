@@ -5,7 +5,7 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { buildInvitePrompt } from '../../shared/invite'
-import { looksLikeMarkdown } from '../../shared/markdown-paste'
+import { looksLikeMarkdown, splitTables } from '../../shared/markdown-paste'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions, markdown } from '../../shared/editor'
 import { api, ApiError } from '../api'
@@ -134,14 +134,19 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           const text = data.getData('text/plain')
           if (!looksLikeMarkdown(text)) return false
           event.preventDefault()
-          // Parse with the same manager the server serializes from, so a pasted
-          // document and its file agree. `insertContent` takes the resulting JSON;
-          // the editor carries no markdown extension of its own.
-          const parsed = markdown.parse(text)
-          // Nothing survived the parse (a construct the schema has no node for): the
-          // text goes in as text rather than disappearing without a word.
-          const kept = JSON.stringify(parsed).includes('"text"')
-          editorHandle.current?.commands.insertContent(kept ? parsed : text)
+          // One paste can be part prose and part table: the prose is parsed, the table
+          // goes in as text. Parsing the whole thing would drop the table silently;
+          // refusing the whole thing is how one table cost every heading its markdown.
+          for (const segment of splitTables(text)) {
+            // Parse with the same manager the server serializes from, so a pasted
+            // document and its file agree. `insertContent` takes the resulting JSON;
+            // the editor carries no markdown extension of its own.
+            const parsed = segment.kind === 'markdown' ? markdown.parse(segment.text) : null
+            // Nothing survived the parse (a construct with no node): the text goes in as
+            // text rather than disappearing without a word.
+            const kept = parsed !== null && JSON.stringify(parsed).includes('"text"')
+            editorHandle.current?.commands.insertContent(kept && parsed ? parsed : segment.text)
+          }
           return true
         },
         handleKeyDown: (_view, event) => {
