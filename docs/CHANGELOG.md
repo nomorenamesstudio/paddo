@@ -2,6 +2,34 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.5: a table stops disappearing, and a long title stops pushing the spinner
+
+Both reported from the phone, both about something being silently wrong rather than
+visibly broken.
+
+**Fix** — pasting a markdown table pasted *nothing*. The schema has no table node, and the
+parser drops a table without a word (measured: `| a | b |` over a separator row parses to an
+empty document). A paste carrying a table is no longer treated as markdown at all, so it
+arrives as text — lossy to look at, lossless to read — and the paste handler now also checks
+that the parse kept something, falling back to plain text when it did not. That net is what
+stops the next construct with no node from vanishing the same way.
+
+**Fix** — a long title in the header was cropped instead of ellipsised, and the sync spinner
+sat off-centre while it showed. The headline is a one-cell grid, and a grid item's
+min-content is its longest unbroken line: the title widened the whole column, so the title
+was clipped by the sheet and the status layer centred on the widened column rather than on
+the bar. `grid-template-columns: minmax(0, 1fr)` stops the column growing, the title
+ellipsises, and the spinner is centred on the bar again (measured on a 390px viewport: 219px
+cell against a 529px title, spinner centre back on the bar's centre).
+
+**Fix** — `slugify` could return a slug that its own validator rejects, because a 64-character
+slice can land on a hyphen and a trailing hyphen fails the pattern. A long title could not be
+created at all: `POST /api/documents` answered 409 "invalid document slug".
+
+**Tests** — three new guards, each run against the pre-fix code first and failing there: a
+pasted table arrives as text, a long title at 390px is truncated with the spinner centred, and
+`slugify` output always passes `isValidSlug`.
+
 ## 2026-11-04 — 0.1.4: the download knows its name, and a paste knows its markdown
 
 Both from the phone, both about something arriving with the wrong shape.

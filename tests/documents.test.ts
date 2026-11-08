@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { plainTitle, renameDocument, titleOf } from '../src/server/documents'
+import { isValidSlug, plainTitle, renameDocument, slugify, titleOf } from '../src/server/documents'
 
 describe('titleOf', () => {
   it('gives the reader the words, not the markup', () => {
@@ -23,6 +23,18 @@ describe('titleOf', () => {
   it('leaves an ordinary title alone', () => {
     expect(plainTitle('The quiet interface')).toBe('The quiet interface')
     expect(plainTitle('Two *words* and a `term`')).toBe('Two words and a term')
+  })
+})
+
+describe('slugify', () => {
+  it('never produces a slug its own validator rejects', () => {
+    // A 64-character slice can land on a hyphen, and a trailing hyphen fails the
+    // pattern: a long title could not be created at all ("invalid document slug").
+    const long = slugify(
+      'A preposterously long document title that will never fit in the bar at all, ever',
+    )
+    expect(long.length).toBeLessThanOrEqual(64)
+    expect(isValidSlug(long)).toBe(true)
   })
 })
 

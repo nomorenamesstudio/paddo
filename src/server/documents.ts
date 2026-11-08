@@ -27,6 +27,9 @@ export function slugify(input: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 64)
+    // The slice can land on a hyphen, and a slug that ends in one fails the pattern
+    // above — a long title could not be saved at all ("invalid document slug").
+    .replace(/-+$/, '')
 }
 
 /** Inline markdown is markup, not part of the title a reader sees in the list. */

@@ -528,6 +528,12 @@ a {
   left: 50%;
   transform: translateX(-50%);
   display: grid;
+  /* A grid item's min-content is its longest unbroken line, and a long title in
+     `nowrap` therefore widened the whole column: the title got cropped instead of
+     ellipsised, and the status layer centred in the widened column rather than in the
+     bar, so the spinner sat off to the right on a phone. `minmax(0, 1fr)` is what stops
+     the column growing past the box. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   width: min(62%, 24rem);
   height: 1.9rem;
@@ -536,6 +542,8 @@ a {
 
 .headline__layer {
   grid-area: 1 / 1;
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -558,6 +566,10 @@ a {
 .headline__layer[data-state='after'] {
   transform: translateY(-105%);
   opacity: 0;
+}
+
+.headline__layer--title {
+  width: 100%;
 }
 
 .headline__layer--status {
@@ -592,6 +604,7 @@ a {
 
 .topbar__title {
   text-align: center;
+  max-width: 100%;
 }
 
 .topbar__title {

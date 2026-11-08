@@ -137,7 +137,11 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           // Parse with the same manager the server serializes from, so a pasted
           // document and its file agree. `insertContent` takes the resulting JSON;
           // the editor carries no markdown extension of its own.
-          editorHandle.current?.commands.insertContent(markdown.parse(text))
+          const parsed = markdown.parse(text)
+          // Nothing survived the parse (a construct the schema has no node for): the
+          // text goes in as text rather than disappearing without a word.
+          const kept = JSON.stringify(parsed).includes('"text"')
+          editorHandle.current?.commands.insertContent(kept ? parsed : text)
           return true
         },
         handleKeyDown: (_view, event) => {

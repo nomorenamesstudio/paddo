@@ -25,12 +25,21 @@ const INLINE_MARKERS = [
   /`[^`\n]+`/, // inline code
 ]
 
+/**
+ * A pipe table has no node in this schema, and parsing one returns *nothing* — the paste
+ * would vanish without a word (measured: `| a | b |` over a separator row parses to an
+ * empty document). So a paste carrying a table is not markdown as far as this editor is
+ * concerned: it arrives as text, which is lossy to look at and lossless to read.
+ */
+const TABLE = /^\s*\|.*\|\s*$/m
+
 export function looksLikeMarkdown(text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed) return false
+  if (TABLE.test(trimmed)) return false
 
-  // A fence or a pipe table is unambiguous, however short the paste.
-  if (/^```/.test(trimmed) || /\n\s*\|.*\|/.test(trimmed)) return true
+  // A fence is unambiguous, however short the paste.
+  if (/^```/.test(trimmed)) return true
   if (BLOCK_MARKERS.some((pattern) => pattern.test(trimmed))) return true
 
   // Inline-only markup: a single line, so "the *one* caveat" stays a sentence.

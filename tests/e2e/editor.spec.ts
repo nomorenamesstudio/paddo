@@ -1006,6 +1006,56 @@ test('pasting markdown source into the editor formats it', async ({ page, contex
   await expect(page.locator('.prose ul li')).toHaveCount(2)
 })
 
+test('a pasted table arrives as text instead of vanishing', async ({ page, context }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Tabled ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // The schema has no table node: parsing this markdown returns an empty document, so
+  // it used to disappear entirely. It has to arrive as text.
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.evaluate(() =>
+    navigator.clipboard.writeText('| rank | name |\n| --- | --- |\n| 1 | apple |\n| 2 | pear |\n'),
+  )
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('ControlOrMeta+V')
+
+  await expect(page.locator('.prose')).toContainText('| 1 | apple |')
+  await expect(page.locator('.prose')).toContainText('| 2 | pear |')
+})
+
+test('a long title ellipsises, and the sync spinner stays centred on a phone', async ({
+  page,
+}) => {
+  await signIn(page)
+  const slug = await createDocument(page, `A preposterously long document title that never fits`)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // The title is one nowrap line inside a grid cell; without a `minmax(0, 1fr)` column
+  // its min-content widened the whole cell, so the title was cropped instead of
+  // ellipsised and the status layer centred on the widened cell, not on the bar.
+  const metrics = await page.evaluate(() => {
+    const centre = (selector: string) => {
+      const box = document.querySelector(selector)?.getBoundingClientRect()
+      return box ? Math.round(box.left + box.width / 2) : null
+    }
+    const title = document.querySelector('.topbar__title')
+    return {
+      bar: centre('.topbar'),
+      status: centre('.headline__layer--status'),
+      truncated: title ? title.scrollWidth > title.clientWidth : false,
+    }
+  })
+
+  expect(metrics.truncated).toBe(true)
+  expect(Math.abs((metrics.status ?? 0) - (metrics.bar ?? 0))).toBeLessThanOrEqual(1)
+})
+
 test('a websocket without a session is refused', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
