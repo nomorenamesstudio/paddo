@@ -142,23 +142,37 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           // the paste gets it restructured into an `<hr>` and a setext heading. Its lines
           // are kept as text instead: nothing is dropped, nothing is invented.
           const { frontmatter, body } = splitFrontmatter(text)
-          if (frontmatter) {
-            editorHandle.current?.commands.insertContent(
-              frontmatter.map((line) => ({
-                type: 'paragraph',
-                content: [{ type: 'text', text: line }],
-              })),
-            )
-          }
+          const metadata = (frontmatter ?? []).map((line) => ({
+            type: 'paragraph',
+            content: [{ type: 'text', text: line }],
+          }))
 
           // Parse with the same manager the server serializes from, so a pasted
           // document and its file agree. `insertContent` takes the resulting JSON; the
           // editor carries no markdown extension of its own.
           const parsed = markdown.parse(body)
           // Nothing survived the parse — a construct with no node, such as a footnote.
-          // The text goes in as text rather than disappearing without a word.
           const kept = JSON.stringify(parsed).includes('"text"')
-          editorHandle.current?.commands.insertContent(kept ? parsed : body)
+
+          // The parser hands back a whole document; `insertContent` wants the nodes inside it.
+          // A `doc` node inside a list of paragraphs is invalid at document level, which is a
+          // `RangeError` and loses the paste.
+          const blocks = kept && parsed && typeof parsed === 'object' && 'content' in parsed
+            ? (parsed.content ?? [])
+            : body
+          const content = Array.isArray(blocks) ? blocks : [blocks]
+
+          // One transaction, and a fallback that cannot fail: a paste that does not fit the
+          // schema throws, and the writer must not lose the text to it. (Measured: an image
+          // with trailing text on the same line rejected the whole document, and only the
+          // front matter above it had been inserted by then.)
+          try {
+            editorHandle.current?.commands.insertContent([...metadata, ...content])
+          } catch (problem) {
+            console.warn('paste: the markdown could not be inserted, so it went in as text', problem)
+            const plain = frontmatter ? [...frontmatter, '', body].join('\n') : body
+            editorHandle.current?.commands.insertContent(plain)
+          }
           return true
         },
         handleKeyDown: (_view, event) => {

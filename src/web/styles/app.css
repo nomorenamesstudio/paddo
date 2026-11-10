@@ -784,6 +784,12 @@ a {
 /* A table is prose in a grid. The borders are the interface's hairline, the header takes
    the well's tint, and a wide table scrolls inside its own wrapper rather than pushing
    the column or the phone layout wider. */
+/* ProseMirror inserts a zero-width separator image beside an inline one; it is an
+   implementation detail and must not take space. */
+.prose img.ProseMirror-separator {
+  display: none;
+}
+
 /* An image is a block in the prose: never wider than the column, never a jump. */
 .prose img {
   display: block;

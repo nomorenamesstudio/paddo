@@ -1032,7 +1032,7 @@ test('a pasted table becomes a table, and the prose around it keeps its markdown
   await expect(page.locator('.prose th').first()).toHaveText('plan')
   await expect(page.locator('.prose td').first()).toHaveText('free')
   // The image path is kept, not just its alt text: this used to be dropped entirely.
-  await expect(page.locator('.prose img')).toHaveAttribute('src', 'images/one.jpg')
+  await expect(page.locator('.prose img[src="images/one.jpg"]')).toHaveCount(1)
 })
 
 test('a long title ellipsises, and the sync spinner stays centred on a phone', async ({

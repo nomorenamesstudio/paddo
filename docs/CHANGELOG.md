@@ -26,6 +26,14 @@ judged by what it carries: real tags (headings, emphasis, lists, images, links) 
 content and ProseMirror gets it; a wrapper means the plain text is the source of truth, and the
 markdown parser does the work.
 
+**Fix** — a paste that did not fit the schema threw, and the writer got the front matter and
+nothing else. Three separate causes, all found by pasting the real document: an image node was
+block-level (a real case study writes `![alt](a.jpg) (on phones: a-phone.jpg)`, which is an image
+and text in one paragraph), the parser's document was being inserted as one node inside a list of
+paragraphs (`RangeError: Invalid content for node doc`), and nothing caught the throw. Images are
+inline now — markdown has no block image — the parsed document is flattened to its blocks, and
+any remaining failure falls back to inserting the text so a paste can never be lost.
+
 **Note** — `*italics*` are written back as `_italics_`: this project's files use underscores,
 and preserving that is deliberate (see `UnderscoreItalic`). A paste of asterisk italics is
 therefore re-marked on its first save.

@@ -82,9 +82,11 @@ export function baseExtensions(options: { collaborative?: boolean } = {}) {
     }),
     UnderscoreItalic,
     // A case study pasted from a pipeline carries `![alt](path)` references, and without
-    // a node for them the parser dropped the path and kept only the alt text. Not inline:
-    // an image is its own block in this editor, like a paragraph.
-    Image.configure({ inline: false, allowBase64: false }),
+    // a node for them the parser dropped the path and kept only the alt text.
+    // Inline on purpose: markdown has no block image, and a real document writes
+    // `![alt](a.jpg) (on phones: a-phone.jpg)` — a block image node cannot sit in a
+    // paragraph with that trailing text, and the whole paste was rejected as invalid.
+    Image.configure({ inline: true, allowBase64: false }),
     // Tables are prose too: a pasted comparison table used to vanish because the schema
     // had no node for one. The kit carries the markdown hooks, so a table parses from and
     // serializes back to GFM — the file keeps the table it had.
