@@ -485,16 +485,27 @@ test('the document menu offers the invitation and the file itself', async ({ pag
   await page.goto(`/d/${slug}`)
   await expect(page.locator('.prose h1')).toBeVisible()
 
+  // Rename it in the editor, so the file's slug and its title disagree: the download has
+  // to follow the title. (The `download` attribute on the link used to force the slug.)
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' renamed')
+  await expect(page.locator('.topbar__title')).toHaveText(/renamed$/)
+
   await page.locator('.editor-menu__trigger').click()
   const panel = page.locator('.editor-menu .row-menu__panel')
   await expect(panel).toBeVisible()
-  await expect(panel.getByRole('menuitem')).toHaveText(['Invite the agent', 'Download markdown'])
+  await expect(panel.getByRole('menuitem')).toHaveText([
+    'Invite the agent',
+    'Copy markdown',
+    'Download markdown',
+  ])
 
   // The anchor has to carry the real file, named after the document.
   const download = page.waitForEvent('download')
   await panel.getByRole('menuitem', { name: 'Download markdown' }).click()
   const file = await download
-  expect(file.suggestedFilename()).toBe(`${slug}.md`)
+  expect(file.suggestedFilename()).toBe(`${slug}-renamed.md`)
   const path = await file.path()
   expect(path).not.toBeNull()
   expect(await readFile(path!, 'utf8')).toContain('# Download ')
@@ -1033,6 +1044,33 @@ test('a pasted table becomes a table, and the prose around it keeps its markdown
   await expect(page.locator('.prose td').first()).toHaveText('free')
   // The image path is kept, not just its alt text: this used to be dropped entirely.
   await expect(page.locator('.prose img[src="images/one.jpg"]')).toHaveCount(1)
+})
+
+test('copy markdown takes the live document, not the last save', async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Copyable ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  // Type something, so the room is ahead of the file and the copy has to come from the
+  // live document rather than the saved markdown.
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('A line that only exists in the room.')
+
+  const raw = page.waitForResponse(
+    (response) => response.url().includes(`/api/documents/${slug}/raw`) && response.ok(),
+  )
+  await page.getByRole('button', { name: 'Document actions' }).click()
+  await page.getByRole('menuitem', { name: 'Copy markdown' }).click()
+  const response = await raw
+
+  // The clipboard itself is not asserted here: the suite's other tests write markdown to
+  // the same clipboard, so reading it would couple tests to each other. What is asserted
+  // is the request this item makes and the text it carries.
+  expect(await response.text()).toContain('A line that only exists in the room.')
+  await expect(page.locator('.notice')).toHaveCount(0)
 })
 
 test('a long title ellipsises, and the sync spinner stays centred on a phone', async ({

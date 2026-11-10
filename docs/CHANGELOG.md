@@ -19,6 +19,16 @@ as a setext heading and the first rule as a horizontal rule: a pasted case study
 its lines are inserted as paragraphs. The `---` delimiters do not survive, because prose has no
 delimiter to put them in; the information does.
 
+**Feature** — Copy markdown, next to Download in the document menu. Same live text the download
+carries (the room's, not the last save's), on the clipboard, so an edit can go back into a
+pipeline without a file in between.
+
+**Fix** — the download was still named after the slug in a browser: the menu link carried
+`download="<slug>.md"`, and that attribute wins over the server's `Content-Disposition`. 0.1.5
+fixed the header and left the attribute in place, so the fix only held for anything that read the
+header rather than clicking the link. The attribute is gone and the file is named after the
+document's title.
+
 **Fix** — the desktop half of the same report. Pasting skipped Paddō's markdown path whenever
 the clipboard carried *any* `text/html`, so a copy taken from an editor — where the HTML is a
 `<div>` wrapper around the same characters — landed as literal `##`. The HTML flavour is now
