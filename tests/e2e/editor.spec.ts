@@ -1018,7 +1018,7 @@ test('a pasted table becomes a table, and the prose around it keeps its markdown
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.evaluate(() =>
     navigator.clipboard.writeText(
-      '## Comparison\n\nSome **bold** prose.\n\n| plan | price |\n| --- | --- |\n| free | 0 |\n| team | 12 |\n',
+      '## Comparison\n\nSome **bold** prose.\n\n| plan | price |\n| --- | --- |\n| free | 0 |\n| team | 12 |\n\n![A screenshot.](images/one.jpg)\n',
     ),
   )
   await page.locator('.prose h1').click()
@@ -1031,6 +1031,8 @@ test('a pasted table becomes a table, and the prose around it keeps its markdown
   await expect(page.locator('.prose table tr')).toHaveCount(3)
   await expect(page.locator('.prose th').first()).toHaveText('plan')
   await expect(page.locator('.prose td').first()).toHaveText('free')
+  // The image path is kept, not just its alt text: this used to be dropped entirely.
+  await expect(page.locator('.prose img')).toHaveAttribute('src', 'images/one.jpg')
 })
 
 test('a long title ellipsises, and the sync spinner stays centred on a phone', async ({

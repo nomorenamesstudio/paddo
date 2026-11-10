@@ -1,6 +1,6 @@
 {
   "name": "paddo",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "type": "module",
   "description": "A self-hosted, PWA Markdown editor for prose, with a local AI agent that proposes edits you review inline.",
@@ -31,6 +31,7 @@
     "@tiptap/extension-bubble-menu": "^3.32.0",
     "@tiptap/extension-collaboration": "^3.32.0",
     "@tiptap/extension-collaboration-caret": "^3.32.0",
+    "@tiptap/extension-image": "3.32.0",
     "@tiptap/extension-italic": "^3.32.0",
     "@tiptap/extension-link": "^3.32.0",
     "@tiptap/extension-table": "^3.32.0",

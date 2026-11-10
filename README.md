@@ -34,7 +34,7 @@ hands back a wall of new text is useless, because none of the decisions were you
 | **No save button** | Yjs over a websocket, both devices in the same document, no conflict dialog. |
 | **Reviewable AI edits** | The agent sends hunks, not rewrites. Accept, reject or edit each one, one-handed. |
 | **Moving without dragging** | Pick the ⠿ grip, tap where the paragraph goes. Same transaction on every input. |
-| **Your files, plainly** | Every document is a `<name>.md` file you can read, grep and edit by hand. |
+| **Your files, plainly** | Every document is a `<name>.md` file you can read, grep and edit by hand. Images stay image references, tables stay tables. |
 | **Runs itself** | One container, no database. Settings, tokens and CRDT state live beside it. |
 
 Not a knowledge base, not a team tool, not a note-taking system with a graph view.
@@ -135,8 +135,9 @@ session cookie, yes — any reverse proxy with a certificate does it, and
 password, one owner, no per-user identity, so every device edits as the same person.
 
 **What is missing?** Rename and delete exist; search does not. Code blocks and footnotes are
-out of scope. Tables are supported and round-trip byte-identically through a save; there is no
-row/column UI yet, so a table is edited cell by cell.
+out of scope. Tables and image references round-trip byte-identically through a save; there is
+no row/column UI yet, so a table is edited cell by cell, and an image is shown at its reference
+— Paddō never uploads or rewrites the file.
 
 **Who built this?** One person, [No More Names Studio](https://nomorenames.studio).
 

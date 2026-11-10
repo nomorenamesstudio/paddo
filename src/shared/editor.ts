@@ -1,4 +1,5 @@
 import { getSchema } from '@tiptap/core'
+import { Image } from '@tiptap/extension-image'
 import { Italic } from '@tiptap/extension-italic'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { MarkdownManager } from '@tiptap/markdown'
@@ -80,6 +81,10 @@ export function baseExtensions(options: { collaborative?: boolean } = {}) {
       },
     }),
     UnderscoreItalic,
+    // A case study pasted from a pipeline carries `![alt](path)` references, and without
+    // a node for them the parser dropped the path and kept only the alt text. Not inline:
+    // an image is its own block in this editor, like a paragraph.
+    Image.configure({ inline: false, allowBase64: false }),
     // Tables are prose too: a pasted comparison table used to vanish because the schema
     // had no node for one. The kit carries the markdown hooks, so a table parses from and
     // serializes back to GFM — the file keeps the table it had.

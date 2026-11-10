@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { looksLikeMarkdown } from '../src/shared/markdown-paste'
+import { looksLikeMarkdown, splitFrontmatter } from '../src/shared/markdown-paste'
 
 describe('looksLikeMarkdown', () => {
   it('recognises the block syntax a writer would expect to become formatting', () => {
@@ -33,5 +33,23 @@ describe('looksLikeMarkdown', () => {
     expect(looksLikeMarkdown('5 * 3 = 15')).toBe(false)
     expect(looksLikeMarkdown('')).toBe(false)
     expect(looksLikeMarkdown('   \n  ')).toBe(false)
+  })
+})
+
+describe('splitFrontmatter', () => {
+  it('separates a YAML block from the prose under it', () => {
+    const { frontmatter, body } = splitFrontmatter('---\ntitle: Something\ndescription: A case study\n---\n\n# Heading\n')
+    expect(frontmatter).toEqual(['title: Something', 'description: A case study'])
+    expect(body.trimStart().startsWith('# Heading')).toBe(true)
+  })
+
+  it('leaves a document without front matter alone', () => {
+    const source = '# Heading\n\n---\n\nAfter a rule.\n'
+    expect(splitFrontmatter(source)).toEqual({ frontmatter: null, body: source })
+  })
+
+  it('does not mistake a leading rule for front matter', () => {
+    const source = '---\n\nJust a rule under nothing.\n'
+    expect(splitFrontmatter(source).frontmatter).toBeNull()
   })
 })

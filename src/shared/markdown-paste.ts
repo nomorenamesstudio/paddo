@@ -41,3 +41,23 @@ export function looksLikeMarkdown(text: string): boolean {
   if (trimmed.includes('\n')) return false
   return INLINE_MARKERS.some((pattern) => pattern.test(trimmed))
 }
+
+/**
+ * Splits a leading YAML front-matter block from the prose under it.
+ *
+ * Paddō's documents have no metadata block — the heading is the title — so the parser
+ * treats `title: …` under a `---` rule as a setext heading and the first `---` as a
+ * horizontal rule: a pasted case study arrived with its front matter restructured into an
+ * `<hr>` and an H2. The block is pulled out here so its lines can be kept as text instead.
+ */
+export function splitFrontmatter(text: string): { frontmatter: string[] | null; body: string } {
+  const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(text)
+  if (!match) return { frontmatter: null, body: text }
+
+  const lines = (match[1] ?? '')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim() !== '')
+
+  return { frontmatter: lines.length > 0 ? lines : null, body: text.slice(match[0].length) }
+}

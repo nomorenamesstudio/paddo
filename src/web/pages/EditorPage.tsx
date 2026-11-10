@@ -5,7 +5,7 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { buildInvitePrompt } from '../../shared/invite'
-import { looksLikeMarkdown } from '../../shared/markdown-paste'
+import { looksLikeMarkdown, splitFrontmatter } from '../../shared/markdown-paste'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions, markdown } from '../../shared/editor'
 import { api, ApiError } from '../api'
@@ -134,14 +134,27 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           const text = data.getData('text/plain')
           if (!looksLikeMarkdown(text)) return false
           event.preventDefault()
+          // Front matter has no node and no meaning in a Paddō document, but leaving it in
+          // the paste gets it restructured into an `<hr>` and a setext heading. Its lines
+          // are kept as text instead: nothing is dropped, nothing is invented.
+          const { frontmatter, body } = splitFrontmatter(text)
+          if (frontmatter) {
+            editorHandle.current?.commands.insertContent(
+              frontmatter.map((line) => ({
+                type: 'paragraph',
+                content: [{ type: 'text', text: line }],
+              })),
+            )
+          }
+
           // Parse with the same manager the server serializes from, so a pasted
           // document and its file agree. `insertContent` takes the resulting JSON; the
           // editor carries no markdown extension of its own.
-          const parsed = markdown.parse(text)
+          const parsed = markdown.parse(body)
           // Nothing survived the parse — a construct with no node, such as a footnote.
           // The text goes in as text rather than disappearing without a word.
           const kept = JSON.stringify(parsed).includes('"text"')
-          editorHandle.current?.commands.insertContent(kept ? parsed : text)
+          editorHandle.current?.commands.insertContent(kept ? parsed : body)
           return true
         },
         handleKeyDown: (_view, event) => {

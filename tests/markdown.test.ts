@@ -32,6 +32,13 @@ describe('markdown round-trip', () => {
     expect(normalizeMarkdown(markdown.serialize(markdown.parse(source)))).toBe(source)
   })
 
+  it('keeps an image reference exactly as written', () => {
+    // A case study pasted from a pipeline carries `![alt](path)`; without a node for it
+    // the parser kept the alt text and dropped the path.
+    const source = '![A phone with the player showing.](images/juuku-home.jpg)\n'
+    expect(normalizeMarkdown(markdown.serialize(markdown.parse(source)))).toBe(source)
+  })
+
   it('carries a table through the CRDT, which is what a save actually writes', () => {
     // The server serializes from the Y.Doc, not from the parsed markdown: a table has to
     // survive y-prosemirror as well.

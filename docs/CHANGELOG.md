@@ -2,6 +2,31 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-04 — 0.1.7: a case study pastes as a case study
+
+Found by pasting a real one — front matter, images, links, bold list items — into the desktop
+editor. Two of those the schema could not hold, and both failed the same way: silently.
+
+**Feature** — images. `@tiptap/extension-image` is in the shared schema, so `![alt](path)`
+parses into an image node, serializes back to the exact same reference, and renders in the
+column at no more than its width. Before this the parser kept the alt text and dropped the
+path, which is the worst of both: the prose looked almost right and the reference was gone.
+
+**Fix** — YAML front matter is kept as text instead of being restructured. A Paddō document
+has no metadata block — the heading is the title — so the parser read `title: …` above a `---`
+as a setext heading and the first rule as a horizontal rule: a pasted case study arrived with an
+`<hr>` and an H2 where its front matter used to be. The block is split off before parsing and
+its lines are inserted as paragraphs. The `---` delimiters do not survive, because prose has no
+delimiter to put them in; the information does.
+
+**Note** — `*italics*` are written back as `_italics_`: this project's files use underscores,
+and preserving that is deliberate (see `UnderscoreItalic`). A paste of asterisk italics is
+therefore re-marked on its first save.
+
+**Tests** — an image reference round-trips byte-identically; `splitFrontmatter` has its own
+cases (a real block, a document without one, a lone rule); the paste e2e now carries an image
+and asserts its `src` survives.
+
 ## 2026-11-04 — 0.1.6: tables are prose too
 
 "Shouldn't we support tables?" Yes. They were out of scope when Paddō was prose-only, and
