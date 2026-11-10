@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { looksLikeMarkdown, splitFrontmatter } from '../src/shared/markdown-paste'
+import { isRichClipboard, looksLikeMarkdown, splitFrontmatter } from '../src/shared/markdown-paste'
 
 describe('looksLikeMarkdown', () => {
   it('recognises the block syntax a writer would expect to become formatting', () => {
@@ -51,5 +51,26 @@ describe('splitFrontmatter', () => {
   it('does not mistake a leading rule for front matter', () => {
     const source = '---\n\nJust a rule under nothing.\n'
     expect(splitFrontmatter(source).frontmatter).toBeNull()
+  })
+})
+
+describe('isRichClipboard', () => {
+  it('treats an editor wrapper around the same text as plain, not rich', () => {
+    // A code editor copies markdown as HTML that carries no structure the text lacks. This
+    // is the shape that used to be handed to ProseMirror, landing as literal `##`.
+    const text = '## Heading\n\nSome prose.\n'
+    const html = '<div style="color:#333"><div>## Heading</div><div><br></div><div>Some prose.</div></div>'
+    expect(isRichClipboard(html, text)).toBe(false)
+  })
+
+  it('calls rendered prose rich, so ProseMirror keeps the formatting', () => {
+    const text = 'Heading\n\nSome prose.'
+    const html = '<h2>Heading</h2><p>Some prose.</p>'
+    expect(isRichClipboard(html, text)).toBe(true)
+  })
+
+  it('says plain when there is no HTML at all', () => {
+    expect(isRichClipboard(undefined, '## Heading')).toBe(false)
+    expect(isRichClipboard('', '## Heading')).toBe(false)
   })
 })

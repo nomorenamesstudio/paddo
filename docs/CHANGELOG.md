@@ -19,6 +19,13 @@ as a setext heading and the first rule as a horizontal rule: a pasted case study
 its lines are inserted as paragraphs. The `---` delimiters do not survive, because prose has no
 delimiter to put them in; the information does.
 
+**Fix** — the desktop half of the same report. Pasting skipped Paddō's markdown path whenever
+the clipboard carried *any* `text/html`, so a copy taken from an editor — where the HTML is a
+`<div>` wrapper around the same characters — landed as literal `##`. The HTML flavour is now
+judged by what it carries: real tags (headings, emphasis, lists, images, links) mean rich
+content and ProseMirror gets it; a wrapper means the plain text is the source of truth, and the
+markdown parser does the work.
+
 **Note** — `*italics*` are written back as `_italics_`: this project's files use underscores,
 and preserving that is deliberate (see `UnderscoreItalic`). A paste of asterisk italics is
 therefore re-marked on its first save.

@@ -61,3 +61,41 @@ export function splitFrontmatter(text: string): { frontmatter: string[] | null; 
 
   return { frontmatter: lines.length > 0 ? lines : null, body: text.slice(match[0].length) }
 }
+
+/** The text inside an HTML fragment, so a clipboard can be judged by what it carries. */
+export function htmlText(html: string): string {
+  return html
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr|blockquote|pre)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+}
+
+const collapse = (value: string) => value.replace(/\s+/g, ' ').trim()
+
+/**
+ * Does the HTML flavour of a clipboard say more than its plain text?
+ *
+ * A code editor or an IDE copies markdown as `<div style="…">## Heading…</div>`: the HTML is
+ * a wrapper around the same characters. A browser copying rendered prose carries structure
+ * the plain text does not. The difference decides who parses the paste — ProseMirror for
+ * rich content, the markdown parser for the text-only source. Measured 2026-11-04: bailing
+ * out on any HTML at all meant a case study copied from an editor landed as literal `##`.
+ */
+/** Tags that carry meaning a plain-text clipboard would lose. */
+const STRUCTURAL_TAG =
+  /<(h[1-6]|strong|b|em|i|u|s|del|code|pre|blockquote|ul|ol|li|table|thead|tbody|tr|td|th|img|a|figure|figcaption|hr)\b/i
+
+export function isRichClipboard(html: string | undefined, text: string): boolean {
+  if (!html) return false
+  // An editor's wrapper is divs, spans and breaks; anything with real tags is content the
+  // plain-text flavour cannot represent, and ProseMirror should have it.
+  if (STRUCTURAL_TAG.test(html)) return true
+  return collapse(htmlText(html)) !== collapse(text)
+}

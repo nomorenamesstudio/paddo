@@ -5,7 +5,7 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { buildInvitePrompt } from '../../shared/invite'
-import { looksLikeMarkdown, splitFrontmatter } from '../../shared/markdown-paste'
+import { isRichClipboard, looksLikeMarkdown, splitFrontmatter } from '../../shared/markdown-paste'
 import { SUGGESTIONS_MAP, type Suggestion } from '../../shared/suggestions'
 import { CONTENT_FIELD, baseExtensions, markdown } from '../../shared/editor'
 import { api, ApiError } from '../api'
@@ -130,9 +130,13 @@ function EditorSurface({ slug, collab }: { slug: string; collab: Collab }) {
           // markdown source should become prose rather than a wall of asterisks.
           const data = event.clipboardData
           if (!data) return false
-          if (data.getData('text/html')) return false
           const text = data.getData('text/plain')
           if (!looksLikeMarkdown(text)) return false
+          // Rich content is ProseMirror's business — it knows where the HTML came from. A
+          // clipboard whose HTML merely wraps this same text (an editor's copy of markdown
+          // source) is not rich, and used to be handed to ProseMirror as well, which is how
+          // a pasted article arrived as literal `##`.
+          if (isRichClipboard(data.getData('text/html'), text)) return false
           event.preventDefault()
           // Front matter has no node and no meaning in a Paddō document, but leaving it in
           // the paste gets it restructured into an `<hr>` and a setext heading. Its lines
