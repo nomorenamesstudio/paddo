@@ -19,6 +19,16 @@ export interface Suggestion {
   to: Uint8Array | null
   original: string
   proposed: string
+  /**
+   * `proposed` parsed as markdown, when it carries markdown syntax. An agent writes a
+   * letter with `**bold**` and `>` quotes, and inserting that as literal text is how the
+   * file ended up with `\*\*` and `&gt;` in it. Accepting a suggestion with this set puts
+   * the formatted nodes in instead of the characters.
+   *
+   * A JSON string, not an object: Yjs turns a nested plain object into a Y.Map, and what
+   * comes back out is not something `nodeFromJSON` can read.
+   */
+  proposedJson?: string
   rationale: string | null
   status: SuggestionStatus
   author: SuggestionAuthor

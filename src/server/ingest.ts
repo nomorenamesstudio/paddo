@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 
 import * as Y from 'yjs'
 
-import { CONTENT_FIELD } from '../shared/editor'
+import { CONTENT_FIELD, markdown } from '../shared/editor'
+import { looksLikeMarkdown } from '../shared/markdown-paste'
 import { kindFor, SUGGESTIONS_MAP, type Suggestion, type SuggestionAuthor } from '../shared/suggestions'
 import { anchorRange, flatten, locateQuote } from './anchors'
 import { diffToHunks } from './diff'
@@ -96,6 +97,10 @@ export async function proposeEdits(
         to,
         original: matchedOriginal,
         proposed,
+        // Markdown in a hunk is formatting, not characters. Parsed here, where the manager
+        // the file is written from is in scope, so accepting puts nodes in rather than
+        // `**` and `>`; stored as a JSON string because Yjs turns objects into Y.Maps.
+        proposedJson: looksLikeMarkdown(proposed) ? JSON.stringify(markdown.parse(proposed)) : undefined,
         rationale: edit.rationale?.trim() || null,
         status: 'pending',
         author,

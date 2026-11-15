@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
-import type { Node as PMNode } from '@tiptap/pm/model'
+import type { Fragment, Node as PMNode } from '@tiptap/pm/model'
 import { relativePositionToAbsolutePosition } from 'y-prosemirror'
 import * as Y from 'yjs'
 
@@ -183,6 +183,29 @@ function paragraphType(editor: Editor) {
   return paragraph
 }
 
+/** The nodes a markdown proposal stands for, or null when it cannot be read. */
+function proposalFragment(editor: Editor, json: string): Fragment | null {
+  try {
+    const doc = editor.schema.nodeFromJSON(JSON.parse(json) as unknown)
+    // A single paragraph is inline content: a hunk inside a sentence stays in the
+    // sentence, with its marks, rather than splitting the paragraph around itself.
+    if (doc.childCount === 1 && doc.child(0).isTextblock) return doc.child(0).content
+    return doc.content
+  } catch {
+    return null
+  }
+}
+
+function replaceWithFragment(editor: Editor, from: number, to: number, fragment: Fragment) {
+  const { tr } = editor.state
+  if (fragment.size === 0) {
+    tr.delete(from, to)
+    return { tr, end: from }
+  }
+  tr.replaceWith(from, to, fragment)
+  return { tr, end: from + fragment.size }
+}
+
 function replaceRange(editor: Editor, from: number, to: number, proposed: string) {
   const { tr } = editor.state
   const blocks = proposed.split(/\n{2,}/).map((block) => block.replace(/\n/g, ' '))
@@ -233,7 +256,10 @@ export function acceptSuggestion(
     range = relocated
   }
 
-  const { tr, end } = replaceRange(editor, range.from, range.to, suggestion.proposed)
+  const fragment = suggestion.proposedJson ? proposalFragment(editor, suggestion.proposedJson) : null
+  const { tr, end } = fragment
+    ? replaceWithFragment(editor, range.from, range.to, fragment)
+    : replaceRange(editor, range.from, range.to, suggestion.proposed)
 
   if (options.select && suggestion.proposed.length > 0) {
     const clampedEnd = Math.min(end, tr.doc.content.size)

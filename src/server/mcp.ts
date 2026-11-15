@@ -93,7 +93,7 @@ server.registerTool(
   {
     title: 'Propose edits',
     description:
-      'Send small, reviewable changes to a document. Each edit quotes existing text as `original` and gives the replacement as `proposed`. A human accepts or rejects each hunk in the editor. Never rewrite the whole document in one edit; one sentence or phrase per hunk.',
+      'Send small, reviewable changes to a document. Each edit quotes existing text as `original` and gives the replacement as `proposed`. Markdown in `proposed` is parsed: `**bold**`, `_italic_`, `> quote`, lists, headings and tables arrive formatted, so write the replacement the way the document should read. A human accepts or rejects each hunk in the editor. Never rewrite the whole document in one edit; one sentence or phrase per hunk.',
     inputSchema: {
       document: z.string().describe('Document slug'),
       edits: z

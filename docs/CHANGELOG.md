@@ -19,6 +19,14 @@ as a setext heading and the first rule as a horizontal rule: a pasted case study
 its lines are inserted as paragraphs. The `---` delimiters do not survive, because prose has no
 delimiter to put them in; the information does.
 
+**Fix** — an agent's markdown arrived as characters. `propose_edits` treats `proposed` as
+literal text, so a letter written with `**bold**` and `> quotes` was accepted into the document
+as those characters — and the next save escaped them, leaving `\*\*` and `&gt;` in the file.
+A hunk whose replacement carries markdown is parsed where the file is written from, stored on
+the suggestion as JSON, and accepted as formatted nodes; the MCP description says so now. Found
+on a real document (a cover letter an agent wrote into it), reproduced by sending the same hunk
+and accepting it.
+
 **Feature** — Copy markdown, next to Download in the document menu. Same live text the download
 carries (the room's, not the last save's), on the clipboard, so an edit can go back into a
 pipeline without a file in between.

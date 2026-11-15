@@ -1073,6 +1073,37 @@ test('copy markdown takes the live document, not the last save', async ({ page }
   await expect(page.locator('.notice')).toHaveCount(0)
 })
 
+test("an agent's markdown arrives as formatting, not as characters", async ({ page }) => {
+  await signIn(page)
+  const slug = await createDocument(page, `Letter ${Date.now()}`)
+  await page.goto(`/d/${slug}`)
+  await expect(page.locator('.prose h1')).toBeVisible()
+
+  await page.locator('.prose h1').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('PLACEHOLDER')
+  await page.waitForTimeout(800)
+
+  // What an agent sends: a hunk whose replacement carries markdown.
+  const proposed = '**bold bit** and a quote:\n\n> quoted line'
+  const response = await page.request.post(`/api/documents/${slug}/suggestions`, {
+    data: { edits: [{ original: 'PLACEHOLDER', proposed }], author: 'agent' },
+  })
+  expect(response.ok()).toBe(true)
+
+  await page.getByRole('button', { name: /accept/i }).first().click()
+  await expect(page.locator('.prose strong').first()).toHaveText('bold bit')
+  await expect(page.locator('.prose blockquote')).toHaveCount(1)
+
+  // And the file on disk keeps markdown, not the escapes a literal insert produced:
+  // `\\*\\*bold bit\\*\\*` and `&gt; quoted line`.
+  const file = await (await page.request.get(`/api/documents/${slug}/raw`)).text()
+  expect(file).toContain('**bold bit**')
+  expect(file).toContain('> quoted line')
+  expect(file).not.toContain('\\*')
+})
+
 test('a long title ellipsises, and the sync spinner stays centred on a phone', async ({
   page,
 }) => {
