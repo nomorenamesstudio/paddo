@@ -46,6 +46,13 @@ describe('markdown round-trip', () => {
     expect(normalizeMarkdown(markdownFromYDoc(yDocFromMarkdown(source)))).toBe(source)
   })
 
+  it('keeps an ampersand as an ampersand, through the CRDT a save writes from', () => {
+    // The serializer escapes `&` as `&amp;`; the file the writer reads must not carry the
+    // escape. Reported on an exported CV: "Lead Product Designer &amp; Design Engineer".
+    const source = '- Title: Lead Product Designer & Design Engineer\n'
+    expect(normalizeMarkdown(markdownFromYDoc(yDocFromMarkdown(source)))).toBe(source)
+  })
+
   it('keeps underscore emphasis rather than rewriting it as asterisks', () => {
     const output = normalizeMarkdown(
       markdown.serialize(markdown.parse('An _emphasized phrase_ sits here.\n')),

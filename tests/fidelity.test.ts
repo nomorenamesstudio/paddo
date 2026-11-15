@@ -19,12 +19,16 @@ describe('raw HTML survives the editor round-trip', () => {
     )
   })
 
-  it('leaves a bare less-than in prose alone, so an entity reference stays one', () => {
-    expect(restoreRawHtml('a &lt; b and c &gt; d')).toBe('a &lt; b and c &gt; d')
+  it('undoes the escaping of an ampersand, which is one level of one escape', () => {
+    // The serializer always escapes `&` in prose, so a single `&amp;` in the output can
+    // only stand for a literal ampersand in the text: "Lead Product Designer &amp; Design
+    // Engineer" in an exported CV was the reported bug.
+    expect(restoreRawHtml('Fish &amp; chips.')).toBe('Fish & chips.')
+    // Undone once, not twice: a writer who typed `&lt;` gets `&lt;` back.
+    expect(restoreRawHtml('&amp;lt;div&amp;gt;')).toBe('&lt;div&gt;')
   })
 
-  it('does not touch a double-escaped entity or a literal ampersand', () => {
-    expect(restoreRawHtml('Fish &amp; chips.')).toBe('Fish &amp; chips.')
-    expect(restoreRawHtml('&amp;lt;div&amp;gt;')).toBe('&amp;lt;div&amp;gt;')
+  it('restores a bare less-than and greater-than in prose', () => {
+    expect(restoreRawHtml('a &lt; b and c &gt; d')).toBe('a < b and c > d')
   })
 })

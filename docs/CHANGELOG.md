@@ -2,6 +2,22 @@
 
 Reverse chronological. Tagged Feature / Fix / Break.
 
+## 2026-11-10 — 0.1.8: an ampersand in the file, not `&amp;`
+
+Reported by an agent reading an exported CV back: "Lead Product Designer &amp; Design Engineer".
+
+**Fix** — the markdown serializer escapes `<`, `>` and `&` as entities, and the fidelity pass
+only undid tag-shaped escapes: a bare ampersand in the writer's text came back as `&amp;` in the
+file, the download and the export. All three are undone now, outside fenced code, `&amp;` last so
+a writer who typed `&lt;` gets `&lt;` back rather than a tag. That makes the mapping one-to-one in
+both directions — text `&` → file `&`, text `&lt;` → file `&lt;` — where before it was
+`&` → `&amp;` and unrecoverable.
+
+**Note** — documents already carrying `&amp;` repair themselves: the parser decodes the entity
+when the room loads, so the next save writes `&`. Checked against the CV on the homelab: six
+escaped ampersands in, none out. The old fidelity test that asserted the escape survives was
+the bug written down, and it is gone.
+
 ## 2026-11-04 — 0.1.7: a case study pastes as a case study
 
 Found by pasting a real one — front matter, images, links, bold list items — into the desktop
